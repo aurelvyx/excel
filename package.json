@@ -1,0 +1,19 @@
+{
+  "name": "centro-idiomas-excel",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev:api": "pnpm --filter api start:dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter api test",
+    "test:e2e": "pnpm --filter api test:e2e",
+    "db:up": "docker compose --env-file infra/.env -f infra/compose.yaml up -d",
+    "db:down": "docker compose --env-file infra/.env -f infra/compose.yaml down",
+    "db:logs": "docker compose --env-file infra/.env -f infra/compose.yaml logs -f postgres",
+    "db:config": "docker compose --env-file infra/.env -f infra/compose.yaml config --quiet"
+  }
+}
