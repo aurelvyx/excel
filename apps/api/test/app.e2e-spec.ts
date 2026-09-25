@@ -1,29 +1,36 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module.js';
+import { DataSource } from 'typeorm';
+import { HealthController } from '../src/health/health.controller.js';
+import { configureApp } from '../src/configure-app.js';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
-
+describe('Contrato técnico B01', () => {
+  let app: INestApplication;
+  const query = vi.fn();
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+    query.mockReset().mockResolvedValue([{ '?column?': 1 }]);
+    const module = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [{ provide: DataSource, useValue: { query } }],
     }).compile();
-
-    app = moduleFixture.createNestApplication();
+    app = module.createNestApplication();
+    configureApp(app);
     await app.init();
   });
-
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterEach(async () => { await app.close(); });
+  it('expone salud bajo /api/v1', async () => {
+    await request(app.getHttpServer()).get('/api/v1/health').expect(200)
+      .expect({ status: 'ok', database: 'up' });
   });
-
-  afterEach(async () => {
-    await app.close();
+  it('responde 503 sin revelar credenciales ni errores SQL', async () => {
+    query.mockRejectedValue(new Error('password=never-expose-this'));
+    const response = await request(app.getHttpServer()).get('/api/v1/health').expect(503);
+    expect(JSON.stringify(response.body)).not.toContain('never-expose-this');
+  });
+  it('publica OpenAPI y no expone rutas académicas', async () => {
+    const response = await request(app.getHttpServer()).get('/api/openapi.json').expect(200);
+    expect(Object.keys(response.body.paths)).toEqual(['/api/v1/health']);
+    await request(app.getHttpServer()).get('/api/v1/estudiantes').expect(404);
   });
 });

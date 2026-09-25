@@ -1,80 +1,129 @@
 # Centro de Idiomas Excel
 
-Estructura inicial basada en `docs/Arquitectura_del_Sistema.docx`, sección 11.
-Preparación parcial de B01 (RNF12–13): proyectos base y PostgreSQL para desarrollo.
-Las aplicaciones conservan el contenido de sus generadores oficiales. Las carpetas
-reservadas contienen únicamente `.gitkeep`; todavía no hay funciones académicas,
-conexión a PostgreSQL, entidades ni migraciones.
+Monorepositorio con pnpm: API NestJS, web React con TypeScript y PostgreSQL.
+Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 
-```text
-apps/
-  api/                   NestJS + TypeScript
-    src/modules/         auth, usuarios, oferta-academica, personas,
-                         matriculas, asistencia, evaluacion, reportes, control
-    src/common/          guards, filtros, interceptores, validacion
-    src/database/        configuracion, migraciones
-  web/                   React + TypeScript (Vite)
-    src/features/        auth, estudiantes, matriculas, asistencia, notas, reportes
-    src/shared/          componentes, cliente-api, utilidades
-packages/contracts/      Reservado para contratos estables compartidos
-infra/                   Compose de PostgreSQL; proxy y scripts de respaldo reservados
-docs/                    Documentación de diseño; decisiones y OpenAPI reservados
-```
+## Alcance actual
 
-## Desarrollo
+- **B01:** configuración de entornos, Compose de desarrollo y pruebas, API con salud
+  técnica y OpenAPI, proxy web y workflow de verificación automática.
+- **B02:** tres migraciones TypeORM para las 15 tablas de identidad y oferta académica,
+  claves, índices y restricciones; cuatro roles iniciales y carga sintética opcional.
+- **B03:** acceso y cierre de sesión, gestión administrativa de usuarios y roles,
+  cambio de contraseña propia, protección CSRF y auditoría básica inmutable.
+- La interfaz mantiene la plantilla de React; el acceso visual corresponde a B05.
+  Matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
 
-Requisitos: Node.js 24 o superior, pnpm 11.19.0 y Docker con Compose.
-Ejecutar desde la raíz:
+Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
+[trazabilidad y verificación](docs/verificacion-B01-B02.md).
+Para crear el primer administrador y utilizar los endpoints de acceso, consulta
+[B03: acceso y usuarios](docs/B03-acceso-y-usuarios.md).
+
+## Instalación desde cero
+
+Requisitos: Git, Node.js 24, pnpm 11.19.0 y Docker con Compose v2 en ejecución
+(contenedores Linux, tanto en Windows como en Linux). Usa la carpeta raíz del repositorio.
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
+pnpm env:setup
+pnpm db:up
+pnpm db:migrate
+pnpm db:status
+```
+
+`pnpm env:setup` crea `infra/.env`, `apps/api/.env` y `apps/web/.env` desde los ejemplos.
+Genera una contraseña aleatoria local y la comparte entre Compose y la API.
+No reemplaza archivos existentes ni imprime secretos. Si ya existe `infra/.env`,
+debe tener POSTGRES_PASSWORD; si cambias usuario, puerto o contraseña después,
+actualiza también `apps/api/.env`. Los archivos `.env` no se versionan.
+
+`pnpm db:up` espera a que PostgreSQL esté saludable antes de terminar.
+Los cambios de POSTGRES_PASSWORD no
+modifican automáticamente la contraseña de una base ya inicializada en el volumen.
+
+En dos terminales separadas:
+
+```sh
 pnpm dev:api
-```
-
-En otra terminal:
-
-```sh
 pnpm dev:web
 ```
 
-NestJS usa inicialmente `http://localhost:3000` y Vite `http://localhost:5173`.
-Se conserva la ruta de ejemplo `/`; `/api/v1` se configurará al implementar la API.
+- Web: http://127.0.0.1:5173 (plantilla inicial).
+- Salud API: http://127.0.0.1:3000/api/v1/health.
+- Swagger: http://127.0.0.1:3000/api/docs.
+- OpenAPI JSON: http://127.0.0.1:3000/api/openapi.json.
+- PostgreSQL: 127.0.0.1:5432 por defecto, base y usuario `excel`.
 
-## PostgreSQL en Docker
+La API escucha solo en localhost para esta demostración. El proxy de Vite dirige
+`/api` a la API local; API_PROXY_TARGET se ajusta en `apps/web/.env` si cambia el puerto.
+El esquema se modifica únicamente mediante migraciones; arrancar la API no crea tablas.
 
-Copiar `infra/.env.example` a `infra/.env` y definir `POSTGRES_PASSWORD`.
-En PowerShell:
+## Migraciones y datos de prueba
+
+```sh
+pnpm db:migrate
+pnpm db:status
+pnpm db:revert
+```
+
+`db:revert` revierte **solo la última migración**. Rechaza producción; las migraciones
+estructurales rechazan tablas con datos y los roles no se retiran si están asignados.
+La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
+Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
+
+Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
+No crean credenciales de acceso ni catálogos institucionales supuestos.
+Para cargar ejemplos sintéticos en desarrollo, en PowerShell:
 
 ```powershell
-Copy-Item infra/.env.example infra/.env
+$env:ALLOW_DEMO_SEED = 'true'
+pnpm db:seed:demo
+Remove-Item Env:ALLOW_DEMO_SEED
 ```
 
-Luego de editar la contraseña:
+En Linux/macOS: `ALLOW_DEMO_SEED=true pnpm db:seed:demo`.
+La carga es transaccional e idempotente. Crea idiomas, niveles, unidades, un periodo,
+turno, sección, docente, dos grupos y una versión de reglas 13/30/3 para demostración.
+Todos los códigos son DEMO; la cuenta de referencia está deshabilitada y su contraseña
+aleatoria no se conserva. No es una cuenta para iniciar sesión. No se fijan pesos de evaluación.
+
+## Verificación automática
 
 ```sh
-pnpm db:config
-pnpm db:up
-pnpm db:logs
-pnpm db:down
+pnpm check
+pnpm test:db
 ```
 
-PostgreSQL 18 está disponible en `127.0.0.1:5432`, con base y usuario `excel`
-por defecto. Las variables están en `infra/.env`, excluido del control de versiones.
-El volumen persiste al ejecutar `pnpm db:down`. La API aún no utiliza esta base.
-Compose es una elección local solicitada para esta preparación; no define el
-despliegue institucional. No se han creado tablas ni datos iniciales.
+`check` ejecuta lint, tipos, compilación, pruebas unitarias, contrato HTTP y configuración
+local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
+revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
+real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
 
-## Verificación
+El workflow `.github/workflows/ci.yml` ejecuta ambas verificaciones en push y pull request.
+Su ejecución remota requiere publicar el repositorio en GitHub; los resultados locales
+no se presentan como una ejecución ya realizada en GitHub Actions.
 
-```sh
-pnpm build
-pnpm lint
-pnpm test
-pnpm test:e2e
+## Estructura
+
+```text
+apps/api/src/
+  database/             Configuración, migraciones y carga sintética
+  health/               Estado técnico de la API y PostgreSQL
+  modules/              Auth, usuarios y control; otras funciones reservadas
+  common/               Filtro de errores e infraestructura compartida
+apps/web/src/
+  features/             Reservado para las funciones del negocio
+  shared/               Reservado para componentes y cliente API
+packages/contracts/     Reservado para contratos compartidos
+infra/
+  compose.yaml          PostgreSQL persistente de desarrollo
+  compose.test.yaml     PostgreSQL temporal de verificación
+  scripts/              Preparación de entornos y pruebas aisladas
+  proxy/                Reservado para despliegue posterior
+  scripts/respaldo/     Reservado para B21
 ```
 
-Las pruebas incluidas son las de la plantilla NestJS; no verifican requisitos
-académicos. B01 sigue pendiente de automatización y revisión del equipo.
-
-Referencias de los generadores: [NestJS CLI](https://docs.nestjs.com/cli/usages),
-[Vite](https://vite.dev/guide/) e [imagen PostgreSQL](https://hub.docker.com/_/postgres).
+Para detener la base: `pnpm db:down`; conserva el volumen. Para consultar logs:
+`pnpm db:logs`. Para validar Compose: `pnpm db:config`.
+La infraestructura de producción, respaldos y restauración siguen en B21.
