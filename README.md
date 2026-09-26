@@ -11,6 +11,8 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   claves, índices y restricciones; cuatro roles iniciales y carga sintética opcional.
 - **B03:** acceso y cierre de sesión, gestión administrativa de usuarios y roles,
   cambio de contraseña propia, protección CSRF y auditoría básica inmutable.
+- **B04:** API de idiomas, niveles, unidades, periodos, turnos, secciones y grupos;
+  gestión de docentes y asignaciones, permisos por grupo y auditoría transaccional.
 - La interfaz mantiene la plantilla de React; el acceso visual corresponde a B05.
   Matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
 
@@ -18,6 +20,7 @@ Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
 Para crear el primer administrador y utilizar los endpoints de acceso, consulta
 [B03: acceso y usuarios](docs/B03-acceso-y-usuarios.md).
+Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-oferta-y-docentes.md).
 
 ## Instalación desde cero
 
@@ -110,7 +113,7 @@ no se presentan como una ejecución ya realizada en GitHub Actions.
 apps/api/src/
   database/             Configuración, migraciones y carga sintética
   health/               Estado técnico de la API y PostgreSQL
-  modules/              Auth, usuarios y control; otras funciones reservadas
+  modules/              Auth, usuarios, control, oferta académica y personas
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
   features/             Reservado para las funciones del negocio
