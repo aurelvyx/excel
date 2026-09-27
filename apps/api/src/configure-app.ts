@@ -16,11 +16,18 @@ export function configureApp(app: INestApplication): void {
   app.useGlobalFilters(new ApiErrorFilter());
   const config = new DocumentBuilder()
     .setTitle('Centro de Idiomas Excel')
-    .setDescription('B03: acceso, usuarios, roles y auditoría básica. Cookie de sesión, Origin y CSRF para escrituras.')
+    .setDescription(
+      'B03–B04: acceso, usuarios, oferta académica, docentes, asignaciones y auditoría. Cookie de sesión, Origin y CSRF para escrituras.',
+    )
     .addCookieAuth(COOKIE_NAME, { type: 'apiKey', in: 'cookie' }, COOKIE_NAME)
-    .setVersion('0.2.0')
+    .setVersion('0.3.0')
     .build();
-  SwaggerModule.setup('api/docs', app, () => SwaggerModule.createDocument(app, config), {
-    jsonDocumentUrl: 'api/openapi.json',
-  });
+  SwaggerModule.setup(
+    'api/docs',
+    app,
+    () => SwaggerModule.createDocument(app, config),
+    {
+      jsonDocumentUrl: 'api/openapi.json',
+    },
+  );
 }

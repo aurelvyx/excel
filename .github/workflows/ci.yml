@@ -1,4 +1,4 @@
-name: Verificación B01, B02 y B03
+name: Verificación B01–B04
 on:
   push:
   pull_request:
