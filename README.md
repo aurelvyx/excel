@@ -15,7 +15,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   gestión de docentes y asignaciones, permisos por grupo y auditoría transaccional.
 - **B05:** interfaz React de acceso, contraseña, menú por rol y configuración de
   oferta, docentes y cuentas, conectada a la API y verificada con navegador.
-- Matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
+- **B06:** registro, búsqueda y actualización de estudiantes, auditoría e historial
+  persistido separado por intento, nivel y periodo; interfaz y permisos por rol.
+- Los flujos de matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -23,6 +25,7 @@ Para crear el primer administrador y utilizar los endpoints de acceso, consulta
 [B03: acceso y usuarios](docs/B03-acceso-y-usuarios.md).
 Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-oferta-y-docentes.md).
 Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-interfaz-y-configuracion.md).
+Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estudiantes-historial.md).
 
 ## Instalación desde cero
 

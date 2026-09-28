@@ -11,3 +11,7 @@ docentes y asignaciones con alcance por grupo y auditoría transaccional.
 Consulta [B03: acceso y usuarios](../../docs/B03-acceso-y-usuarios.md).
 Consulta [B04: oferta y docentes](../../docs/B04-oferta-y-docentes.md) para rutas,
 permisos, ejemplos y límites de esta entrega.
+
+B06 añade `/api/v1/estudiantes`: alta, búsqueda, edición auditada e historial
+persistido por intento/nivel/periodo. Aplicar la quinta migración antes de iniciar.
+Ver [B06: estudiantes e historial](../../docs/B06-estudiantes-historial.md).

@@ -18,3 +18,8 @@ Organización: `src/features/auth`, `src/features/configuration` y `src/shared`
 (cliente API, navegación y diálogo). El navegador se verifica mediante
 `apps/api/test/web.integration-spec.ts`, iniciado por `pnpm test:db` con PostgreSQL
 temporal. Instalar antes Chromium con `pnpm --filter api exec playwright install chromium`.
+
+B06 incorpora `src/features/students`: registro y edición para administración y
+secretaría, consulta para coordinación e historial por intento. Ver
+[guía B06](../../docs/B06-estudiantes-historial.md). Las pruebas de navegador están
+en `apps/api/test/students-web.integration-spec.ts` y se incluyen en `pnpm test:db`.

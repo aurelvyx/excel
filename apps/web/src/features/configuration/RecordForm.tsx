@@ -14,12 +14,14 @@ type Values = Record<string, string | string[]>;
 export function RecordForm({
   resource,
   row,
+  initial,
   lookups,
   onClose,
   onSave,
 }: {
   resource: Resource;
   row?: Row;
+  initial?: Row;
   lookups: Record<string, Row[]>;
   onClose: () => void;
   onSave: (body: Record<string, unknown>) => Promise<void>;
@@ -38,7 +40,7 @@ export function RecordForm({
         field.key,
         field.type === "roles"
           ? ((row?.roles as string[]) ?? [])
-          : fieldValue(field, row) ||
+          : fieldValue(field, row ?? initial) ||
             (field.type === "select" ? (field.options?.[0] ?? "") : ""),
       ]),
     ),

@@ -333,6 +333,27 @@
 .account-panel {
   padding: 30px;
 }
+.student-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+.student-facts dt {
+  color: #53665a;
+  font-size: 0.85rem;
+}
+.student-facts dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+.student-page > .panel {
+  margin-top: 20px;
+  padding: 22px;
+}
+.student-history {
+  margin-top: 24px;
+  padding: 22px;
+}
 .filters {
   display: flex;
   gap: 16px;
