@@ -5,6 +5,7 @@ import { ResourcePage } from "./features/configuration/ResourcePage";
 import { resources, roleNames } from "./features/configuration/model";
 import { useRoute } from "./shared/navigation";
 import { errorText } from "./shared/api";
+import { StudentsPage } from "./features/students/StudentsPage";
 
 export default function App() {
   return (
@@ -79,6 +80,16 @@ function Workspace() {
                 ? "Consulta académica"
                 : "Docencia"}
           </p>
+          {reader && (
+            <a
+              href="#/estudiantes"
+              aria-current={
+                path.startsWith("/estudiantes") ? "page" : undefined
+              }
+            >
+              Estudiantes
+            </a>
+          )}
           {available.map((item) => (
             <a
               key={item.key}
@@ -109,7 +120,9 @@ function Workspace() {
               ? "Inicio"
               : path === "/cuenta"
                 ? "Mi cuenta"
-                : (resource?.title ?? "Página")}
+                : path.startsWith("/estudiantes")
+                  ? "Estudiantes"
+                  : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -214,6 +227,8 @@ function Workspace() {
             <div className="panel account-panel">
               <PasswordForm />
             </div>
+          ) : reader && /^\/estudiantes(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
+            <StudentsPage key={path} id={path.split("/")[2]} query={query} />
           ) : allowed ? (
             <ResourcePage
               key={`${path}:${session.user.roles.join(",")}`}
