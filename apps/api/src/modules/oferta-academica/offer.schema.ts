@@ -44,7 +44,20 @@ export function catalogSchema(key: CatalogKey): SchemaObject {
           ? ['PLANIFICADO', 'ACTIVO', 'CERRADO']
           : ['PLANIFICADO', 'ABIERTO', 'CERRADO'];
   }
-  return { type: 'object', required: Object.keys(properties), properties };
+  const required = Object.keys(properties);
+  if (key === 'grupos')
+    properties.contexto = {
+      type: 'object',
+      description:
+        'Disponible en consultas; nombres del contexto del grupo autorizado',
+      properties: Object.fromEntries(
+        ['periodo', 'idioma', 'nivel', 'turno', 'seccion'].map((key) => [
+          key,
+          { type: 'string' },
+        ]),
+      ),
+    };
+  return { type: 'object', required, properties };
 }
 export const assignmentSchema: SchemaObject = {
   type: 'object',

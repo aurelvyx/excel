@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { EntityManager } from 'typeorm';
 import { catalogs, type Catalog, type CatalogKey } from './catalogs.js';
+import { groupContext } from './group-context.js';
 
 export type Row = Record<string, unknown> & { id: string };
 @Injectable()
@@ -15,7 +16,7 @@ export class OfferRepository {
     lock = false,
   ): Promise<Row> {
     const [row] = (await manager.query(
-      `SELECT * FROM ${this.config(key).table} WHERE id=$1::bigint${lock ? ' FOR UPDATE' : ''}`,
+      `SELECT t.*${key === 'grupos' && !lock ? `,${groupContext}` : ''} FROM ${this.config(key).table} t WHERE t.id=$1::bigint${lock ? ' FOR UPDATE' : ''}`,
       [id],
     )) as Row[];
     if (!row) throw new NotFoundException('Registro no encontrado');
