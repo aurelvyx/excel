@@ -13,14 +13,16 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   cambio de contraseña propia, protección CSRF y auditoría básica inmutable.
 - **B04:** API de idiomas, niveles, unidades, periodos, turnos, secciones y grupos;
   gestión de docentes y asignaciones, permisos por grupo y auditoría transaccional.
-- La interfaz mantiene la plantilla de React; el acceso visual corresponde a B05.
-  Matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
+- **B05:** interfaz React de acceso, contraseña, menú por rol y configuración de
+  oferta, docentes y cuentas, conectada a la API y verificada con navegador.
+- Matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
 Para crear el primer administrador y utilizar los endpoints de acceso, consulta
 [B03: acceso y usuarios](docs/B03-acceso-y-usuarios.md).
 Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-oferta-y-docentes.md).
+Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-interfaz-y-configuracion.md).
 
 ## Instalación desde cero
 
@@ -52,7 +54,7 @@ pnpm dev:api
 pnpm dev:web
 ```
 
-- Web: http://127.0.0.1:5173 (plantilla inicial).
+- Web: http://127.0.0.1:5173 (acceso y configuración por rol).
 - Salud API: http://127.0.0.1:3000/api/v1/health.
 - Swagger: http://127.0.0.1:3000/api/docs.
 - OpenAPI JSON: http://127.0.0.1:3000/api/openapi.json.
@@ -95,6 +97,7 @@ aleatoria no se conserva. No es una cuenta para iniciar sesión. No se fijan pes
 
 ```sh
 pnpm check
+pnpm --filter api exec playwright install chromium
 pnpm test:db
 ```
 
@@ -102,6 +105,8 @@ pnpm test:db
 local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
+Incluye el recorrido React–API–PostgreSQL de B05 con Chromium. En Linux/CI, instalar
+Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 El workflow `.github/workflows/ci.yml` ejecuta ambas verificaciones en push y pull request.
 Su ejecución remota requiere publicar el repositorio en GitHub; los resultados locales
@@ -116,8 +121,8 @@ apps/api/src/
   modules/              Auth, usuarios, control, oferta académica y personas
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
-  features/             Reservado para las funciones del negocio
-  shared/               Reservado para componentes y cliente API
+  features/             Acceso y configuración; otras funciones reservadas
+  shared/               Cliente API, navegación y diálogos
 packages/contracts/     Reservado para contratos compartidos
 infra/
   compose.yaml          PostgreSQL persistente de desarrollo

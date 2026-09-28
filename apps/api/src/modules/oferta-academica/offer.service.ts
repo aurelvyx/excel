@@ -15,6 +15,7 @@ import { page, validId } from '../../common/validation.js';
 import { type CatalogKey, readers } from './catalogs.js';
 import { OfferRepository, type Row } from './offer.repository.js';
 import type { AssignmentDto } from './offer.dto.js';
+import { groupContext } from './group-context.js';
 
 @Injectable()
 export class OfferService {
@@ -86,7 +87,7 @@ export class OfferService {
       }
       values.push(limit);
       const items = (await manager.query(
-        `SELECT t.* FROM ${config.table} t WHERE ${clauses.join(' AND ')} ORDER BY t.id LIMIT $${values.length}`,
+        `SELECT t.*${key === 'grupos' ? `,${groupContext}` : ''} FROM ${config.table} t WHERE ${clauses.join(' AND ')} ORDER BY t.id LIMIT $${values.length}`,
         values,
       )) as Row[];
       return {
