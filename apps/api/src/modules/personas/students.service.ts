@@ -1,3 +1,4 @@
+import { personColumns } from './person.persistence.js';
 import {
   BadRequestException,
   ConflictException,
@@ -15,17 +16,6 @@ import type { EditStudentDto, StudentDto } from './students.dto.js';
 
 export const studentReaders = ['ADMIN', 'SECRETARIA', 'COORDINADOR'] as const;
 export const studentWriters = ['ADMIN', 'SECRETARIA'] as const;
-const columns: Record<string, string> = {
-  tipoDocumento: 'tipo_documento',
-  numeroDocumento: 'numero_documento',
-  nombres: 'nombres',
-  apellidoPaterno: 'apellido_paterno',
-  apellidoMaterno: 'apellido_materno',
-  fechaNacimiento: 'fecha_nacimiento',
-  telefono: 'telefono',
-  correo: 'correo',
-  direccion: 'direccion',
-};
 type Student = Record<string, unknown> & {
   id: string;
   persona_id: string;
@@ -155,7 +145,7 @@ export class StudentsService {
           ([, value]) => value !== undefined,
         );
         const [person] = (await manager.query(
-          `INSERT INTO personas (${fields.map(([key]) => columns[key]).join(',')}) VALUES (${fields.map((_, index) => `$${index + 1}`).join(',')}) RETURNING id`,
+          `INSERT INTO personas (${fields.map(([key]) => personColumns[key]).join(',')}) VALUES (${fields.map((_, index) => `$${index + 1}`).join(',')}) RETURNING id`,
           fields.map(([, value]) => value),
         )) as { id: string }[];
         personId = person!.id;
@@ -219,7 +209,7 @@ export class StudentsService {
       );
       if (fields.length)
         await manager.query(
-          `UPDATE personas SET ${fields.map(([key], index) => `${columns[key]}=$${index + 1}`).join(',')} WHERE id=$${fields.length + 1}`,
+          `UPDATE personas SET ${fields.map(([key], index) => `${personColumns[key]}=$${index + 1}`).join(',')} WHERE id=$${fields.length + 1}`,
           [...fields.map(([, value]) => value), before.persona_id],
         );
       if (dto.activo !== undefined)

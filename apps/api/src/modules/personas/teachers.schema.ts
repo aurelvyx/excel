@@ -1,3 +1,4 @@
+import { personSchema } from './person.schema.js';
 import type { SchemaObject } from '@nestjs/swagger';
 const text: SchemaObject = { type: 'string' };
 const nullable: SchemaObject = { type: 'string', nullable: true };
@@ -22,21 +23,6 @@ export const teacherSchema: SchemaObject = {
     codigo_docente: text,
     especialidad: nullable,
     activo: { type: 'boolean' },
-    persona: {
-      type: 'object',
-      properties: {
-        id: text,
-        tipoDocumento: text,
-        numeroDocumento: text,
-        nombres: text,
-        apellidoPaterno: text,
-        apellidoMaterno: nullable,
-        fechaNacimiento: { ...nullable, format: 'date' },
-        telefono: nullable,
-        correo: nullable,
-        direccion: nullable,
-        activo: { type: 'boolean' },
-      },
-    },
+    persona: personSchema,
   },
 };

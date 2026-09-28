@@ -318,7 +318,23 @@ describe('B05 navegador React → API → PostgreSQL', () => {
     expect(
       await page.getByText('Completa este campo.').count(),
     ).toBeGreaterThan(0);
+    const invalidName = page.getByRole('dialog').getByLabel('Nombre');
+    expect(await invalidName.getAttribute('aria-invalid')).toBe('true');
+    expect(
+      await invalidName.evaluate((input) => {
+        const ids = input.getAttribute('aria-describedby')?.split(' ') ?? [];
+        return ids.some(
+          (id) =>
+            document.getElementById(id)?.textContent === 'Completa este campo.',
+        );
+      }),
+    ).toBe(true);
     await page.getByLabel('Cerrar formulario').click();
+    expect(
+      await page
+        .getByRole('button', { name: 'Crear idioma', exact: true })
+        .evaluate((button) => button === document.activeElement),
+    ).toBe(true);
     await page
       .getByRole('row')
       .filter({ hasText: 'DEMO-EN' })

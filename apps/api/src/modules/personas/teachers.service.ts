@@ -1,3 +1,4 @@
+import { personColumns } from './person.persistence.js';
 import {
   BadRequestException,
   ConflictException,
@@ -13,17 +14,6 @@ import { AuditService } from '../control/audit.service.js';
 import { page, validId } from '../../common/validation.js';
 import type { TeacherDto, EditTeacherDto } from './teachers.dto.js';
 
-const personColumns: Record<string, string> = {
-  tipoDocumento: 'tipo_documento',
-  numeroDocumento: 'numero_documento',
-  nombres: 'nombres',
-  apellidoPaterno: 'apellido_paterno',
-  apellidoMaterno: 'apellido_materno',
-  fechaNacimiento: 'fecha_nacimiento',
-  telefono: 'telefono',
-  correo: 'correo',
-  direccion: 'direccion',
-};
 type TeacherRow = Record<string, unknown> & {
   id: string;
   persona_id: string;

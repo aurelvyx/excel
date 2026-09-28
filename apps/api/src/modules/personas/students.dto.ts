@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { IdField, OptionalField, TextField } from '../../common/validation.js';
-import { PersonDto, EditPersonDto } from './teachers.dto.js';
+import { PersonDto, EditPersonDto } from './person.dto.js';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;

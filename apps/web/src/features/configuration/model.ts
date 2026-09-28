@@ -1,39 +1,7 @@
+import type { Field, Resource } from "../../shared/form-types";
+export type { Field, Resource } from "../../shared/form-types";
+import { personFields } from "../persons/fields";
 import { text, type Row } from "../../shared/api";
-export type Field = {
-  key: string;
-  label: string;
-  source?: string;
-  type?:
-    | "text"
-    | "number"
-    | "date"
-    | "time"
-    | "email"
-    | "password"
-    | "select"
-    | "roles";
-  required?: boolean;
-  max?: number;
-  min?: number;
-  pattern?: string;
-  options?: string[];
-  reference?: string;
-  immutable?: boolean;
-  nullable?: boolean;
-  createOnly?: boolean;
-  editOnly?: boolean;
-  hint?: string;
-};
-export type Resource = {
-  key: string;
-  title: string;
-  singular: string;
-  path: string;
-  description: string;
-  fields: Field[];
-  columns: string[];
-  filters?: Field[];
-};
 export const roleNames: Record<string, string> = {
   ADMIN: "Administrador",
   SECRETARIA: "Secretaría",
@@ -56,7 +24,7 @@ const code = (max = 20): Field => ({
   required: true,
   max,
 });
-const active: Field = {
+export const active: Field = {
   key: "activo",
   label: "Estado",
   type: "select",
@@ -315,53 +283,7 @@ const resourcesList: Resource[] = [
         pattern: "[1-9][0-9]{0,17}",
         hint: "Solo si la persona ya está registrada. De lo contrario, completa sus datos.",
       },
-      {
-        key: "persona.tipoDocumento",
-        label: "Tipo de documento",
-        required: true,
-        max: 20,
-        immutable: true,
-      },
-      {
-        key: "persona.numeroDocumento",
-        label: "Número de documento",
-        required: true,
-        max: 25,
-        immutable: true,
-      },
-      { key: "persona.nombres", label: "Nombres", required: true, max: 100 },
-      {
-        key: "persona.apellidoPaterno",
-        label: "Apellido paterno",
-        required: true,
-        max: 80,
-      },
-      {
-        key: "persona.apellidoMaterno",
-        label: "Apellido materno",
-        nullable: true,
-        max: 80,
-      },
-      {
-        key: "persona.fechaNacimiento",
-        label: "Fecha de nacimiento",
-        type: "date",
-        nullable: true,
-      },
-      { key: "persona.telefono", label: "Teléfono", nullable: true, max: 25 },
-      {
-        key: "persona.correo",
-        label: "Correo",
-        type: "email",
-        nullable: true,
-        max: 150,
-      },
-      {
-        key: "persona.direccion",
-        label: "Dirección",
-        nullable: true,
-        max: 250,
-      },
+      ...personFields,
       { key: "especialidad", label: "Especialidad", nullable: true, max: 120 },
       active,
     ],

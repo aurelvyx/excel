@@ -23,3 +23,7 @@ B06 incorpora `src/features/students`: registro y edición para administración 
 secretaría, consulta para coordinación e historial por intento. Ver
 [guía B06](../../docs/B06-estudiantes-historial.md). Las pruebas de navegador están
 en `apps/api/test/students-web.integration-spec.ts` y se incluyen en `pnpm test:db`.
+
+Botones, campos, tablas, paginación y mensajes se comparten en `src/shared/ui`.
+Ver [guía de componentes y refactorización](../../docs/refactor-componentes-compartidos.md)
+antes de agregar nuevas pantallas.

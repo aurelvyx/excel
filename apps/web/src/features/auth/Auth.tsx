@@ -1,3 +1,6 @@
+import { Feedback } from "../../shared/ui/Feedback";
+import { Button } from "../../shared/ui/Button";
+import { InputField } from "../../shared/ui/Field";
 import {
   useEffect,
   useState,
@@ -86,7 +89,7 @@ export function Auth({ children }: { children: ReactNode }) {
     return (
       <div className="center">
         <p role="alert">{error}</p>
-        <button onClick={() => void restore()}>Reintentar conexión</button>
+        <Button onClick={() => void restore()}>Reintentar conexión</Button>
       </div>
     );
   if (!session) return <Login onLogin={accept} notice={notice} />;
@@ -181,14 +184,10 @@ function Login({
           <p className="muted">
             Utiliza el usuario asignado por el administrador.
           </p>
-          {notice && (
-            <p role="status" className="notice">
-              {notice}
-            </p>
-          )}
+          <Feedback tone="notice">{notice}</Feedback>
           <form onSubmit={submit}>
-            <label htmlFor="usuario">Usuario</label>
-            <input
+            <InputField
+              label="Usuario"
               id="usuario"
               name="usuario"
               autoComplete="username"
@@ -198,33 +197,35 @@ function Login({
               pattern="[a-zA-Z0-9_.\-]+"
               autoFocus
             />
-            <label htmlFor="password">Contraseña</label>
-            <div className="password-input">
-              <input
-                id="password"
-                name="password"
-                type={show ? "text" : "password"}
-                autoComplete="current-password"
-                required
-                maxLength={128}
-              />
-              <button
-                type="button"
-                className="quiet"
-                onClick={() => reveal(!show)}
-                aria-pressed={show}
-              >
-                {show ? "Ocultar" : "Mostrar"}
-              </button>
-            </div>
-            {error && (
-              <p role="alert" className="error">
-                {error}
-              </p>
-            )}
-            <button className="primary full" disabled={busy}>
-              {busy ? "Ingresando…" : "Ingresar"}
-            </button>
+            <InputField
+              label="Contraseña"
+              id="password"
+              name="password"
+              type={show ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              maxLength={128}
+              endAdornment={
+                <Button
+                  type="button"
+                  variant="quiet"
+                  onClick={() => reveal(!show)}
+                  aria-pressed={show}
+                >
+                  {show ? "Ocultar" : "Mostrar"}
+                </Button>
+              }
+            />
+            <Feedback tone="error">{error}</Feedback>
+            <Button
+              type="submit"
+              variant="primary"
+              className="full"
+              busy={busy}
+              busyLabel="Ingresando…"
+            >
+              Ingresar
+            </Button>
           </form>
           <p className="help">
             Si no puedes acceder, comunícate con el administrador del centro.
@@ -272,8 +273,8 @@ export function PasswordForm({ mandatory = false }: { mandatory?: boolean }) {
         abiertas.
       </p>
       <form onSubmit={submit} className="narrow">
-        <label htmlFor="current">Contraseña actual</label>
-        <input
+        <InputField
+          label="Contraseña actual"
           id="current"
           name="current"
           type="password"
@@ -281,8 +282,8 @@ export function PasswordForm({ mandatory = false }: { mandatory?: boolean }) {
           required
           maxLength={128}
         />
-        <label htmlFor="new">Nueva contraseña</label>
-        <input
+        <InputField
+          label="Nueva contraseña"
           id="new"
           name="new"
           type="password"
@@ -292,8 +293,8 @@ export function PasswordForm({ mandatory = false }: { mandatory?: boolean }) {
           maxLength={128}
           pattern=".*\S.*"
         />
-        <label htmlFor="confirm">Repetir nueva contraseña</label>
-        <input
+        <InputField
+          label="Repetir nueva contraseña"
           id="confirm"
           name="confirm"
           type="password"
@@ -301,31 +302,26 @@ export function PasswordForm({ mandatory = false }: { mandatory?: boolean }) {
           required
           minLength={12}
           maxLength={128}
-          aria-invalid={mismatch}
-          aria-describedby={mismatch ? "mismatch" : undefined}
+          error={mismatch ? "Las contraseñas no coinciden." : undefined}
         />
-        {mismatch && (
-          <p className="error" id="mismatch">
-            Las contraseñas no coinciden.
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
+        <Feedback tone="error">{error}</Feedback>
         <div className="actions">
-          <button className="primary" disabled={busy}>
-            {busy ? "Guardando…" : "Guardar contraseña"}
-          </button>
+          <Button
+            type="submit"
+            variant="primary"
+            busy={busy}
+            busyLabel="Guardando…"
+          >
+            Guardar contraseña
+          </Button>
           {mandatory && (
-            <button
+            <Button
               type="button"
               disabled={busy}
               onClick={() => void logout().catch((e) => fail(errorText(e)))}
             >
               Cerrar sesión
-            </button>
+            </Button>
           )}
         </div>
       </form>
