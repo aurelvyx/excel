@@ -1,3 +1,8 @@
+import {
+  createWebServer,
+  freePort,
+  type ViteServer,
+} from './browser-server.js';
 import { DataSource } from 'typeorm';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
@@ -7,9 +12,7 @@ import {
   type BrowserContext,
   type Page,
 } from 'playwright';
-import { createServer, type AddressInfo } from 'node:net';
-import { createRequire } from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { mkdir } from 'node:fs/promises';
 import { databaseOptions } from '../src/database/configuracion/data-source.js';
 import { bootstrapAdministrator } from '../src/database/bootstrap-admin.js';
@@ -21,19 +24,7 @@ import { configureApp } from '../src/configure-app.js';
 if (process.env.NODE_ENV !== 'test' || process.env.DB_NAME !== 'excel_test')
   throw new Error('Ejecutar B05 con pnpm test:db');
 const password = 'Sintetica-B05-segura';
-const webRoot = fileURLToPath(new URL('../../web/', import.meta.url));
 const artifacts = fileURLToPath(new URL('../../../.tmp/b05/', import.meta.url));
-async function freePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const port = (server.address() as AddressInfo).port;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
-}
-type ViteServer = {
-  listen: () => Promise<unknown>;
-  close: () => Promise<void>;
-};
 
 describe('B05 navegador React → API → PostgreSQL', () => {
   let source: DataSource;
@@ -96,23 +87,7 @@ describe('B05 navegador React → API → PostgreSQL', () => {
     app = module.createNestApplication();
     configureApp(app);
     await app.listen(0, '127.0.0.1');
-    const vitePath = createRequire(import.meta.url).resolve('vite', {
-      paths: [webRoot],
-    });
-    const factory = (await import(pathToFileURL(vitePath).href)) as {
-      createServer: (options: unknown) => Promise<ViteServer>;
-    };
-    vite = await factory.createServer({
-      root: webRoot,
-      server: {
-        host: '127.0.0.1',
-        port,
-        strictPort: true,
-        proxy: { '/api': await app.getUrl() },
-      },
-      logLevel: 'error',
-    });
-    await vite.listen();
+    vite = await createWebServer(await app.getUrl(), port);
     browser = await chromium.launch();
     await mkdir(artifacts, { recursive: true });
   }, 60000);

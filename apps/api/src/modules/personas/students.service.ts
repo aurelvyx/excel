@@ -1,3 +1,4 @@
+import { queryText, containsPattern } from '../../common/query-text.js';
 import { personColumns } from './person.persistence.js';
 import {
   BadRequestException,
@@ -23,19 +24,6 @@ type Student = Record<string, unknown> & {
 };
 const personSelect = `jsonb_build_object('id',p.id::text,'tipoDocumento',p.tipo_documento,'numeroDocumento',p.numero_documento,'nombres',p.nombres,'apellidoPaterno',p.apellido_paterno,'apellidoMaterno',p.apellido_materno,'activo',p.activo`;
 const privateSelect = `, 'fechaNacimiento',p.fecha_nacimiento,'telefono',p.telefono,'correo',p.correo,'direccion',p.direccion`;
-const escapedLike = (value: string) => `%${value.replace(/[\\%_]/g, '\\$&')}%`;
-function input(
-  query: Record<string, unknown>,
-  key: string,
-  max: number,
-  required = false,
-) {
-  const value = query[key];
-  if (value === undefined && !required) return undefined;
-  if (typeof value !== 'string' || !value.trim() || value.length > max)
-    throw new BadRequestException(`Filtro ${key} inválido`);
-  return value.trim();
-}
 @Injectable()
 export class StudentsService {
   constructor(
@@ -61,9 +49,9 @@ export class StudentsService {
       'tipoDocumento',
       'numeroDocumento',
     ]);
-    const search = input(query, 'q', 120),
-      type = input(query, 'tipoDocumento', 20),
-      document = input(query, 'numeroDocumento', 25);
+    const search = queryText(query, 'q', 120),
+      type = queryText(query, 'tipoDocumento', 20),
+      document = queryText(query, 'numeroDocumento', 25);
     if (
       query.activo !== undefined &&
       !['true', 'false'].includes(query.activo as string)
@@ -74,7 +62,7 @@ export class StudentsService {
       const values: unknown[] = [after];
       const clauses = ['e.id>$1::bigint'];
       if (search) {
-        values.push(escapedLike(search));
+        values.push(containsPattern(search));
         clauses.push(
           `(e.codigo_estudiante ILIKE $${values.length} OR p.numero_documento ILIKE $${values.length} OR concat_ws(' ',p.nombres,p.apellido_paterno,p.apellido_materno) ILIKE $${values.length} OR concat_ws(' ',p.apellido_paterno,p.apellido_materno,p.nombres) ILIKE $${values.length})`,
         );
@@ -121,8 +109,8 @@ export class StudentsService {
       )
     )
       throw new BadRequestException('Filtro no permitido');
-    const type = input(query, 'tipoDocumento', 20, true),
-      number = input(query, 'numeroDocumento', 25, true);
+    const type = queryText(query, 'tipoDocumento', 20, true),
+      number = queryText(query, 'numeroDocumento', 25, true);
     return this.source.transaction(async (manager) => {
       await authorize(manager, actor, studentWriters);
       const [row] = (await manager.query(

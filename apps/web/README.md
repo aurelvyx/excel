@@ -27,3 +27,5 @@ en `apps/api/test/students-web.integration-spec.ts` y se incluyen en `pnpm test:
 Botones, campos, tablas, paginación y mensajes se comparten en `src/shared/ui`.
 Ver [guía de componentes y refactorización](../../docs/refactor-componentes-compartidos.md)
 antes de agregar nuevas pantallas.
+
+B07 incorpora src/features/vouchers y el selector reutilizable de estudiantes para administración y secretaría. Ver [guía B07](../../docs/B07-vouchers.md).

@@ -39,7 +39,7 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('migra desde cero, siembra cuatro roles y no repite migraciones', async () => {
-    expect(await source.runMigrations()).toHaveLength(5);
+    expect(await source.runMigrations()).toHaveLength(6);
     expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(26);
     expect(await source.query('SELECT codigo FROM roles ORDER BY codigo')).toEqual([
       { codigo: 'ADMIN' }, { codigo: 'COORDINADOR' }, { codigo: 'DOCENTE' }, { codigo: 'SECRETARIA' },
@@ -48,12 +48,12 @@ describe('B02 sobre PostgreSQL real', () => {
     expect(await source.query('SELECT * FROM usuarios')).toEqual([]);
   });
 
-  it('revierte las cinco migraciones y las reaplica desde limpio', async () => {
-    for (let i = 0; i < 5; i++) await source.undoLastMigration();
+  it('revierte las seis migraciones y las reaplica desde limpio', async () => {
+    for (let i = 0; i < 6; i++) await source.undoLastMigration();
     expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`))
       .toEqual([{ tablename: 'migraciones' }]);
     expect(await source.query('SELECT * FROM migraciones')).toEqual([]);
-    expect(await source.runMigrations()).toHaveLength(5);
+    expect(await source.runMigrations()).toHaveLength(6);
   });
 
   it('un conflicto en la carga sintética no deja datos parciales', async () => {
@@ -162,12 +162,13 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('revertir roles asignados falla y conserva los datos e historial', async () => {
+    await source.undoLastMigration(); // Protección B07 sin vouchers.
     await source.undoLastMigration(); // Historial B06 todavía vacío.
     await source.undoLastMigration(); // Acceso todavía sin sesiones ni auditoría en esta suite.
     await expect(source.undoLastMigration()).rejects.toMatchObject({ driverError: { code: '23001' } });
     expect(await source.query('SELECT * FROM roles')).toHaveLength(4);
     expect(await source.query('SELECT * FROM migraciones')).toHaveLength(3);
-    expect(await source.runMigrations()).toHaveLength(2);
+    expect(await source.runMigrations()).toHaveLength(3);
   });
 
   it('rechaza revertir tablas que contienen datos', async () => {

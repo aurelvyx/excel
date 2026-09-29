@@ -15,3 +15,5 @@ permisos, ejemplos y límites de esta entrega.
 B06 añade `/api/v1/estudiantes`: alta, búsqueda, edición auditada e historial
 persistido por intento/nivel/periodo. Aplicar la quinta migración antes de iniciar.
 Ver [B06: estudiantes e historial](../../docs/B06-estudiantes-historial.md).
+
+B07 incorpora registro y decisión de vouchers en /api/v1/vouchers, con auditoría y protección transaccional. Aplicar la sexta migración. Ver [guía B07](../../docs/B07-vouchers.md).
