@@ -1,3 +1,4 @@
+import { Button } from "./shared/ui/Button";
 import { useEffect, useRef, useState } from "react";
 import { Auth, Brand, PasswordForm } from "./features/auth/Auth";
 import { useAuth } from "./features/auth/session";
@@ -107,13 +108,13 @@ function Workspace() {
       </aside>
       <div className="workspace-body">
         <header className="topbar">
-          <button
+          <Button
             className="menu-toggle"
             aria-expanded={menu}
             onClick={() => toggle(menu ? null : path)}
           >
             Menú
-          </button>
+          </Button>
           <span className="breadcrumb">
             Excel <span>/</span>{" "}
             {path === "/"
@@ -131,9 +132,9 @@ function Workspace() {
                 {session.user.roles.map((role) => roleNames[role]).join(" · ")}
               </small>
             </a>
-            <button disabled={busy} onClick={() => void exit()}>
+            <Button disabled={busy} onClick={() => void exit()}>
               {busy ? "Saliendo…" : "Cerrar sesión"}
-            </button>
+            </Button>
           </div>
         </header>
         <main

@@ -199,6 +199,34 @@ describe('B06 navegador React → API → PostgreSQL', () => {
       .getByRole('cell', { name: 'SYN-WEB-001', exact: true })
       .waitFor();
     expect(await page.locator('tbody tr').count()).toBe(1);
+    await page
+      .getByText('1 registros en esta página', { exact: true })
+      .waitFor();
+    await page.screenshot({ path: `${artifacts}/listado.png`, fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({
+      path: `${artifacts}/listado-movil.png`,
+      fullPage: true,
+    });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page
+      .getByLabel('Documento, código o nombre')
+      .fill('SIN-COINCIDENCIAS');
+    await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+    await page
+      .getByRole('heading', { name: 'No hay registros para mostrar' })
+      .waitFor();
+    await page
+      .getByRole('button', { name: 'Limpiar filtros', exact: true })
+      .click();
+    await page
+      .getByRole('cell', { name: 'SYN-WEB-001', exact: true })
+      .waitFor();
     await page.getByRole('button', { name: 'Registrar estudiante' }).click();
     await page.getByLabel('Tipo de documento').fill('SINTETICO');
     await page.getByLabel('Número de documento').fill('B06-WEB-001');

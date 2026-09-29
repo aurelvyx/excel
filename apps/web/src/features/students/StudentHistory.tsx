@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+import { SelectField } from "../../shared/ui/Field";
+import { Feedback, Loading } from "../../shared/ui/Feedback";
+import { Pagination } from "../../shared/ui/Pagination";
+import { DataTable } from "../../shared/ui/DataTable";
+import { useApiQuery } from "../../shared/useApiQuery";
+import { Button } from "../../shared/ui/Button";
+import { useState } from "react";
 import { api, errorText, text, type Page, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
 type HistoryPage = Page & { opciones: Row[] };
@@ -32,43 +38,24 @@ function Result({ row }: { row: Row }) {
   );
 }
 export function StudentHistory({ id }: { id: string }) {
-  const [data, setData] = useState<HistoryPage>({
-    items: [],
-    nextCursor: null,
-    opciones: [],
-  });
   const [nivel, setNivel] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [after, setAfter] = useState("");
-  const [error, fail] = useState("");
-  const [completed, finish] = useState("");
-  const [retry, reload] = useState(0);
+  const [actionError, fail] = useState("");
   const [detail, setDetail] = useState<Row | null>(null);
   const [opening, open] = useState(false);
-  const key = `${id}:${nivel}:${periodo}:${after}:${retry}`;
-  useEffect(() => {
-    const abort = new AbortController();
-    const query = new URLSearchParams({ limit: "20" });
-    if (nivel) query.set("nivelId", nivel);
-    if (periodo) query.set("periodoId", periodo);
-    if (after) query.set("after", after);
-    void api<HistoryPage>(`estudiantes/${id}/historial?${query}`, {
-      signal: abort.signal,
-    })
-      .then((result) => {
-        if (!abort.signal.aborted) {
-          setData(result);
-          fail("");
-        }
-      })
-      .catch((e) => {
-        if (!abort.signal.aborted) fail(errorText(e));
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) finish(key);
-      });
-    return () => abort.abort();
-  }, [id, nivel, periodo, after, retry, key]);
+  const query = new URLSearchParams({ limit: "20" });
+  if (nivel) query.set("nivelId", nivel);
+  if (periodo) query.set("periodoId", periodo);
+  if (after) query.set("after", after);
+  const {
+    data: loaded,
+    error: queryError,
+    loading,
+    reload,
+  } = useApiQuery<HistoryPage>(`estudiantes/${id}/historial?${query}`);
+  const data = loaded ?? { items: [], nextCursor: null, opciones: [] };
+  const error = queryError || actionError;
   async function show(row: Row) {
     open(true);
     fail("");
@@ -93,120 +80,120 @@ export function StudentHistory({ id }: { id: string }) {
         pertenecen únicamente al intento indicado.
       </p>
       <div className="filters">
-        <div>
-          <label htmlFor="history-level">Nivel</label>
-          <select
-            id="history-level"
-            value={nivel}
-            onChange={(e) => {
-              setNivel(e.target.value);
-              setAfter("");
-            }}
-          >
-            <option value="">Todos los niveles</option>
-            {options("nivel").map((row) => (
-              <option key={text(row, "nivel_id")} value={text(row, "nivel_id")}>
-                {text(row, "idioma")} · {text(row, "nivel")}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="history-period">Periodo</label>
-          <select
-            id="history-period"
-            value={periodo}
-            onChange={(e) => {
-              setPeriodo(e.target.value);
-              setAfter("");
-            }}
-          >
-            <option value="">Todos los periodos</option>
-            {options("periodo").map((row) => (
-              <option
-                key={text(row, "periodo_id")}
-                value={text(row, "periodo_id")}
-              >
-                {text(row, "periodo")}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Nivel"
+          id="history-level"
+          value={nivel}
+          onChange={(e) => {
+            setNivel(e.target.value);
+            setAfter("");
+          }}
+        >
+          <option value="">Todos los niveles</option>
+          {options("nivel").map((row) => (
+            <option key={text(row, "nivel_id")} value={text(row, "nivel_id")}>
+              {text(row, "idioma")} · {text(row, "nivel")}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Periodo"
+          id="history-period"
+          value={periodo}
+          onChange={(e) => {
+            setPeriodo(e.target.value);
+            setAfter("");
+          }}
+        >
+          <option value="">Todos los periodos</option>
+          {options("periodo").map((row) => (
+            <option
+              key={text(row, "periodo_id")}
+              value={text(row, "periodo_id")}
+            >
+              {text(row, "periodo")}
+            </option>
+          ))}
+        </SelectField>
       </div>
       {error && (
-        <p className="error" role="alert">
-          {error}{" "}
-          <button onClick={() => reload((v) => v + 1)}>
-            Reintentar historial
-          </button>
-        </p>
+        <Feedback
+          onRetry={() => {
+            fail("");
+            reload();
+          }}
+          retryLabel="Reintentar historial"
+        >
+          {error}
+        </Feedback>
       )}
-      {completed !== key ? (
-        <p role="status">Cargando historial…</p>
+      {loading ? (
+        <Loading>Cargando historial…</Loading>
       ) : (
         !error && (
           <>
-            <div className="table-scroll">
-              <table>
-                <caption className="sr-only">Intentos académicos</caption>
-                <thead>
-                  <tr>
-                    <th>Intento</th>
-                    <th>Idioma y nivel</th>
-                    <th>Periodo y grupo</th>
-                    <th>Matrícula</th>
-                    <th>Resultado</th>
-                    <th>Detalle</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((row) => (
-                    <tr key={row.id}>
-                      <td>Intento {text(row, "numero_intento")}</td>
-                      <td>
-                        {text(row, "idioma")} · {text(row, "nivel")}
-                      </td>
-                      <td>
-                        {text(row, "periodo")} · {text(row, "grupo")}
-                        <br />
-                        {text(row, "turno")} · {text(row, "seccion")}
-                      </td>
-                      <td>
-                        {text(row, "codigo")}
-                        <br />
-                        {text(row, "estado")}
-                      </td>
-                      <td>
-                        <Result row={row} />
-                      </td>
-                      <td>
-                        <button
-                          disabled={opening}
-                          onClick={() => void show(row)}
-                        >
-                          Consultar intento {text(row, "numero_intento")}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {!data.items.length && (
-              <p className="empty">
-                No hay intentos registrados para esta consulta.
-              </p>
-            )}
-            <div className="actions">
-              {after && (
-                <button onClick={() => setAfter("")}>Primeros intentos</button>
-              )}
-              {data.nextCursor && (
-                <button onClick={() => setAfter(data.nextCursor!)}>
-                  Más intentos
-                </button>
-              )}
-            </div>
+            <DataTable
+              caption="Intentos académicos"
+              rows={data.items}
+              rowKey={(row) => row.id}
+              emptyMessage="No hay intentos registrados para esta consulta."
+              columns={[
+                {
+                  key: "intento",
+                  header: "Intento",
+                  cell: (row) => `Intento ${text(row, "numero_intento")}`,
+                },
+                {
+                  key: "nivel",
+                  header: "Idioma y nivel",
+                  cell: (row) =>
+                    `${text(row, "idioma")} · ${text(row, "nivel")}`,
+                },
+                {
+                  key: "grupo",
+                  header: "Periodo y grupo",
+                  cell: (row) => (
+                    <>
+                      {text(row, "periodo")} · {text(row, "grupo")}
+                      <br />
+                      {text(row, "turno")} · {text(row, "seccion")}
+                    </>
+                  ),
+                },
+                {
+                  key: "matricula",
+                  header: "Matrícula",
+                  cell: (row) => (
+                    <>
+                      {text(row, "codigo")}
+                      <br />
+                      {text(row, "estado")}
+                    </>
+                  ),
+                },
+                {
+                  key: "resultado",
+                  header: "Resultado",
+                  cell: (row) => <Result row={row} />,
+                },
+                {
+                  key: "detalle",
+                  header: "Detalle",
+                  cell: (row) => (
+                    <Button disabled={opening} onClick={() => void show(row)}>
+                      Consultar intento {text(row, "numero_intento")}
+                    </Button>
+                  ),
+                },
+              ]}
+            />
+            <Pagination
+              after={after}
+              nextCursor={data.nextCursor}
+              onChange={setAfter}
+              firstLabel="Primeros intentos"
+              nextLabel="Más intentos"
+            />
           </>
         )
       )}
@@ -229,58 +216,55 @@ export function StudentHistory({ id }: { id: string }) {
             P: presente · F: falta · T: tardanza · J: justificación. Las marcas
             originales no representan por sí solas el cálculo de inasistencia.
           </p>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Sesión</th>
-                  <th>Marca</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(detail.asistencias as Row[]).map((row) => (
-                  <tr key={row.id}>
-                    <td>{text(row, "fecha")}</td>
-                    <td>{text(row, "estado")}</td>
-                    <td>{text(row, "codigo") || "Sin registro"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {!(detail.asistencias as Row[]).length && (
-            <p>Sin sesiones registradas.</p>
-          )}
+          <DataTable
+            caption="Asistencia registrada"
+            rows={detail.asistencias as Row[]}
+            rowKey={(row) => row.id}
+            emptyMessage="Sin sesiones registradas."
+            columns={[
+              {
+                key: "fecha",
+                header: "Fecha",
+                cell: (row) => text(row, "fecha"),
+              },
+              {
+                key: "sesion",
+                header: "Sesión",
+                cell: (row) => text(row, "estado"),
+              },
+              {
+                key: "marca",
+                header: "Marca",
+                cell: (row) => text(row, "codigo") || "Sin registro",
+              },
+            ]}
+          />
           <h3>Notas registradas</h3>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Evaluación</th>
-                  <th>Indicador</th>
-                  <th>Nota</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(detail.notas as Row[]).map((row) => (
-                  <tr key={row.id}>
-                    <td>{text(row, "evaluacion")}</td>
-                    <td>
-                      {text(row, "descripcion")}
-                      {!row.activo ? " (inactivo)" : ""}
-                    </td>
-                    <td>
-                      {row.nota == null ? "Pendiente" : text(row, "nota")}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {!(detail.notas as Row[]).length && (
-            <p>Sin evaluaciones registradas.</p>
-          )}
+          <DataTable
+            caption="Notas registradas"
+            rows={detail.notas as Row[]}
+            rowKey={(row) => row.id}
+            emptyMessage="Sin evaluaciones registradas."
+            columns={[
+              {
+                key: "evaluacion",
+                header: "Evaluación",
+                cell: (row) => text(row, "evaluacion"),
+              },
+              {
+                key: "indicador",
+                header: "Indicador",
+                cell: (row) =>
+                  `${text(row, "descripcion")}${!row.activo ? " (inactivo)" : ""}`,
+              },
+              {
+                key: "nota",
+                header: "Nota",
+                cell: (row) =>
+                  row.nota == null ? "Pendiente" : text(row, "nota"),
+              },
+            ]}
+          />
         </Dialog>
       )}
     </section>

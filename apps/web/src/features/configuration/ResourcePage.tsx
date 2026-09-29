@@ -1,3 +1,11 @@
+import { ListPanel } from "../../shared/ui/ListPanel";
+import { PageHeading } from "../../shared/ui/PageHeading";
+import { StatusBadge } from "../../shared/ui/StatusBadge";
+import { InputField, SelectField } from "../../shared/ui/Field";
+import { Feedback } from "../../shared/ui/Feedback";
+import { DataTable } from "../../shared/ui/DataTable";
+import { Pagination } from "../../shared/ui/Pagination";
+import { Button } from "../../shared/ui/Button";
 import { useEffect, useState } from "react";
 import {
   allRows,
@@ -136,35 +144,35 @@ export function ResourcePage({
   }
   return (
     <section>
-      <header className="page-heading">
-        <div>
-          <p className="eyebrow">
-            {admin
-              ? "Configuración"
-              : teacherOnly
-                ? "Mi espacio"
-                : "Consulta académica"}
-          </p>
-          <h1>{teacherOnly ? "Mis grupos" : resource.title}</h1>
-          <p className="muted">
-            {teacherOnly
-              ? "Consulta los grupos que tienes asignados."
-              : resource.description}
-          </p>
-        </div>
-        {admin && (
-          <button
-            className="primary"
-            disabled={loading || opening || !!error}
-            onClick={() => {
-              notify("");
-              setEditing(null);
-            }}
-          >
-            Crear {resource.singular}
-          </button>
-        )}
-      </header>
+      <PageHeading
+        eyebrow={
+          admin
+            ? "Configuración"
+            : teacherOnly
+              ? "Mi espacio"
+              : "Consulta académica"
+        }
+        title={teacherOnly ? "Mis grupos" : resource.title}
+        description={
+          teacherOnly
+            ? "Consulta los grupos que tienes asignados."
+            : resource.description
+        }
+        action={
+          admin && (
+            <Button
+              variant="primary"
+              disabled={loading || opening || !!error}
+              onClick={() => {
+                notify("");
+                setEditing(null);
+              }}
+            >
+              Crear {resource.singular}
+            </Button>
+          )
+        }
+      />
       {!admin && (
         <p className="readonly">
           Solo lectura ·{" "}
@@ -173,29 +181,27 @@ export function ResourcePage({
             : "Consulta autorizada para tu rol"}
         </p>
       )}
-      {success && (
-        <p className="success" role="status">
-          {success}
-        </p>
-      )}
-      <div className="panel">
-        {!teacherOnly && !!resource.filters?.length && (
-          <form
-            className="filters"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              const next = new URLSearchParams();
-              for (const [key, value] of data)
-                if (value) next.set(key, String(value));
-              navigate(`${path}?${next}`);
-            }}
-          >
-            {resource.filters.map((field) => (
-              <div key={field.key}>
-                <label htmlFor={`filter-${field.key}`}>{field.label}</label>
-                {field.reference || field.options ? (
-                  <select
+      <Feedback tone="success">{success}</Feedback>
+      <ListPanel
+        filters={
+          !teacherOnly &&
+          !!resource.filters?.length && (
+            <form
+              className="filters"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const next = new URLSearchParams();
+                for (const [key, value] of data)
+                  if (value) next.set(key, String(value));
+                navigate(`${path}?${next}`);
+              }}
+            >
+              {resource.filters.map((field) =>
+                field.reference || field.options ? (
+                  <SelectField
+                    key={field.key}
+                    label={field.label}
                     id={`filter-${field.key}`}
                     name={field.key}
                     value={query.get(field.key) ?? ""}
@@ -214,163 +220,121 @@ export function ResourcePage({
                             {labels[value] ?? value}
                           </option>
                         ))}
-                  </select>
+                  </SelectField>
                 ) : (
-                  <input
-                    key={serialized}
+                  <InputField
+                    label={field.label}
+                    key={`${field.key}:${serialized}`}
                     id={`filter-${field.key}`}
                     name={field.key}
                     defaultValue={query.get(field.key) ?? ""}
                     maxLength={field.max}
                   />
-                )}
-              </div>
-            ))}
-            {resource.filters.some(
-              (field) => !field.reference && !field.options,
-            ) && <button disabled={loading}>Buscar</button>}
-            <button
-              type="button"
-              onClick={() => navigate(path)}
-              disabled={loading || !serialized}
-            >
-              Limpiar filtros
-            </button>
-          </form>
-        )}
-        {!loading && error ? (
-          <div className="empty">
-            <p role="alert" className="error">
-              {error}
-            </p>
-            <button onClick={() => reload((value) => value + 1)}>
-              Reintentar
-            </button>
-          </div>
-        ) : loading ? (
-          <div className="empty" role="status">
-            Cargando {resource.title.toLowerCase()}…
-          </div>
-        ) : !data.items.length ? (
-          <div className="empty">
-            <span className="empty-icon" aria-hidden="true">
-              □
-            </span>
-            <h2>No hay registros para mostrar</h2>
-            <p>
-              {serialized
-                ? "Prueba con otros filtros."
-                : admin
-                  ? `Crea el primer registro de ${resource.title.toLowerCase()} para comenzar.`
-                  : "Todavía no hay registros disponibles para tu cuenta."}
-            </p>
-          </div>
-        ) : (
-          <div
-            className="table-scroll"
-            tabIndex={0}
-            aria-label={`Tabla de ${resource.title.toLowerCase()}`}
-          >
-            <table>
-              <thead>
-                <tr>
-                  {resource.columns.map((key) => (
-                    <th key={key} scope="col">
-                      {resource.fields.find((field) => field.key === key)
-                        ?.label ??
-                        {
-                          nombres: "Nombres",
-                          apellido_paterno: "Apellido paterno",
-                          roles: "Roles",
-                        }[key] ??
-                        key}
-                    </th>
-                  ))}
-                  <th scope="col">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((row) => (
-                  <tr key={row.id}>
-                    {resource.columns.map((key) => (
-                      <td key={key}>
-                        {key === "activo" || key === "estado" ? (
-                          <span
-                            className={`badge ${row.activo === false || row.estado === "CERRADO" ? "inactive" : ""}`}
-                          >
-                            {cell(row, key)}
-                          </span>
-                        ) : (
-                          cell(row, key)
-                        )}
-                      </td>
-                    ))}
-                    <td className="row-actions">
-                      {admin ? (
-                        <>
-                          <button
-                            className="link-button"
-                            disabled={opening}
-                            onClick={() => void open(row)}
-                          >
-                            Editar
-                          </button>
-                          {resource.key === "usuarios" && (
-                            <button
-                              className="link-button"
-                              onClick={() => setRoleUser(row)}
-                            >
-                              Roles
-                            </button>
-                          )}
-                          {resource.key === "grupos" && (
-                            <button
-                              className="link-button"
-                              onClick={() => setAssigned(row)}
-                            >
-                              Asignar docentes
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <button
-                          className="link-button"
-                          onClick={() => setDetail(row)}
-                        >
-                          Ver detalle
-                        </button>
+                ),
+              )}
+              {resource.filters.some(
+                (field) => !field.reference && !field.options,
+              ) && (
+                <Button type="submit" disabled={loading}>
+                  Buscar
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={() => navigate(path)}
+                disabled={loading || !serialized}
+              >
+                Limpiar filtros
+              </Button>
+            </form>
+          )
+        }
+        loading={loading}
+        loadingLabel={`Cargando ${resource.title.toLowerCase()}…`}
+        error={error}
+        onRetry={() => reload((value) => value + 1)}
+        empty={!data.items.length}
+        emptyDescription={
+          serialized
+            ? "Prueba con otros filtros."
+            : admin
+              ? `Crea el primer registro de ${resource.title.toLowerCase()} para comenzar.`
+              : "Todavía no hay registros disponibles para tu cuenta."
+        }
+        pagination={
+          <Pagination
+            count={data.items.length}
+            after={query.get("after")}
+            nextCursor={data.nextCursor}
+            onChange={(cursor) => filter("after", cursor)}
+          />
+        }
+      >
+        <DataTable
+          caption={resource.title}
+          rows={data.items}
+          rowKey={(row) => row.id}
+          columns={[
+            ...resource.columns.map((key) => ({
+              key,
+              header:
+                resource.fields.find((field) => field.key === key)?.label ??
+                (
+                  {
+                    nombres: "Nombres",
+                    apellido_paterno: "Apellido paterno",
+                    roles: "Roles",
+                  } as Record<string, string>
+                )[key] ??
+                key,
+              cell: (row: Row) =>
+                key === "activo" || key === "estado" ? (
+                  <StatusBadge
+                    inactive={row.activo === false || row.estado === "CERRADO"}
+                  >
+                    {cell(row, key)}
+                  </StatusBadge>
+                ) : (
+                  cell(row, key)
+                ),
+            })),
+            {
+              key: "actions",
+              header: "Acciones",
+              className: "row-actions",
+              cell: (row) => (
+                <>
+                  {admin ? (
+                    <>
+                      <Button
+                        variant="link"
+                        disabled={opening}
+                        onClick={() => void open(row)}
+                      >
+                        Editar
+                      </Button>
+                      {resource.key === "usuarios" && (
+                        <Button variant="link" onClick={() => setRoleUser(row)}>
+                          Roles
+                        </Button>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {!loading && !error && (
-          <footer className="pagination">
-            <span>{data.items.length} registros en esta página</span>
-            <div>
-              <button
-                disabled={!query.get("after")}
-                onClick={() => filter("after", "")}
-              >
-                Primera página
-              </button>
-              <button
-                disabled={!data.nextCursor}
-                onClick={() => {
-                  const next = new URLSearchParams(serialized);
-                  next.set("after", data.nextCursor!);
-                  navigate(`${path}?${next}`);
-                }}
-              >
-                Siguiente
-              </button>
-            </div>
-          </footer>
-        )}
-      </div>
+                      {resource.key === "grupos" && (
+                        <Button variant="link" onClick={() => setAssigned(row)}>
+                          Asignar docentes
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <Button variant="link" onClick={() => setDetail(row)}>
+                      Ver detalle
+                    </Button>
+                  )}
+                </>
+              ),
+            },
+          ]}
+        />
+      </ListPanel>
       {editing !== undefined && (
         <RecordForm
           resource={resource}

@@ -1,3 +1,6 @@
+import { Feedback } from "../../shared/ui/Feedback";
+import { InputField, SelectField } from "../../shared/ui/Field";
+import { Button } from "../../shared/ui/Button";
 import { useState, type FormEvent } from "react";
 import { errorText, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
@@ -254,152 +257,124 @@ export function RecordForm({
                     String(item.idioma_id) === values.idiomaId &&
                     Number(item.orden) < Number(values.orden),
                 );
+              if (field.type === "roles")
+                return (
+                  <fieldset
+                    key={field.key}
+                    className="roles span-2"
+                    aria-describedby={
+                      errors[field.key] ? `${id}-error` : undefined
+                    }
+                  >
+                    <legend>{field.label}</legend>
+                    {Object.entries(roleNames).map(([role, label]) => (
+                      <label key={role}>
+                        <input
+                          type="checkbox"
+                          checked={(values[field.key] as string[]).includes(
+                            role,
+                          )}
+                          disabled={busy}
+                          onChange={(event) =>
+                            change(
+                              field.key,
+                              event.target.checked
+                                ? [...(values[field.key] as string[]), role]
+                                : (values[field.key] as string[]).filter(
+                                    (item) => item !== role,
+                                  ),
+                            )
+                          }
+                        />
+                        {label}
+                      </label>
+                    ))}
+                    {errors[field.key] && (
+                      <small className="field-error" id={`${id}-error`}>
+                        {errors[field.key]}
+                      </small>
+                    )}
+                  </fieldset>
+                );
               const shared = {
                 id,
                 name: field.key,
+                label: field.label,
+                required: field.required,
                 disabled: busy || !!locked(field),
-                "aria-invalid": !!errors[field.key],
-                "aria-describedby": errors[field.key]
-                  ? `${id}-error`
-                  : field.hint
-                    ? `${id}-hint`
-                    : undefined,
+                error: errors[field.key],
+                hint: [
+                  field.hint,
+                  locked(field)
+                    ? "El contexto se conserva para proteger el historial."
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" "),
+                fieldClassName: field.key === "motivo" ? "span-2" : "field",
+                value: values[field.key] as string,
               };
-              return (
-                <div
-                  className={
-                    field.key === "motivo" || field.type === "roles"
-                      ? "span-2"
-                      : "field"
-                  }
+              return field.reference || field.type === "select" ? (
+                <SelectField
                   key={field.key}
+                  {...shared}
+                  onChange={(event) => change(field.key, event.target.value)}
                 >
-                  <label htmlFor={field.type === "roles" ? undefined : id}>
-                    {field.label}
-                    {field.required && <span aria-hidden="true"> *</span>}
-                  </label>
-                  {field.type === "roles" ? (
-                    <fieldset
-                      className="roles"
-                      aria-label={field.label}
-                      aria-describedby={
-                        errors[field.key] ? `${id}-error` : undefined
-                      }
-                    >
-                      <legend className="sr-only">
-                        Selecciona uno o varios roles
-                      </legend>
-                      {Object.entries(roleNames).map(([role, label]) => (
-                        <label key={role}>
-                          <input
-                            type="checkbox"
-                            checked={(values[field.key] as string[]).includes(
-                              role,
-                            )}
-                            disabled={busy}
-                            onChange={(event) =>
-                              change(
-                                field.key,
-                                event.target.checked
-                                  ? [...(values[field.key] as string[]), role]
-                                  : (values[field.key] as string[]).filter(
-                                      (item) => item !== role,
-                                    ),
-                              )
-                            }
-                          />
-                          {label}
-                        </label>
+                  <option value="">
+                    {field.required
+                      ? "Selecciona una opción"
+                      : "Sin especificar"}
+                  </option>
+                  {field.reference
+                    ? choices.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {optionLabel(item, field.reference!, lookups)}
+                        </option>
+                      ))
+                    : field.options?.map((option) => (
+                        <option key={option} value={option}>
+                          {field.key === "esTitular"
+                            ? option === "true"
+                              ? "Titular"
+                              : "Apoyo"
+                            : (labels[option] ?? option)}
+                        </option>
                       ))}
-                    </fieldset>
-                  ) : field.reference || field.type === "select" ? (
-                    <select
-                      {...shared}
-                      value={values[field.key] as string}
-                      onChange={(event) =>
-                        change(field.key, event.target.value)
-                      }
-                    >
-                      <option value="">
-                        {field.required
-                          ? "Selecciona una opción"
-                          : "Sin especificar"}
-                      </option>
-                      {field.reference
-                        ? choices.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {optionLabel(item, field.reference!, lookups)}
-                            </option>
-                          ))
-                        : field.options?.map((option) => (
-                            <option key={option} value={option}>
-                              {field.key === "esTitular"
-                                ? option === "true"
-                                  ? "Titular"
-                                  : "Apoyo"
-                                : (labels[option] ?? option)}
-                            </option>
-                          ))}
-                    </select>
-                  ) : (
-                    <input
-                      {...shared}
-                      type={field.type ?? "text"}
-                      value={values[field.key] as string}
-                      onChange={(event) =>
-                        change(field.key, event.target.value)
-                      }
-                      autoComplete={
-                        field.type === "password" ? "new-password" : "off"
-                      }
-                      maxLength={
-                        field.type !== "number" ? field.max : undefined
-                      }
-                      min={field.type === "number" ? field.min : undefined}
-                      max={field.type === "number" ? field.max : undefined}
-                      step={field.type === "number" ? 1 : undefined}
-                    />
-                  )}
-                  {field.hint && (
-                    <small id={`${id}-hint`} className="help">
-                      {field.hint}
-                    </small>
-                  )}
-                  {locked(field) && (
-                    <small className="help">
-                      El contexto se conserva para proteger el historial.
-                    </small>
-                  )}
-                  {errors[field.key] && (
-                    <small className="field-error" id={`${id}-error`}>
-                      {errors[field.key]}
-                    </small>
-                  )}
-                </div>
+                </SelectField>
+              ) : (
+                <InputField
+                  key={field.key}
+                  {...shared}
+                  type={field.type ?? "text"}
+                  onChange={(event) => change(field.key, event.target.value)}
+                  autoComplete={
+                    field.type === "password" ? "new-password" : "off"
+                  }
+                  maxLength={field.type !== "number" ? field.max : undefined}
+                  min={field.type === "number" ? field.min : undefined}
+                  max={field.type === "number" ? field.max : undefined}
+                  step={field.type === "number" ? 1 : undefined}
+                />
               );
             })}
           </div>
         )}
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
+        <Feedback tone="error">{error}</Feedback>
         <footer className="actions">
-          <button
+          <Button
             type="button"
             disabled={busy}
             onClick={review ? () => confirm(false) : onClose}
           >
             {review ? "Volver a editar" : "Cancelar"}
-          </button>
-          <button className="primary" disabled={busy}>
+          </Button>
+          <Button type="submit" variant="primary" disabled={busy}>
             {busy
               ? "Guardando…"
               : review
                 ? "Confirmar y guardar"
                 : "Revisar cambios"}
-          </button>
+          </Button>
         </footer>
       </form>
     </Dialog>

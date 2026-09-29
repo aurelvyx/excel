@@ -1,5 +1,5 @@
 import type { SchemaObject } from '@nestjs/swagger';
-import { teacherSchema } from './teachers.schema.js';
+import { personSchema } from './person.schema.js';
 const text: SchemaObject = { type: 'string' };
 export const studentSchema: SchemaObject = {
   type: 'object',
@@ -9,7 +9,7 @@ export const studentSchema: SchemaObject = {
     codigo_estudiante: text,
     fecha_registro: { type: 'string', format: 'date' },
     activo: { type: 'boolean' },
-    persona: teacherSchema.properties!.persona,
+    persona: personSchema,
   },
   description:
     'Coordinación recibe identidad, sin datos de contacto, dirección ni fecha de nacimiento.',

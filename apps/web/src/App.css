@@ -333,6 +333,9 @@
 .account-panel {
   padding: 30px;
 }
+.required-marker::after {
+  content: " *";
+}
 .student-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -346,7 +349,7 @@
   margin: 5px 0 0;
   overflow-wrap: anywhere;
 }
-.student-page > .panel {
+.student-profile {
   margin-top: 20px;
   padding: 22px;
 }
