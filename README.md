@@ -19,7 +19,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   persistido separado por intento, nivel y periodo; interfaz y permisos por rol.
 - **B07:** registro y decisión de vouchers para administración y secretaría, con
   importes exactos, bloqueo de duplicados y auditoría transaccional.
-- Los flujos de matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
+- **B08:** API de solicitud y activación transaccional de matrícula, prerrequisitos,
+  vacantes, intentos, código basado en documento y conservación del historial.
+- El asistente visual de matrícula (B09), asistencia, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -29,6 +31,7 @@ Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-of
 Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-interfaz-y-configuracion.md).
 Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estudiantes-historial.md).
 Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
+Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matriculas.md).
 
 ## Instalación desde cero
 
