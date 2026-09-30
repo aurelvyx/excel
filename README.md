@@ -17,6 +17,8 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   oferta, docentes y cuentas, conectada a la API y verificada con navegador.
 - **B06:** registro, búsqueda y actualización de estudiantes, auditoría e historial
   persistido separado por intento, nivel y periodo; interfaz y permisos por rol.
+- **B07:** registro y decisión de vouchers para administración y secretaría, con
+  importes exactos, bloqueo de duplicados y auditoría transaccional.
 - Los flujos de matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
@@ -26,6 +28,7 @@ Para crear el primer administrador y utilizar los endpoints de acceso, consulta
 Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-oferta-y-docentes.md).
 Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-interfaz-y-configuracion.md).
 Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estudiantes-historial.md).
+Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
 
 ## Instalación desde cero
 

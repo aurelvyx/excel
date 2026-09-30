@@ -6,6 +6,7 @@ import { OfertaAcademica1790208001000 } from '../migraciones/1790208001000-ofert
 import { RolesIniciales1790208002000 } from '../migraciones/1790208002000-roles-iniciales.js';
 import { AccesoAuditoria1790208003000 } from '../migraciones/1790208003000-acceso-auditoria.js';
 import { Historial1790208004000 } from '../migraciones/1790208004000-historial.js';
+import { Vouchers1790208005000 } from '../migraciones/1790208005000-vouchers.js';
 
 export function databaseOptions(env: NodeJS.ProcessEnv = process.env): DataSourceOptions {
   return {
@@ -16,7 +17,7 @@ export function databaseOptions(env: NodeJS.ProcessEnv = process.env): DataSourc
     migrationsTransactionMode: 'all',
     migrationsTableName: 'migraciones',
     entities: [],
-    migrations: [Identidad1790208000000, OfertaAcademica1790208001000, RolesIniciales1790208002000, AccesoAuditoria1790208003000, Historial1790208004000],
+    migrations: [Identidad1790208000000, OfertaAcademica1790208001000, RolesIniciales1790208002000, AccesoAuditoria1790208003000, Historial1790208004000, Vouchers1790208005000],
     logging: false,
   };
 }

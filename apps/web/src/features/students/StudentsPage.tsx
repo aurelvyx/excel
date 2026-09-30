@@ -208,9 +208,17 @@ export function StudentsPage({
                     </p>
                   </div>
                   {canEdit && (
-                    <Button onClick={() => edit(true)}>
-                      Editar estudiante
-                    </Button>
+                    <div className="actions">
+                      <a
+                        className="button"
+                        href={`#/vouchers?estudianteId=${id}`}
+                      >
+                        Vouchers
+                      </a>
+                      <Button onClick={() => edit(true)}>
+                        Editar estudiante
+                      </Button>
+                    </div>
                   )}
                 </header>
                 <dl className="student-facts">

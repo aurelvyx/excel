@@ -7,6 +7,7 @@ import { resources, roleNames } from "./features/configuration/model";
 import { useRoute } from "./shared/navigation";
 import { errorText } from "./shared/api";
 import { StudentsPage } from "./features/students/StudentsPage";
+import { VouchersPage } from "./features/vouchers/VouchersPage";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ function Workspace() {
   const { session, logout } = useAuth();
   const { path, query } = useRoute();
   const admin = session.user.roles.includes("ADMIN");
+  const vouchersAllowed = admin || session.user.roles.includes("SECRETARIA");
   const reader = session.user.roles.some((role) =>
     ["ADMIN", "SECRETARIA", "COORDINADOR"].includes(role),
   );
@@ -91,6 +93,14 @@ function Workspace() {
               Estudiantes
             </a>
           )}
+          {vouchersAllowed && (
+            <a
+              href="#/vouchers"
+              aria-current={path === "/vouchers" ? "page" : undefined}
+            >
+              Vouchers
+            </a>
+          )}
           {available.map((item) => (
             <a
               key={item.key}
@@ -123,7 +133,9 @@ function Workspace() {
                 ? "Mi cuenta"
                 : path.startsWith("/estudiantes")
                   ? "Estudiantes"
-                  : (resource?.title ?? "Página")}
+                  : path === "/vouchers"
+                    ? "Vouchers"
+                    : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -230,6 +242,8 @@ function Workspace() {
             </div>
           ) : reader && /^\/estudiantes(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
             <StudentsPage key={path} id={path.split("/")[2]} query={query} />
+          ) : vouchersAllowed && path === "/vouchers" ? (
+            <VouchersPage query={query} />
           ) : allowed ? (
             <ResourcePage
               key={`${path}:${session.user.roles.join(",")}`}

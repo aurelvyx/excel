@@ -454,6 +454,7 @@ describe('B03 acceso y permisos sobre PostgreSQL', () => {
     expect(JSON.stringify(rows)).not.toMatch(
       /password_hash|token_hash|csrfToken|\$argon2/,
     );
+    await source.undoLastMigration(); // Protección B07 sin vouchers.
     await source.undoLastMigration(); // Historial B06 vacío; ahora se intenta revertir acceso/auditoría.
     await expect(source.undoLastMigration()).rejects.toMatchObject({
       driverError: { code: '23514' },
