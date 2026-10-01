@@ -17,3 +17,7 @@ persistido por intento/nivel/periodo. Aplicar la quinta migración antes de inic
 Ver [B06: estudiantes e historial](../../docs/B06-estudiantes-historial.md).
 
 B07 incorpora registro y decisión de vouchers en /api/v1/vouchers, con auditoría y protección transaccional. Aplicar la sexta migración. Ver [guía B07](../../docs/B07-vouchers.md).
+
+B08 incorpora `/api/v1/matriculas`: solicitud pendiente, consulta individual y
+confirmación de activación con voucher validado, prerrequisito y vacante.
+Aplicar la séptima migración. Ver [guía B08](../../docs/B08-matriculas.md).
