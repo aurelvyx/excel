@@ -689,3 +689,83 @@ dialog::backdrop {
     padding: 24px;
   }
 }
+/* Asistente UI04: conserva contexto y usa los mismos paneles y controles. */
+.wizard-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 28px 0 20px;
+  list-style: none;
+}
+.wizard-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #53675d;
+  padding: 12px;
+  border-bottom: 2px solid #dce5df;
+}
+.wizard-steps li[aria-current="step"] {
+  color: #175b49;
+  border-color: #1c7059;
+  font-weight: 700;
+}
+.wizard-steps span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e5eee7;
+}
+.enrollment-context {
+  margin-bottom: 20px;
+  padding: 20px;
+}
+.enrollment-step {
+  padding: 24px;
+}
+.enrollment-step h2 {
+  margin-top: 0;
+}
+.selection-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.confirmation-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  background: #f4f8f4;
+  border-radius: 6px;
+  line-height: 1.6;
+}
+.confirmation-check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+@media (max-width: 650px) {
+  .wizard-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .wizard-steps li {
+    padding: 10px 4px;
+    font-size: 0.85rem;
+  }
+  .selection-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .enrollment-step {
+    padding: 16px;
+  }
+}

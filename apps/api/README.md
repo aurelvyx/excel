@@ -21,3 +21,6 @@ B07 incorpora registro y decisión de vouchers en /api/v1/vouchers, con auditor�
 B08 incorpora `/api/v1/matriculas`: solicitud pendiente, consulta individual y
 confirmación de activación con voucher validado, prerrequisito y vacante.
 Aplicar la séptima migración. Ver [guía B08](../../docs/B08-matriculas.md).
+
+B09 admite `claveSolicitud` opcional para reintentar un alta sin generar otro
+intento ni auditoría. Aplicar la octava migración. Ver [guía B09](../../docs/B09-asistente-matricula.md).

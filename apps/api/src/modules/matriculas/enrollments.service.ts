@@ -112,6 +112,23 @@ export class EnrollmentsService {
   async create(actor: Identity, dto: EnrollmentDto, ip?: string) {
     return this.source.transaction(async (manager) => {
       await authorize(manager, actor, enrollmentRoles);
+      if (dto.claveSolicitud) {
+        const [existing] = await manager.query(
+          'SELECT id,estudiante_id,grupo_id,registrado_por FROM matriculas WHERE clave_solicitud=$1',
+          [dto.claveSolicitud],
+        );
+        if (existing) {
+          if (
+            existing.estudiante_id !== dto.estudianteId ||
+            existing.grupo_id !== dto.grupoId ||
+            existing.registrado_por !== actor.id
+          )
+            throw new ConflictException(
+              'La solicitud de reintento corresponde a otros datos',
+            );
+          return this.view(manager, existing.id);
+        }
+      }
       const person = await this.student(manager, dto.estudianteId);
       const group = await this.eligible(manager, dto.estudianteId, dto.grupoId);
       // Las versiones son inmutables. Una versión posterior nunca reemplaza la del intento.
@@ -137,8 +154,8 @@ export class EnrollmentsService {
       );
       const code = enrollmentCode(person.numero_documento, sequence.id);
       const [inserted] = await manager.query(
-        `INSERT INTO matriculas(codigo,estudiante_id,grupo_id,nivel_id,parametro_id,numero_intento,fecha_matricula,estado,registrado_por,id)
-        OVERRIDING SYSTEM VALUE VALUES($1,$2,$3,$4,$5,$6,$7,'PENDIENTE',$8,$9) RETURNING id`,
+        `INSERT INTO matriculas(codigo,estudiante_id,grupo_id,nivel_id,parametro_id,numero_intento,fecha_matricula,estado,registrado_por,id,clave_solicitud)
+        OVERRIDING SYSTEM VALUE VALUES($1,$2,$3,$4,$5,$6,$7,'PENDIENTE',$8,$9,$10) RETURNING id`,
         [
           code,
           dto.estudianteId,
@@ -149,6 +166,7 @@ export class EnrollmentsService {
           group.fecha,
           actor.id,
           sequence.id,
+          dto.claveSolicitud ?? null,
         ],
       );
       const row = await this.view(manager, inserted.id);

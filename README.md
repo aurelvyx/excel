@@ -21,7 +21,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   importes exactos, bloqueo de duplicados y auditoría transaccional.
 - **B08:** API de solicitud y activación transaccional de matrícula, prerrequisitos,
   vacantes, intentos, código basado en documento y conservación del historial.
-- El asistente visual de matrícula (B09), asistencia, notas y reportes se desarrollan en historias posteriores.
+- **B09:** asistente de matrícula con búsqueda/alta de estudiante, voucher, grupo y
+  confirmación; recuperación de solicitudes pendientes y reintentos sin duplicados.
+- Asistencia, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -32,6 +34,7 @@ Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-
 Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estudiantes-historial.md).
 Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
 Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matriculas.md).
+Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asistente-matricula.md).
 
 ## Instalación desde cero
 
