@@ -8,6 +8,7 @@ import { useRoute } from "./shared/navigation";
 import { errorText } from "./shared/api";
 import { StudentsPage } from "./features/students/StudentsPage";
 import { VouchersPage } from "./features/vouchers/VouchersPage";
+import { EnrollmentsPage } from "./features/enrollments/EnrollmentsPage";
 
 export default function App() {
   return (
@@ -95,6 +96,14 @@ function Workspace() {
           )}
           {vouchersAllowed && (
             <a
+              href="#/matriculas"
+              aria-current={path.startsWith("/matriculas") ? "page" : undefined}
+            >
+              Matrículas
+            </a>
+          )}
+          {vouchersAllowed && (
+            <a
               href="#/vouchers"
               aria-current={path === "/vouchers" ? "page" : undefined}
             >
@@ -135,7 +144,9 @@ function Workspace() {
                   ? "Estudiantes"
                   : path === "/vouchers"
                     ? "Vouchers"
-                    : (resource?.title ?? "Página")}
+                    : path.startsWith("/matriculas")
+                      ? "Matrículas"
+                      : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -244,6 +255,13 @@ function Workspace() {
             <StudentsPage key={path} id={path.split("/")[2]} query={query} />
           ) : vouchersAllowed && path === "/vouchers" ? (
             <VouchersPage query={query} />
+          ) : vouchersAllowed &&
+            /^\/matriculas(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
+            <EnrollmentsPage
+              key={`${path}:${query.get("estudianteId") ?? ""}`}
+              id={path.split("/")[2]}
+              studentId={query.get("estudianteId") ?? undefined}
+            />
           ) : allowed ? (
             <ResourcePage
               key={`${path}:${session.user.roles.join(",")}`}

@@ -37,7 +37,13 @@ function Result({ row }: { row: Row }) {
     <p>Resultado pendiente de cálculo.</p>
   );
 }
-export function StudentHistory({ id }: { id: string }) {
+export function StudentHistory({
+  id,
+  canResume = false,
+}: {
+  id: string;
+  canResume?: boolean;
+}) {
   const [nivel, setNivel] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [after, setAfter] = useState("");
@@ -180,9 +186,16 @@ export function StudentHistory({ id }: { id: string }) {
                   key: "detalle",
                   header: "Detalle",
                   cell: (row) => (
-                    <Button disabled={opening} onClick={() => void show(row)}>
-                      Consultar intento {text(row, "numero_intento")}
-                    </Button>
+                    <>
+                      <Button disabled={opening} onClick={() => void show(row)}>
+                        Consultar intento {text(row, "numero_intento")}
+                      </Button>
+                      {canResume && row.estado === "PENDIENTE" && (
+                        <a className="button" href={`#/matriculas/${row.id}`}>
+                          Retomar solicitud
+                        </a>
+                      )}
+                    </>
                   ),
                 },
               ]}

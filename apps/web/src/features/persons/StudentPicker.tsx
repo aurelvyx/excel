@@ -14,6 +14,13 @@ export function StudentPicker({
   onClose: () => void;
   onSelect: (row: Row) => void;
 }) {
+  return (
+    <Dialog title="Seleccionar estudiante" onClose={onClose}>
+      <StudentSearch onSelect={onSelect} />
+    </Dialog>
+  );
+}
+export function StudentSearch({ onSelect }: { onSelect: (row: Row) => void }) {
   const [query, setQuery] = useState("");
   const [after, setAfter] = useState("");
   const params = new URLSearchParams({ activo: "true", limit: "20" });
@@ -28,7 +35,7 @@ export function StudentPicker({
     setAfter("");
   }
   return (
-    <Dialog title="Seleccionar estudiante" onClose={onClose}>
+    <>
       <p>
         Busca por documento, código o nombre. Solo se muestran estudiantes
         activos.
@@ -92,6 +99,6 @@ export function StudentPicker({
           ]}
         />
       </ListPanel>
-    </Dialog>
+    </>
   );
 }

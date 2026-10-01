@@ -29,3 +29,7 @@ Ver [guía de componentes y refactorización](../../docs/refactor-componentes-co
 antes de agregar nuevas pantallas.
 
 B07 incorpora src/features/vouchers y el selector reutilizable de estudiantes para administración y secretaría. Ver [guía B07](../../docs/B07-vouchers.md).
+
+B09 incorpora `src/features/enrollments`: asistente conectado a la API B08 y
+recuperación de solicitudes pendientes desde el historial. Reutiliza altas y
+decisiones de estudiantes/vouchers. Ver [guía B09](../../docs/B09-asistente-matricula.md).

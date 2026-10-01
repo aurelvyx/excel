@@ -12,6 +12,7 @@ import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
 import { AuditService } from '../src/modules/control/audit.service.js';
 import { freePort } from './browser-server.js';
+import { randomUUID } from 'node:crypto';
 if (process.env.NODE_ENV !== 'test' || process.env.DB_NAME !== 'excel_test')
   throw new Error('Ejecutar B08 con pnpm test:db');
 const password = 'Sintetica-segura-B08';
@@ -137,6 +138,49 @@ describe('B08 matrícula HTTP y PostgreSQL', () => {
         .expect(201)
     ).body;
   }
+  it('B09 reintenta la misma alta una vez y rechaza cambiar su identidad o actor', async () => {
+    const owner = await student();
+    const input = {
+      estudianteId: owner,
+      grupoId: groupId,
+      claveSolicitud: randomUUID(),
+    };
+    const responses = await Promise.all([
+      call('post', 'matriculas').send(input).expect(201),
+      call('post', 'matriculas').send(input).expect(201),
+    ]);
+    expect(responses[0].body.id).toBe(responses[1].body.id);
+    expect(
+      (
+        await source.query(
+          'SELECT count(*)::int AS n FROM matriculas WHERE clave_solicitud=$1',
+          [input.claveSolicitud],
+        )
+      )[0].n,
+    ).toBe(1);
+    await call('post', 'matriculas')
+      .send({ ...input, estudianteId: await student() })
+      .expect(409);
+    await call('post', 'matriculas', await login('secretaria'))
+      .send(input)
+      .expect(409);
+    await call('post', 'matriculas')
+      .send({ ...input, claveSolicitud: 'invalido' })
+      .expect(400);
+    const paid = await voucher(owner);
+    await activation(responses[0].body.id, paid.id).expect(200);
+    expect(
+      (await call('post', 'matriculas').send(input).expect(201)).body.estado,
+    ).toBe('ACTIVA');
+    expect(
+      (
+        await source.query(
+          "SELECT count(*)::int AS n FROM auditoria_eventos WHERE entidad='matriculas' AND entidad_id=$1 AND accion='CREATE'",
+          [responses[0].body.id],
+        )
+      )[0].n,
+    ).toBe(1);
+  });
   async function voucher(student = studentId, state = 'VALIDADO') {
     const row = (
       await call('post', 'vouchers')

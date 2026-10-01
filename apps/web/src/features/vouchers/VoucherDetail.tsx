@@ -12,7 +12,7 @@ export function VoucherDetail({
 }: {
   voucher: Row;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (row: Row) => void;
 }) {
   const [decision, setDecision] = useState("");
   const [note, setNote] = useState("");
@@ -29,14 +29,14 @@ export function VoucherDetail({
     pending(true);
     fail("");
     try {
-      await api(`vouchers/${voucher.id}/decision`, {
+      const saved = await api<Row>(`vouchers/${voucher.id}/decision`, {
         method: "PATCH",
         body: {
           estado: decision,
           ...(note.trim() ? { observacion: note.trim() } : {}),
         },
       });
-      onSaved();
+      onSaved(saved);
     } catch (e) {
       fail(errorText(e));
       setReview(false);
