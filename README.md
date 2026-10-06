@@ -28,7 +28,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   Los tiempos observados y la aprobación institucional de los formatos siguen pendientes.
 - **B11:** programación de fechas de clase por grupo, horario opcional y confirmación;
   permisos docentes, rango del periodo, duplicados y auditoría en API, BD e interfaz.
-- Marcas y cálculos de asistencia, justificaciones, cierres, notas y reportes se
+- **B12:** matriz de asistencia P/F/T/J por sesión, registro masivo y correcciones
+  con versiones, conservación de intentos, permisos y auditoría transaccional.
+- Cálculos de asistencia, justificaciones, cierres, notas y reportes se
   desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
@@ -43,6 +45,7 @@ Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matricul
 Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asistente-matricula.md).
 Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas](docs/B10-verificacion-matricula.md).
 Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-clase.md).
+Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-registro-asistencia.md).
 
 ## Instalación desde cero
 
@@ -125,7 +128,7 @@ pnpm test:db
 local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
-Incluye recorridos React–API–PostgreSQL de configuración, matrícula y sesiones con Chromium. En Linux/CI, instalar
+Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones y asistencia con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 `pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra
@@ -152,7 +155,7 @@ apps/api/src/
   modules/              Auth, usuarios, control, oferta, personas, matrículas y asistencia
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
-  features/             Acceso, configuración, estudiantes, vouchers, matrícula y sesiones
+  features/             Acceso, configuración, estudiantes, vouchers, matrícula y asistencia
   shared/               Cliente API, navegación y diálogos
 packages/contracts/     Reservado para contratos compartidos
 infra/

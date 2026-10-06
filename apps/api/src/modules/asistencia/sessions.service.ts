@@ -4,10 +4,9 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, type EntityManager } from 'typeorm';
+import { DataSource } from 'typeorm';
 import type { Identity } from '../auth/access.js';
 import { authorize } from '../auth/authorization.js';
 import { AuditService } from '../control/audit.service.js';
@@ -16,32 +15,15 @@ import {
   requireGroupRead,
 } from '../oferta-academica/group-scope.js';
 import { readers } from '../oferta-academica/catalogs.js';
-import { groupContext } from '../oferta-academica/group-context.js';
 import { page, validId } from '../../common/validation.js';
 import { validateSessionSchedule } from './session.policy.js';
 import type { ScheduleSessionsDto } from './sessions.dto.js';
+import {
+  loadAcademicGroup,
+  sessionColumns as columns,
+  type ClassSession as Session,
+} from './academic-context.js';
 
-type Session = Record<string, unknown> & {
-  id: string;
-  grupo_id: string;
-  fecha: string;
-  hora_inicio: string | null;
-  hora_fin: string | null;
-  estado: 'PROGRAMADA' | 'REALIZADA' | 'CANCELADA';
-  creado_por: string;
-};
-type Group = Record<string, unknown> & {
-  id: string;
-  codigo: string;
-  estado: string;
-  periodo_id: string;
-  fecha_inicio: string;
-  fecha_fin: string;
-  periodo_estado: string;
-  asistencia_cerrada: boolean;
-};
-const columns =
-  'id,grupo_id,fecha::text,hora_inicio::text,hora_fin::text,estado,creado_por';
 export const sessionReaders = [...readers, 'DOCENTE'] as const;
 
 @Injectable()
@@ -51,24 +33,13 @@ export class SessionsService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  private async group(manager: EntityManager, id: string): Promise<Group> {
-    const [group] = (await manager.query(
-      `SELECT t.id,t.codigo,t.estado,t.periodo_id,p.fecha_inicio::text,p.fecha_fin::text,
-      p.estado AS periodo_estado,(t.estado='CERRADO') AS asistencia_cerrada,${groupContext}
-      FROM grupos t JOIN periodos_academicos p ON p.id=t.periodo_id WHERE t.id=$1::bigint FOR SHARE OF t,p`,
-      [id],
-    )) as Group[];
-    if (!group) throw new NotFoundException('Grupo no encontrado');
-    return group;
-  }
-
   async list(actor: Identity, groupId: string, query: Record<string, unknown>) {
     validId(groupId);
     const { after, limit } = page(query);
     return this.source.transaction(async (manager) => {
       const roles = await authorize(manager, actor, sessionReaders);
       await requireGroupRead(manager, actor, roles, groupId);
-      const group = await this.group(manager, groupId);
+      const group = await loadAcademicGroup(manager, groupId);
       const assigned =
         roles.includes('DOCENTE') &&
         (await assignedToGroup(manager, actor, groupId));
@@ -102,7 +73,7 @@ export class SessionsService {
         !(await assignedToGroup(manager, actor, groupId))
       )
         throw new ForbiddenException('Grupo no asignado');
-      const group = await this.group(manager, groupId);
+      const group = await loadAcademicGroup(manager, groupId);
       if (group.estado === 'CERRADO' || group.periodo_estado === 'CERRADO')
         throw new ConflictException(
           'El grupo o periodo está cerrado; no admite programación',

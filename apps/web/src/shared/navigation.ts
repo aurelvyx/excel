@@ -1,7 +1,16 @@
 import { useSyncExternalStore } from "react";
+export const routeChangeEvent = "excel-route-change";
 const subscribe = (listener: () => void) => {
-  window.addEventListener("hashchange", listener);
-  return () => window.removeEventListener("hashchange", listener);
+  function changed(event: HashChangeEvent) {
+    const request = new CustomEvent(routeChangeEvent, {
+      cancelable: true,
+      detail: event,
+    });
+    // El formulario decide antes de notificar el nuevo snapshot al router.
+    if (window.dispatchEvent(request)) listener();
+  }
+  window.addEventListener("hashchange", changed);
+  return () => window.removeEventListener("hashchange", changed);
 };
 export function useRoute() {
   const hash = useSyncExternalStore(

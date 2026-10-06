@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { useAuth } from "../auth/session";
-import { labels } from "../configuration/model";
 import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { Button } from "../../shared/ui/Button";
 import { DataTable } from "../../shared/ui/DataTable";
-import { Facts } from "../../shared/ui/Facts";
 import { Feedback } from "../../shared/ui/Feedback";
 import { ListPanel } from "../../shared/ui/ListPanel";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { SessionForm } from "./SessionForm";
+import { GroupContext } from "./GroupContext";
 import {
   sessionDate,
   sessionStates,
@@ -74,33 +73,7 @@ export function SessionsPage({
           )
         }
       />
-      {group && (
-        <section
-          className="panel enrollment-context"
-          aria-label="Contexto del grupo"
-        >
-          <Facts
-            emptyLabel="—"
-            items={[
-              ["Grupo", group.codigo],
-              ["Estado del grupo", labels[group.estado] ?? group.estado],
-              ["Periodo", group.contexto.periodo],
-              [
-                "Estado del periodo",
-                labels[group.periodo_estado] ?? group.periodo_estado,
-              ],
-              ["Idioma", group.contexto.idioma],
-              ["Nivel", group.contexto.nivel],
-              ["Turno", group.contexto.turno],
-              ["Sección", group.contexto.seccion],
-              [
-                "Fechas del periodo",
-                `${sessionDate(group.fecha_inicio)} al ${sessionDate(group.fecha_fin)}`,
-              ],
-            ]}
-          />
-        </section>
-      )}
+      {group && <GroupContext group={group} />}
       {data && !data.puedeProgramar && (
         <p className="readonly">
           Solo lectura ·{" "}
@@ -156,6 +129,13 @@ export function SessionsPage({
                 <StatusBadge inactive={row.estado === "CANCELADA"}>
                   {sessionStates[row.estado]}
                 </StatusBadge>
+              ),
+            },
+            {
+              key: "acciones",
+              header: "Acciones",
+              cell: (row) => (
+                <a href={`#${path}/sesiones/${row.id}`}>Asistencia</a>
               ),
             },
           ]}
