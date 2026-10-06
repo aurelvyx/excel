@@ -1,4 +1,6 @@
 import { DataSource } from 'typeorm';
+import { checkMigrationReversal } from './migration-test.js';
+import { AccesoAuditoria1790208003000 } from '../src/database/migraciones/1790208003000-acceso-auditoria.js';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { Controller, Get } from '@nestjs/common';
@@ -454,14 +456,11 @@ describe('B03 acceso y permisos sobre PostgreSQL', () => {
     expect(JSON.stringify(rows)).not.toMatch(
       /password_hash|token_hash|csrfToken|\$argon2/,
     );
-    await source.undoLastMigration(); // Reintentos B09 sin matrículas.
-    await source.undoLastMigration(); // Protección B08 sin matrículas.
-    await source.undoLastMigration(); // Protección B07 sin vouchers.
-    await source.undoLastMigration(); // Historial B06 vacío; ahora se intenta revertir acceso/auditoría.
-    await expect(source.undoLastMigration()).rejects.toMatchObject({
+    await expect(
+      checkMigrationReversal(source, new AccesoAuditoria1790208003000()),
+    ).rejects.toMatchObject({
       driverError: { code: '23514' },
     });
-    await source.runMigrations();
   });
 
   it('un fallo de auditoría revierte la creación del usuario', async () => {
@@ -519,7 +518,9 @@ describe('B03 acceso y permisos sobre PostgreSQL', () => {
         motivo: 'Prueba concurrente B',
       }),
     ]);
-    expect(results.map((result) => result.status).sort((a, b) => a - b)).toEqual([200, 409]);
+    expect(
+      results.map((result) => result.status).sort((a, b) => a - b),
+    ).toEqual([200, 409]);
     const active =
       await source.query(`SELECT u.id FROM usuarios u JOIN usuario_roles ur ON ur.usuario_id=u.id
       JOIN roles r ON r.id=ur.rol_id WHERE u.activo AND r.activo AND r.codigo='ADMIN'`);

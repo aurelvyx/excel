@@ -7,6 +7,7 @@ import { Pagination } from "../../shared/ui/Pagination";
 import { DataTable } from "../../shared/ui/DataTable";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { Button } from "../../shared/ui/Button";
+import { Facts } from "../../shared/ui/Facts";
 import { useState, type FormEvent } from "react";
 import { api, text, type Page, type Row } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
@@ -229,15 +230,16 @@ export function StudentsPage({
                     </div>
                   )}
                 </header>
-                <dl className="student-facts">
-                  {[
+                <Facts
+                  emptyLabel="Sin registrar"
+                  items={[
                     [
                       "Documento",
                       `${text(student, "persona.tipoDocumento")} ${text(student, "persona.numeroDocumento")}`,
                     ],
                     ["Registro", text(student, "fecha_registro")],
                     ...(canEdit
-                      ? [
+                      ? ([
                           ["Teléfono", text(student, "persona.telefono")],
                           ["Correo", text(student, "persona.correo")],
                           ["Dirección", text(student, "persona.direccion")],
@@ -245,15 +247,10 @@ export function StudentsPage({
                             "Nacimiento",
                             text(student, "persona.fechaNacimiento"),
                           ],
-                        ]
+                        ] as const)
                       : []),
-                  ].map(([label, value]) => (
-                    <div key={label}>
-                      <dt>{label}</dt>
-                      <dd>{value || "Sin registrar"}</dd>
-                    </div>
-                  ))}
-                </dl>
+                  ]}
+                />
               </section>
               <StudentHistory id={id} canResume={canEdit} />
             </>

@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -16,6 +15,7 @@ import { type CatalogKey, readers } from './catalogs.js';
 import { OfferRepository, type Row } from './offer.repository.js';
 import type { AssignmentDto } from './offer.dto.js';
 import { groupContext } from './group-context.js';
+import { assignedGroupSql, requireGroupRead } from './group-scope.js';
 
 @Injectable()
 export class OfferService {
@@ -24,22 +24,6 @@ export class OfferService {
     @Inject(OfferRepository) private readonly repo: OfferRepository,
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
-
-  private async groupScope(
-    manager: EntityManager,
-    actor: Identity,
-    roles: string[],
-    groupId: string,
-  ): Promise<void> {
-    if (readers.some((role) => roles.includes(role))) return;
-    const found: unknown[] = await manager.query(
-      `SELECT gd.grupo_id FROM grupo_docentes gd
-      JOIN docentes d ON d.id=gd.docente_id JOIN personas p ON p.id=d.persona_id JOIN usuarios u ON u.persona_id=p.id
-      WHERE gd.grupo_id=$1::bigint AND u.id=$2 AND d.activo AND p.activo AND gd.activo`,
-      [groupId, actor.id],
-    );
-    if (!found.length) throw new ForbiddenException('Grupo no asignado');
-  }
 
   async list(actor: Identity, key: CatalogKey, query: Record<string, unknown>) {
     const config = this.repo.config(key);
@@ -81,9 +65,7 @@ export class OfferService {
       }
       if (key === 'grupos' && !readers.some((role) => roles.includes(role))) {
         values.push(actor.id);
-        clauses.push(`EXISTS (SELECT 1 FROM grupo_docentes gd JOIN docentes d ON d.id=gd.docente_id
-          JOIN personas p ON p.id=d.persona_id JOIN usuarios u ON u.persona_id=p.id
-          WHERE gd.grupo_id=t.id AND u.id=$${values.length} AND gd.activo AND d.activo AND p.activo)`);
+        clauses.push(assignedGroupSql('t.id', `$${values.length}`));
       }
       values.push(limit);
       const items = (await manager.query(
@@ -105,7 +87,7 @@ export class OfferService {
         actor,
         key === 'grupos' ? [...readers, 'DOCENTE'] : readers,
       );
-      if (key === 'grupos') await this.groupScope(manager, actor, roles, id);
+      if (key === 'grupos') await requireGroupRead(manager, actor, roles, id);
       return this.repo.find(manager, key, id);
     });
   }

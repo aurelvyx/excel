@@ -1,4 +1,6 @@
 import { DataSource } from 'typeorm';
+import { checkMigrationReversal } from './migration-test.js';
+import { SolicitudReintento1790208007000 } from '../src/database/migraciones/1790208007000-solicitud-reintento.js';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -371,9 +373,9 @@ describe('B06 estudiantes e historial HTTP y PostgreSQL', () => {
         second.id,
       ]),
     ).rejects.toMatchObject({ driverError: { code: '23001' } });
-    await expect(source.undoLastMigration()).rejects.toThrow(
-      'historial persistido',
-    );
+    await expect(
+      checkMigrationReversal(source, new SolicitudReintento1790208007000()),
+    ).rejects.toThrow('historial persistido');
   });
   it('integridad: nota inválida, cruce de grupos y voucher pendiente no generan historial inconsistente', async () => {
     const [grade] = await source.query('SELECT * FROM calificaciones LIMIT 1');

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, errorText, text, type Row } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Feedback, Loading } from "../../shared/ui/Feedback";
 import { Button } from "../../shared/ui/Button";
+import { Facts } from "../../shared/ui/Facts";
 import { StudentSearch } from "../persons/StudentPicker";
 import { studentName, studentRow } from "../persons/student";
 import { RegisterStudent } from "../students/RegisterStudent";
@@ -67,18 +68,6 @@ function ResumeEnrollment({ id }: { id: string }) {
     <EnrollmentWizard initial={data} />
   ) : (
     <Loading>Cargando solicitud…</Loading>
-  );
-}
-function Facts({ items }: { items: [string, ReactNode][] }) {
-  return (
-    <dl className="student-facts">
-      {items.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value || "Sin seleccionar"}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 function EnrollmentWizard({ initial }: { initial?: Initial }) {
