@@ -26,6 +26,9 @@ if (process.env.NODE_ENV !== 'test' || process.env.DB_NAME !== 'excel_test')
   throw new Error('Ejecutar B09 con pnpm test:db');
 const password = 'Sintetica-B09-segura';
 const artifacts = fileURLToPath(new URL('../../../.tmp/b09/', import.meta.url));
+const b10Artifacts = fileURLToPath(
+  new URL('../../../.tmp/b10/', import.meta.url),
+);
 
 describe('B09 navegador React → API → PostgreSQL', () => {
   let source: DataSource;
@@ -37,6 +40,10 @@ describe('B09 navegador React → API → PostgreSQL', () => {
   let origin: string;
   const previousOrigins = process.env.WEB_ORIGINS;
   const errors: string[] = [];
+  const sessions = new Map<
+    string,
+    Awaited<ReturnType<BrowserContext['cookies']>>
+  >();
   beforeAll(async () => {
     const base = await new DataSource(databaseOptions()).initialize();
     try {
@@ -82,14 +89,6 @@ describe('B09 navegador React → API → PostgreSQL', () => {
         [user.id, admin.id, role],
       );
     }
-    const [temporary] = await source.query(
-      "INSERT INTO usuarios (nombre_usuario,password_hash) VALUES ('temporal_web',$1) RETURNING id",
-      [encoded],
-    );
-    await source.query(
-      "INSERT INTO usuario_roles (usuario_id,rol_id,asignado_por) SELECT $1,id,$2 FROM roles WHERE codigo='SECRETARIA'",
-      [temporary.id, admin.id],
-    );
     const port = await freePort();
     origin = `http://127.0.0.1:${port}`;
     process.env.WEB_ORIGINS = origin;
@@ -102,6 +101,7 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     vite = await createWebServer(await app.getUrl(), port);
     browser = await chromium.launch();
     await mkdir(artifacts, { recursive: true });
+    await mkdir(b10Artifacts, { recursive: true });
   }, 60000);
   beforeEach(async () => {
     context = await browser.newContext({
@@ -126,10 +126,26 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     else process.env.WEB_ORIGINS = previousOrigins;
   });
   async function login(user = 'admin_enrollments_web', secret = password) {
+    // Reutilizar sesiones verificadas evita superar el límite real de diez accesos/minuto.
+    // Cada prueba conserva un contexto de navegador independiente y restaura CSRF por /auth/me.
+    const cookies = sessions.get(user);
+    if (cookies) await context.addCookies(cookies);
     await page.goto(origin);
-    await page.getByLabel('Usuario', { exact: true }).fill(user);
-    await page.getByLabel('Contraseña', { exact: true }).fill(secret);
-    await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
+    if (!cookies) {
+      await page.getByLabel('Usuario', { exact: true }).fill(user);
+      await page.getByLabel('Contraseña', { exact: true }).fill(secret);
+      const response = page.waitForResponse(
+        (res) =>
+          res.url().endsWith('/api/v1/auth/login') &&
+          res.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
+      expect((await response).status()).toBe(200);
+    }
+    await page
+      .getByRole('button', { name: 'Cerrar sesión', exact: true })
+      .waitFor();
+    if (!cookies) sessions.set(user, await context.cookies());
   }
 
   let sequence = 0;
@@ -169,25 +185,33 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     if (saved) await page.getByRole('dialog').waitFor({ state: 'hidden' });
     return number;
   }
-  async function validateVoucher(number: string) {
+  async function decideVoucher(
+    number: string,
+    decision: 'VALIDADO' | 'RECHAZADO' = 'VALIDADO',
+    note?: string,
+  ) {
     const row = page
       .getByRole('row')
       .filter({ has: page.getByRole('cell', { name: number, exact: true }) });
     await row.getByRole('button', { name: 'Revisar voucher' }).click();
-    await page.getByLabel('Decisión', { exact: true }).selectOption('VALIDADO');
+    await page.getByLabel('Decisión', { exact: true }).selectOption(decision);
+    if (note) await page.getByLabel('Observación', { exact: true }).fill(note);
     await page.getByRole('button', { name: 'Revisar decisión' }).click();
     await page
       .getByRole('button', { name: 'Confirmar decisión', exact: true })
       .click();
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
   }
-  async function chooseGroup(level = 'Nivel sintético 1') {
+  async function chooseGroup(
+    level = 'Nivel sintético 1',
+    language = 'Inglés de prueba',
+  ) {
     await page
       .getByLabel('Periodo', { exact: true })
       .selectOption({ label: 'Periodo sintético B02' });
     await page
       .getByLabel('Idioma', { exact: true })
-      .selectOption({ label: 'Inglés de prueba' });
+      .selectOption({ label: language });
     await page
       .getByLabel('Nivel', { exact: true })
       .selectOption({ label: level });
@@ -197,16 +221,194 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await page.getByRole('heading', { name: 'Revisar y confirmar' }).waitFor();
   }
-  async function preparePaid() {
+  async function preparePaid(language = 'Inglés de prueba') {
     const owner = await student();
     await start(owner);
     const number = await registerVoucher();
-    await validateVoucher(number);
+    await decideVoucher(number);
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
-    await chooseGroup();
+    await chooseGroup('Nivel sintético 1', language);
     await page.getByRole('checkbox').check();
     return owner;
   }
+  async function confirmEnrollment() {
+    await page
+      .getByRole('button', { name: 'Confirmar matrícula', exact: true })
+      .click();
+    await page.getByRole('heading', { name: 'Matrícula registrada' }).waitFor();
+  }
+  it('B10 completa portugués y conserva voucher, contexto e identidad en historial', async () => {
+    const owner = await student();
+    await login('secretaria');
+    await page.getByRole('link', { name: 'Matrículas', exact: true }).click();
+    await page
+      .getByLabel('Buscar estudiante', { exact: true })
+      .fill(owner.code);
+    await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+    const row = page.getByRole('row').filter({ hasText: owner.code });
+    await row.getByRole('button', { name: 'Seleccionar', exact: true }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    const number = await registerVoucher();
+    await decideVoucher(number);
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await chooseGroup('Nivel sintético 1', 'Portugués de prueba');
+    expect(
+      await page
+        .getByRole('region', { name: 'Contexto de matrícula' })
+        .textContent(),
+    ).toContain('Portugués de prueba / Nivel sintético 1');
+    await page.screenshot({
+      path: `${b10Artifacts}/portugues-confirmacion.png`,
+      fullPage: true,
+    });
+    await page.getByRole('checkbox').check();
+    await confirmEnrollment();
+    const [enrollment] = await source.query(
+      `SELECT m.id,m.codigo,m.numero_intento,m.estado,v.numero,v.importe,v.validado_at,
+      u.nombre_usuario AS responsable,g.codigo AS grupo,i.codigo AS idioma
+      FROM matriculas m JOIN vouchers v ON v.id=m.voucher_id JOIN usuarios u ON u.id=v.validado_por
+      JOIN grupos g ON g.id=m.grupo_id JOIN niveles n ON n.id=m.nivel_id
+      JOIN idiomas i ON i.id=n.idioma_id WHERE m.estudiante_id=$1`,
+      [owner.id],
+    );
+    expect(enrollment).toMatchObject({
+      codigo: `MAT-${owner.code}-${enrollment.id}`,
+      numero_intento: 1,
+      estado: 'ACTIVA',
+      numero: number,
+      importe: '100.25',
+      responsable: 'secretaria',
+      grupo: 'DEMO-PT-G1',
+      idioma: 'DEMO-PT',
+    });
+    expect(enrollment.validado_at).toBeInstanceOf(Date);
+    await page.getByRole('link', { name: 'Ver ficha del estudiante' }).click();
+    await page
+      .getByRole('cell', { name: enrollment.codigo, exact: false })
+      .waitFor();
+    expect(
+      await page
+        .getByRole('table', { name: 'Intentos académicos' })
+        .textContent(),
+    ).toContain('Portugués de prueba');
+    await page.screenshot({
+      path: `${b10Artifacts}/portugues-historial.png`,
+      fullPage: true,
+    });
+  });
+  it('B10 rechaza voucher con motivo y retoma el mismo intento con otro validado', async () => {
+    const owner = await student();
+    await start(owner);
+    const rejected = await registerVoucher();
+    await decideVoucher(
+      rejected,
+      'RECHAZADO',
+      'Comprobante sintético no conforme',
+    );
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await chooseGroup();
+    expect(
+      await page
+        .getByRole('button', { name: 'Confirmar matrícula', exact: true })
+        .count(),
+    ).toBe(0);
+    await page
+      .getByRole('button', { name: 'Guardar solicitud pendiente' })
+      .click();
+    await page.waitForURL('**/#/matriculas/*');
+    const [pending] = await source.query(
+      'SELECT id,codigo,numero_intento,estado,voucher_id FROM matriculas WHERE estudiante_id=$1',
+      [owner.id],
+    );
+    expect(pending).toMatchObject({ estado: 'PENDIENTE', voucher_id: null });
+    expect(
+      await source.query(
+        'SELECT id FROM resultados_academicos WHERE matricula_id=$1',
+        [pending.id],
+      ),
+    ).toEqual([]);
+    await page.getByRole('link', { name: 'Ver ficha del estudiante' }).click();
+    await page
+      .getByRole('link', { name: 'Retomar solicitud', exact: true })
+      .click();
+    const valid = await registerVoucher();
+    await decideVoucher(valid);
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await page.getByRole('checkbox').check();
+    await confirmEnrollment();
+    const [voucher] = await source.query(
+      'SELECT id FROM vouchers WHERE numero=$1',
+      [valid],
+    );
+    expect(
+      await source.query(
+        'SELECT id,codigo,numero_intento,estado,voucher_id FROM matriculas WHERE estudiante_id=$1',
+        [owner.id],
+      ),
+    ).toEqual([{ ...pending, estado: 'ACTIVA', voucher_id: voucher.id }]);
+    expect(
+      await source.query(
+        'SELECT estado,observacion FROM vouchers WHERE numero=$1',
+        [rejected],
+      ),
+    ).toEqual([
+      { estado: 'RECHAZADO', observacion: 'Comprobante sintético no conforme' },
+    ]);
+    const audits = await source.query(
+      "SELECT accion FROM auditoria_eventos WHERE entidad='matriculas' AND entidad_id=$1 ORDER BY id",
+      [pending.id],
+    );
+    expect(audits.map((audit: { accion: string }) => audit.accion)).toEqual([
+      'CREATE',
+      'ACTIVATE',
+    ]);
+  }, 60000);
+  it('B10 duplicado activo muestra conflicto sin consumir el segundo voucher', async () => {
+    const owner = await preparePaid();
+    await confirmEnrollment();
+    await page
+      .getByRole('button', { name: 'Nueva matrícula', exact: true })
+      .click();
+    await page
+      .getByLabel('Buscar estudiante', { exact: true })
+      .fill(owner.code);
+    await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+    await page
+      .getByRole('row')
+      .filter({ hasText: owner.code })
+      .getByRole('button', { name: 'Seleccionar', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    const number = await registerVoucher();
+    await decideVoucher(number);
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await chooseGroup();
+    await page.getByRole('checkbox').check();
+    await page
+      .getByRole('button', { name: 'Confirmar matrícula', exact: true })
+      .click();
+    await page
+      .getByRole('alert')
+      .filter({ hasText: 'Ya existe una matrícula activa' })
+      .waitFor();
+    expect(
+      await source.query(
+        'SELECT numero_intento,estado FROM matriculas WHERE estudiante_id=$1',
+        [owner.id],
+      ),
+    ).toEqual([{ numero_intento: 1, estado: 'ACTIVA' }]);
+    expect(
+      await source.query(
+        'SELECT v.estado,m.id AS matricula_id FROM vouchers v LEFT JOIN matriculas m ON m.voucher_id=v.id WHERE v.numero=$1',
+        [number],
+      ),
+    ).toEqual([{ estado: 'VALIDADO', matricula_id: null }]);
+    await page.screenshot({
+      path: `${b10Artifacts}/matricula-duplicada.png`,
+      fullPage: true,
+    });
+  }, 60000);
   it('registra estudiante y voucher, conserva pasos y confirma matrícula real en escritorio y móvil', async () => {
     await login('secretaria');
     await page.getByRole('link', { name: 'Matrículas', exact: true }).click();
@@ -228,7 +430,7 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     const number = await registerVoucher();
-    await validateVoucher(number);
+    await decideVoucher(number);
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await chooseGroup();
     await page.getByRole('button', { name: 'Anterior', exact: true }).click();
@@ -303,7 +505,7 @@ describe('B09 navegador React → API → PostgreSQL', () => {
       .getByRole('link', { name: 'Retomar solicitud', exact: true })
       .click();
     const number = await registerVoucher();
-    await validateVoucher(number);
+    await decideVoucher(number);
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await page.getByRole('checkbox').check();
@@ -472,15 +674,22 @@ describe('B09 navegador React → API → PostgreSQL', () => {
       ),
     ).toEqual([{ estado: 'ACTIVA' }]);
   });
-  it('docente y coordinación no acceden al asistente', async () => {
-    await login('coordinador');
-    expect(
-      await page.getByRole('link', { name: 'Matrículas', exact: true }).count(),
-    ).toBe(0);
-    await page.goto(`${origin}/#/matriculas`);
-    await page.getByRole('heading', { name: 'Página no disponible' }).waitFor();
-    expect(
-      (await context.request.get(`${origin}/api/v1/matriculas/1`)).status(),
-    ).toBe(403);
-  });
+  it.each(['docente', 'coordinador'])(
+    '%s no accede al asistente',
+    async (role) => {
+      await login(role);
+      expect(
+        await page
+          .getByRole('link', { name: 'Matrículas', exact: true })
+          .count(),
+      ).toBe(0);
+      await page.goto(`${origin}/#/matriculas`);
+      await page
+        .getByRole('heading', { name: 'Página no disponible' })
+        .waitFor();
+      expect(
+        (await context.request.get(`${origin}/api/v1/matriculas/1`)).status(),
+      ).toBe(403);
+    },
+  );
 });
