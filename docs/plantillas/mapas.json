@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "estado": "MAPEO_PROPUESTO",
+  "familias": {
+    "FICHA_MATRICULA": {
+      "campos": [
+        {
+          "celda": "C3",
+          "fuente": "institucion.nombre",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "C4",
+          "fuente": "institucion.codigoModular",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "C5",
+          "fuente": "institucion.resolucion",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "C6",
+          "fuente": "institucion.departamento",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "C7",
+          "fuente": "institucion.provincia",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "C8",
+          "fuente": "institucion.distrito",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "C9",
+          "fuente": "estudiante.apellidosNombres",
+          "estado": "DISPONIBLE"
+        },
+        {
+          "celda": "C10",
+          "fuente": "estudiante.numeroDocumento",
+          "estado": "DISPONIBLE",
+          "tipo": "TEXTO"
+        },
+        {
+          "celda": "E3",
+          "fuente": "institucion.dreGre",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "E4",
+          "fuente": "institucion.ugel",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "E5",
+          "fuente": "institucion.tipoGestion",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "E6",
+          "fuente": "programa.denominacion",
+          "estado": "PENDIENTE_CRITERIO"
+        },
+        {
+          "celda": "E7",
+          "fuente": "programa.modalidadServicio",
+          "estado": "PENDIENTE_CONFIGURACION"
+        },
+        {
+          "celda": "E8",
+          "fuente": "nivel.nombre",
+          "estado": "PENDIENTE_CRITERIO"
+        },
+        { "celda": "E9", "fuente": "periodo.nombre", "estado": "DISPONIBLE" },
+        {
+          "celda": "E10",
+          "fuente": "periodo.rangoClases",
+          "estado": "PENDIENTE_CRITERIO"
+        }
+      ],
+      "tablas": [
+        {
+          "fuente": "unidades",
+          "primeraFila": 13,
+          "ultimaFila": 21,
+          "politicaDesborde": "PENDIENTE_APROBACION",
+          "columnas": [
+            { "columna": "A", "fuente": "ordinal", "tipo": "ENTERO" },
+            { "columna": "B", "fuente": "nombre", "tipo": "TEXTO" },
+            { "columna": "E", "fuente": "creditos", "tipo": "DECIMAL" },
+            { "columna": "F", "fuente": "horasTotales", "tipo": "ENTERO" },
+            {
+              "columna": "G",
+              "fuente": "observacion",
+              "tipo": "TEXTO",
+              "estado": "PENDIENTE_CRITERIO"
+            }
+          ]
+        }
+      ]
+    },
+    "RESUMEN_PARTICIPANTES": {
+      "campos": [
+        {
+          "celda": "C3",
+          "fuente": "institucion.nombre",
+          "estado": "PENDIENTE_CONFIGURACION"
+        }
+      ],
+      "tablas": [
+        {
+          "fuente": "programas",
+          "primeraFila": 11,
+          "politicaDesborde": "PENDIENTE_APROBACION",
+          "columnas": [
+            { "columna": "A", "fuente": "ordinal", "tipo": "ENTERO" },
+            {
+              "columna": "B",
+              "fuente": "familiaCnof",
+              "tipo": "TEXTO",
+              "estado": "PENDIENTE_CONFIGURACION"
+            },
+            {
+              "columna": "C",
+              "fuente": "denominacion",
+              "tipo": "TEXTO",
+              "estado": "PENDIENTE_CRITERIO"
+            },
+            {
+              "columna": "D",
+              "fuente": "nivel",
+              "tipo": "TEXTO",
+              "estado": "PENDIENTE_CRITERIO"
+            },
+            {
+              "columna": "E",
+              "fuente": "tipoPrograma",
+              "tipo": "TEXTO",
+              "estado": "PENDIENTE_CONFIGURACION"
+            },
+            {
+              "columna": "F",
+              "fuente": "modalidadServicio",
+              "tipo": "TEXTO",
+              "estado": "PENDIENTE_CONFIGURACION"
+            },
+            { "columna": "G", "fuente": "creditosTotales", "tipo": "DECIMAL" },
+            { "columna": "H", "fuente": "horasTotales", "tipo": "ENTERO" },
+            { "columna": "I", "fuente": "fechaInicio", "tipo": "FECHA" },
+            { "columna": "J", "fuente": "fechaFin", "tipo": "FECHA" },
+            {
+              "columna": "K",
+              "fuente": "matriculados",
+              "tipo": "ENTERO",
+              "estado": "PENDIENTE_CRITERIO"
+            },
+            {
+              "columna": "L",
+              "fuente": "aprobados",
+              "tipo": "ENTERO",
+              "estado": "PENDIENTE_RESULTADOS_CONFIRMADOS"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -23,6 +23,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   vacantes, intentos, código basado en documento y conservación del historial.
 - **B09:** asistente de matrícula con búsqueda/alta de estudiante, voucher, grupo y
   confirmación; recuperación de solicitudes pendientes y reintentos sin duplicados.
+- **B10:** verificación ampliada de matrícula, informe automático, diez casos
+  sintéticos, instrumento de medición y registro de plantillas con mapas comunes.
+  Los tiempos observados y la aprobación institucional de los formatos siguen pendientes.
 - Asistencia, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
@@ -35,6 +38,7 @@ Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estud
 Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
 Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matriculas.md).
 Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asistente-matricula.md).
+Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas](docs/B10-verificacion-matricula.md).
 
 ## Instalación desde cero
 
@@ -119,6 +123,17 @@ revierte, reaplica y prueba restricciones, rollback, carga sintética y la API c
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
 Incluye el recorrido React–API–PostgreSQL de B05 con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
+
+`pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra
+base temporal. Guarda el informe JSON en `.tmp/b10/pruebas.json`; la suite completa
+usa `.tmp/verificacion/pruebas.json`. Los tiempos del runner son evidencia técnica.
+El procedimiento para observar los tiempos del centro está en la documentación B10.
+
+`pnpm b10:plantillas [carpeta]` comprueba las versiones de los cuatro archivos
+facilitados por el equipo contra `docs/plantillas/registro.json`. La carpeta por
+defecto es `.tmp/b10`; los archivos originales permanecen sin versionarse.
+`pnpm b10:mediciones <archivo.json>` resume las observaciones registradas con la
+plantilla de `docs/evidencias/B10/`. No genera cifras cuando faltan mediciones.
 
 El workflow `.github/workflows/ci.yml` ejecuta ambas verificaciones en push y pull request.
 Su ejecución remota requiere publicar el repositorio en GitHub; los resultados locales
