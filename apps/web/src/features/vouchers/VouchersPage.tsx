@@ -10,10 +10,11 @@ import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { Button } from "../../shared/ui/Button";
 import { Feedback } from "../../shared/ui/Feedback";
 import { InputField, SelectField } from "../../shared/ui/Field";
-import { RecordForm } from "../configuration/RecordForm";
+import { VoucherForm } from "./VoucherForm";
+import { studentRow } from "../persons/student";
 import { StudentPicker } from "../persons/StudentPicker";
 import { VoucherDetail } from "./VoucherDetail";
-import { voucherResource, voucherStates } from "./model";
+import { voucherStates } from "./model";
 export function VouchersPage({ query }: { query: URLSearchParams }) {
   const serialized = query.toString();
   const { data, loading, error, reload } = useApiQuery<Page>(
@@ -33,11 +34,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
       const id = query.get("estudianteId");
       if (id) {
         const row = await api<Row>(`estudiantes/${id}`);
-        select({
-          ...row,
-          nombres: text(row, "persona.nombres"),
-          apellido_paterno: text(row, "persona.apellido_paterno"),
-        });
+        select(studentRow(row));
       }
       create(true);
     } catch (e) {
@@ -222,21 +219,13 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
         <StudentPicker onClose={() => create(false)} onSelect={select} />
       )}
       {creating && student && (
-        <RecordForm
-          resource={{
-            ...voucherResource,
-            description: `${voucherResource.description} Estudiante: ${text(student, "nombres")} ${text(student, "apellido_paterno")} · ${text(student, "codigo_estudiante")}.`,
-          }}
-          lookups={{}}
+        <VoucherForm
+          student={student}
           onClose={() => {
             create(false);
             select(null);
           }}
-          onSave={async (body) => {
-            await api("vouchers", {
-              method: "POST",
-              body: { ...body, estudianteId: String(student.id) },
-            });
+          onSaved={() => {
             create(false);
             select(null);
             notify("Voucher registrado, pendiente de revisión.");

@@ -4,6 +4,7 @@ export const enrollmentSchema: SchemaObject = {
   type: 'object',
   properties: {
     id,
+    clave_solicitud: { type: 'string', format: 'uuid', nullable: true },
     codigo: {
       type: 'string',
       description: 'MAT-NroDocumento-Correlativo global de matrícula',
