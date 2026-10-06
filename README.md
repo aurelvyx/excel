@@ -26,7 +26,10 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 - **B10:** verificación ampliada de matrícula, informe automático, diez casos
   sintéticos, instrumento de medición y registro de plantillas con mapas comunes.
   Los tiempos observados y la aprobación institucional de los formatos siguen pendientes.
-- Asistencia, notas y reportes se desarrollan en historias posteriores.
+- **B11:** programación de fechas de clase por grupo, horario opcional y confirmación;
+  permisos docentes, rango del periodo, duplicados y auditoría en API, BD e interfaz.
+- Marcas y cálculos de asistencia, justificaciones, cierres, notas y reportes se
+  desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -39,6 +42,7 @@ Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
 Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matriculas.md).
 Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asistente-matricula.md).
 Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas](docs/B10-verificacion-matricula.md).
+Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-clase.md).
 
 ## Instalación desde cero
 
@@ -121,7 +125,7 @@ pnpm test:db
 local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
-Incluye el recorrido React–API–PostgreSQL de B05 con Chromium. En Linux/CI, instalar
+Incluye recorridos React–API–PostgreSQL de configuración, matrícula y sesiones con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 `pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra
@@ -145,10 +149,10 @@ no se presentan como una ejecución ya realizada en GitHub Actions.
 apps/api/src/
   database/             Configuración, migraciones y carga sintética
   health/               Estado técnico de la API y PostgreSQL
-  modules/              Auth, usuarios, control, oferta académica y personas
+  modules/              Auth, usuarios, control, oferta, personas, matrículas y asistencia
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
-  features/             Acceso y configuración; otras funciones reservadas
+  features/             Acceso, configuración, estudiantes, vouchers, matrícula y sesiones
   shared/               Cliente API, navegación y diálogos
 packages/contracts/     Reservado para contratos compartidos
 infra/

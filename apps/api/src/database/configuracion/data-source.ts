@@ -9,8 +9,11 @@ import { Historial1790208004000 } from '../migraciones/1790208004000-historial.j
 import { Vouchers1790208005000 } from '../migraciones/1790208005000-vouchers.js';
 import { Matriculas1790208006000 } from '../migraciones/1790208006000-matriculas.js';
 import { SolicitudReintento1790208007000 } from '../migraciones/1790208007000-solicitud-reintento.js';
+import { Sesiones1790208008000 } from '../migraciones/1790208008000-sesiones.js';
 
-export function databaseOptions(env: NodeJS.ProcessEnv = process.env): DataSourceOptions {
+export function databaseOptions(
+  env: NodeJS.ProcessEnv = process.env,
+): DataSourceOptions {
   return {
     type: 'postgres',
     ...databaseEnvironment(env),
@@ -19,7 +22,17 @@ export function databaseOptions(env: NodeJS.ProcessEnv = process.env): DataSourc
     migrationsTransactionMode: 'all',
     migrationsTableName: 'migraciones',
     entities: [],
-    migrations: [Identidad1790208000000, OfertaAcademica1790208001000, RolesIniciales1790208002000, AccesoAuditoria1790208003000, Historial1790208004000, Vouchers1790208005000, Matriculas1790208006000, SolicitudReintento1790208007000],
+    migrations: [
+      Identidad1790208000000,
+      OfertaAcademica1790208001000,
+      RolesIniciales1790208002000,
+      AccesoAuditoria1790208003000,
+      Historial1790208004000,
+      Vouchers1790208005000,
+      Matriculas1790208006000,
+      SolicitudReintento1790208007000,
+      Sesiones1790208008000,
+    ],
     logging: false,
   };
 }

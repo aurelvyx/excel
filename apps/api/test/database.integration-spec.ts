@@ -39,7 +39,7 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('migra desde cero, siembra cuatro roles y no repite migraciones', async () => {
-    expect(await source.runMigrations()).toHaveLength(8);
+    expect(await source.runMigrations()).toHaveLength(9);
     expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(26);
     expect(await source.query('SELECT codigo FROM roles ORDER BY codigo')).toEqual([
       { codigo: 'ADMIN' }, { codigo: 'COORDINADOR' }, { codigo: 'DOCENTE' }, { codigo: 'SECRETARIA' },
@@ -48,12 +48,12 @@ describe('B02 sobre PostgreSQL real', () => {
     expect(await source.query('SELECT * FROM usuarios')).toEqual([]);
   });
 
-  it('revierte las seis migraciones y las reaplica desde limpio', async () => {
-    for (let i = 0; i < 8; i++) await source.undoLastMigration();
+  it('revierte las nueve migraciones y las reaplica desde limpio', async () => {
+    for (let i = 0; i < 9; i++) await source.undoLastMigration();
     expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`))
       .toEqual([{ tablename: 'migraciones' }]);
     expect(await source.query('SELECT * FROM migraciones')).toEqual([]);
-    expect(await source.runMigrations()).toHaveLength(8);
+    expect(await source.runMigrations()).toHaveLength(9);
   });
 
   it('un conflicto en la carga sintética no deja datos parciales', async () => {
@@ -162,6 +162,7 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('revertir roles asignados falla y conserva los datos e historial', async () => {
+    await source.undoLastMigration(); // Fechas de sesiones B11.
     await source.undoLastMigration(); // Reintentos B09 sin matrículas.
     await source.undoLastMigration(); // Protección B08 sin matrículas.
     await source.undoLastMigration(); // Protección B07 sin vouchers.
@@ -170,7 +171,7 @@ describe('B02 sobre PostgreSQL real', () => {
     await expect(source.undoLastMigration()).rejects.toMatchObject({ driverError: { code: '23001' } });
     expect(await source.query('SELECT * FROM roles')).toHaveLength(4);
     expect(await source.query('SELECT * FROM migraciones')).toHaveLength(3);
-    expect(await source.runMigrations()).toHaveLength(5);
+    expect(await source.runMigrations()).toHaveLength(6);
   });
 
   it('rechaza revertir tablas que contienen datos', async () => {

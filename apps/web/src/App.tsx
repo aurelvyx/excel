@@ -9,6 +9,7 @@ import { errorText } from "./shared/api";
 import { StudentsPage } from "./features/students/StudentsPage";
 import { VouchersPage } from "./features/vouchers/VouchersPage";
 import { EnrollmentsPage } from "./features/enrollments/EnrollmentsPage";
+import { SessionsPage } from "./features/attendance/SessionsPage";
 
 export default function App() {
   return (
@@ -146,7 +147,9 @@ function Workspace() {
                     ? "Vouchers"
                     : path.startsWith("/matriculas")
                       ? "Matrículas"
-                      : (resource?.title ?? "Página")}
+                      : path.startsWith("/asistencia/grupos/")
+                        ? "Sesiones de clase"
+                        : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -262,6 +265,8 @@ function Workspace() {
               id={path.split("/")[2]}
               studentId={query.get("estudianteId") ?? undefined}
             />
+          ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
+            <SessionsPage key={path} id={path.split("/")[3]} query={query} />
           ) : allowed ? (
             <ResourcePage
               key={`${path}:${session.user.roles.join(",")}`}

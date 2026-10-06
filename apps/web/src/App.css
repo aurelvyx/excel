@@ -336,16 +336,16 @@
 .required-marker::after {
   content: " *";
 }
-.student-facts {
+.facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 18px;
 }
-.student-facts dt {
+.facts dt {
   color: #53665a;
   font-size: 0.85rem;
 }
-.student-facts dd {
+.facts dd {
   margin: 5px 0 0;
   overflow-wrap: anywhere;
 }
@@ -751,6 +751,21 @@ dialog::backdrop {
   height: 18px;
   margin-top: 4px;
   flex-shrink: 0;
+}
+.session-dates {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  max-height: 240px;
+  overflow: auto;
+}
+.session-dates li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #e3e9e1;
 }
 @media (max-width: 650px) {
   .wizard-steps {

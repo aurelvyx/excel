@@ -1,4 +1,6 @@
 import { DataSource } from 'typeorm';
+import { checkMigrationReversal } from './migration-test.js';
+import { SolicitudReintento1790208007000 } from '../src/database/migraciones/1790208007000-solicitud-reintento.js';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -266,9 +268,9 @@ describe('B08 matrícula HTTP y PostgreSQL', () => {
         results[0].id,
       ]),
     ).rejects.toThrow();
-    await expect(source.undoLastMigration()).rejects.toThrow(
-      'historial persistido',
-    );
+    await expect(
+      checkMigrationReversal(source, new SolicitudReintento1790208007000()),
+    ).rejects.toThrow('historial persistido');
   });
   it.each([true, false])(
     'activaciones concurrentes no duplican matrícula (mismo voucher: %s)',

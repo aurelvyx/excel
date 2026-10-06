@@ -304,6 +304,9 @@ export function ResourcePage({
               className: "row-actions",
               cell: (row) => (
                 <>
+                  {resource.key === "grupos" && (
+                    <a href={`#/asistencia/grupos/${row.id}`}>Sesiones</a>
+                  )}
                   {admin ? (
                     <>
                       <Button
