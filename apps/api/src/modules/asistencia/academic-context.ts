@@ -23,6 +23,8 @@ export type AcademicGroup = Record<string, unknown> & {
 };
 export const sessionColumns =
   'id,grupo_id,fecha::text,hora_inicio::text,hora_fin::text,estado,creado_por';
+export const academicDateSql =
+  "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date";
 
 /** Contexto académico consistente para programación y registro, sin ampliar el alcance del actor. */
 export async function loadAcademicGroup(
@@ -53,8 +55,6 @@ export async function loadClassSession(
   return session;
 }
 export async function academicDate(manager: EntityManager): Promise<string> {
-  const [row] = await manager.query(
-    "SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date::text AS fecha",
-  );
+  const [row] = await manager.query(`SELECT ${academicDateSql}::text AS fecha`);
   return row.fecha as string;
 }

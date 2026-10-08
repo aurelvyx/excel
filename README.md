@@ -30,7 +30,10 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   permisos docentes, rango del periodo, duplicados y auditoría en API, BD e interfaz.
 - **B12:** matriz de asistencia P/F/T/J por sesión, registro masivo y correcciones
   con versiones, conservación de intentos, permisos y auditoría transaccional.
-- Cálculos de asistencia, justificaciones, cierres, notas y reportes se
+- **B13:** cálculo por intento de tardanzas, faltas computables y porcentaje exacto,
+  condición por límite del 30 %, resúmenes compartidos en matriz e historial y
+  distinción de marcas pendientes y justificaciones provisionales.
+- Justificaciones, cierres, notas y reportes se
   desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
@@ -46,6 +49,7 @@ Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asiste
 Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas](docs/B10-verificacion-matricula.md).
 Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-clase.md).
 Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-registro-asistencia.md).
+Para consultar los cálculos, consulta [B13: faltas e inasistencia](docs/B13-calculo-asistencia.md).
 
 ## Instalación desde cero
 

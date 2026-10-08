@@ -118,7 +118,7 @@ export class StudentsController {
   @Get(':id/historial')
   @ApiOperation({
     summary:
-      'Intentos separados por nivel y periodo; sin recalcular resultados',
+      'Intentos separados por nivel y periodo, resumen actual de asistencia y resultados académicos conservados',
   })
   @ApiQuery({ name: 'after', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })

@@ -5,6 +5,7 @@ import { authorize } from '../auth/authorization.js';
 import type { Identity } from '../auth/access.js';
 import { page, validId } from '../../common/validation.js';
 import { StudentsService, studentReaders } from './students.service.js';
+import { AttendanceCalculationService } from '../asistencia/attendance-calculation.service.js';
 
 const context = `SELECT m.id,m.codigo,m.numero_intento,m.fecha_matricula::text AS fecha_matricula,m.estado,m.parametro_id,
   g.codigo AS grupo,g.id AS grupo_id,n.id AS nivel_id,n.nombre AS nivel,i.nombre AS idioma,
@@ -21,6 +22,8 @@ export class StudentHistoryService {
   constructor(
     @InjectDataSource() private readonly source: DataSource,
     @Inject(StudentsService) private readonly students: StudentsService,
+    @Inject(AttendanceCalculationService)
+    private readonly calculation: AttendanceCalculationService,
   ) {}
   async list(actor: Identity, id: string, query: Record<string, unknown>) {
     validId(id);
@@ -50,8 +53,15 @@ export class StudentHistoryService {
         [id],
       );
       const items = rows.slice(0, limit);
+      const summaries = await this.calculation.summaries(
+        manager,
+        items.map((row) => row.id),
+      );
       return {
-        items,
+        items: items.map((row) => ({
+          ...row,
+          resumenAsistencia: summaries.get(row.id)!,
+        })),
         nextCursor: rows.length > limit ? items.at(-1)!.id : null,
         opciones: options,
       };
@@ -70,15 +80,18 @@ export class StudentHistoryService {
         throw new NotFoundException(
           'Intento no encontrado para este estudiante',
         );
-      const asistencias = await manager.query(
-        `SELECT s.id,s.fecha::text AS fecha,s.estado,a.codigo FROM sesiones_clase s LEFT JOIN asistencias a ON a.sesion_id=s.id AND a.matricula_id=$1 WHERE s.grupo_id=$2 ORDER BY s.fecha,s.id`,
-        [attemptId, attempt.grupo_id],
-      );
+      const asistencias = await this.calculation.details(manager, attemptId);
+      const summaries = await this.calculation.summaries(manager, [attemptId]);
       const notas = await manager.query(
         `SELECT i.id,e.nombre AS evaluacion,i.codigo,i.descripcion,i.activo,c.nota::text AS nota FROM indicadores_evaluacion i JOIN evaluaciones e ON e.id=i.evaluacion_id LEFT JOIN calificaciones c ON c.indicador_id=i.id AND c.matricula_id=$1 WHERE i.grupo_id=$2 ORDER BY e.orden,e.id,i.orden,i.id`,
         [attemptId, attempt.grupo_id],
       );
-      return { ...attempt, asistencias, notas };
+      return {
+        ...attempt,
+        resumenAsistencia: summaries.get(attemptId)!,
+        asistencias,
+        notas,
+      };
     });
   }
 }

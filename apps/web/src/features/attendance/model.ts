@@ -41,6 +41,34 @@ export type AttendanceRecord = {
   registrado_at: string;
   actualizado_at: string | null;
 };
+export type AttendanceSummaryData = {
+  estado:
+    "NO_APLICA" | "SIN_SESIONES" | "INCOMPLETO" | "PROVISIONAL" | "CALCULADO";
+  sesionesComputables: number;
+  presentes: number;
+  faltas: number;
+  tardanzas: number;
+  justificadas: number;
+  marcasPendientes: number;
+  faltasPorTardanzas: number;
+  tardanzasRestantes: number;
+  justificadasPendientes: number;
+  justificadasRecuperadas: number;
+  justificadasComputables: number;
+  faltasConfirmadas: number;
+  faltasComputables: number;
+  inasistenciaPct: string | null;
+  excedeLimite: boolean | null;
+  condicion: "DENTRO_LIMITE" | "RETIRADO_INASISTENCIA" | null;
+  reglas: {
+    parametroId: string;
+    version: number;
+    inasistenciaMaxPct: string;
+    tardanzasPorFalta: number;
+  };
+  cierreConfirmado: boolean;
+  criterioSesiones: "REALIZADAS_DEL_GRUPO_HASTA_HOY";
+};
 export type AttendanceRow = {
   matricula_id: string;
   codigo_matricula: string;
@@ -52,6 +80,7 @@ export type AttendanceRow = {
   estado_matricula: string;
   editable: boolean;
   asistencia: Omit<AttendanceRecord, "matricula_id"> | null;
+  resumenAsistencia: AttendanceSummaryData;
 };
 export type AttendancePageData = {
   items: AttendanceRow[];

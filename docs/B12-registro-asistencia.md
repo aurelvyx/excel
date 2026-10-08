@@ -3,8 +3,8 @@
 Sprint 3. Trazabilidad: **B12, RF29, registro y corrección de RF30, CU11 parcial,
 UI06, RN11 y RN27**. Fuentes: backlog, catálogo de requisitos, casos de uso,
 modelo de datos, arquitectura y prototipos de interfaz del repositorio.
-El recálculo asociado a RF30 se implementará con B13; B12 no produce resultados
-académicos ni porcentajes oficiales.
+El recálculo asociado a RF30 se implementa en [B13](B13-calculo-asistencia.md);
+el registro B12 no produce resultados académicos ni cierra actas.
 
 ## Comportamiento y permisos
 
@@ -89,8 +89,9 @@ API documentada en `/api/docs` y `/api/openapi.json`:
   Cada fila identifica matrícula, estudiante, documento, número de intento, estado,
   permiso de edición y una marca `asistencia` o `null`. El cursor es el último ID de
   matrícula, con orden estable y sin repetir intentos.
-- `PATCH` sobre la misma ruta devuelve `{items, sesion}` con las marcas guardadas,
-  nuevas versiones y estado actualizado de la sesión.
+- `PATCH` sobre la misma ruta devuelve `{items, sesion, resumenes}` con las marcas
+  guardadas, nuevas versiones, estado actualizado y resúmenes por intento de B13.
+  B13 también añade `resumenAsistencia` en cada fila de `GET`.
 
 ```json
 {
@@ -167,9 +168,10 @@ el nuevo flujo allí. La revisión de una persona del equipo y su aceptación si
 pendientes. No se realizó un piloto institucional ni se ejecutó remotamente
 GitHub Actions durante esta implementación.
 
-**B13** incorporará sesiones computables, tardanzas, faltas y límite del 30 %;
+**B13** incorpora sesiones computables, tardanzas, faltas y límite del 30 %;
 **B14**, el proceso de resolución y recuperación de `J`; **B15**, cierres y
 correcciones posteriores. Registrar `J` en B12 conserva la marca y no aprueba una
-justificación, descuenta faltas ni determina una condición académica.
+justificación ni descuenta faltas confirmadas. B13 la incluye provisionalmente y
+mantiene la condición pendiente hasta que se resuelva.
 
 Decisiones técnicas: [ADR-007](decisiones/ADR-007-registro-asistencia.md).
