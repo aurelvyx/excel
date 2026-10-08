@@ -1,5 +1,6 @@
 import type { SchemaObject } from '@nestjs/swagger';
 import { personSchema } from './person.schema.js';
+import { attendanceSummarySchema } from '../asistencia/attendance-calculation.schema.js';
 const text: SchemaObject = { type: 'string' };
 export const studentSchema: SchemaObject = {
   type: 'object',
@@ -53,6 +54,7 @@ export const attemptSchema: SchemaObject = {
     ]),
   ),
 };
+attemptSchema.properties!.resumenAsistencia = attendanceSummarySchema;
 attemptSchema.properties!.resultado = {
   type: 'object',
   nullable: true,
@@ -80,6 +82,11 @@ export const attemptDetailSchema: SchemaObject = {
           fecha: { type: 'string', format: 'date' },
           estado: text,
           codigo: { ...text, nullable: true, enum: ['P', 'F', 'T', 'J'] },
+          computable: {
+            type: 'boolean',
+            description:
+              'La sesión entra en el denominador del resumen de asistencia.',
+          },
         },
       },
     },

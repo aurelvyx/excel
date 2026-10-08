@@ -1,6 +1,7 @@
 import type { SchemaObject } from '@nestjs/swagger';
 import { pageSchema } from '../../common/http-schema.js';
 import { academicGroupSchema, sessionSchema } from './sessions.schema.js';
+import { attendanceSummarySchema } from './attendance-calculation.schema.js';
 const text: SchemaObject = { type: 'string' };
 export const attendanceSchema: SchemaObject = {
   type: 'object',
@@ -39,6 +40,7 @@ const rosterSchema: SchemaObject = {
     'estado_matricula',
     'editable',
     'asistencia',
+    'resumenAsistencia',
   ],
   properties: {
     matricula_id: text,
@@ -51,6 +53,7 @@ const rosterSchema: SchemaObject = {
     estado_matricula: { ...text, enum: ['ACTIVA', 'CERRADA', 'ANULADA'] },
     editable: { type: 'boolean' },
     asistencia: { ...attendanceSchema, nullable: true },
+    resumenAsistencia: attendanceSummarySchema,
   },
 };
 export const attendancePageSchema: SchemaObject = {
@@ -73,9 +76,20 @@ export const attendancePageSchema: SchemaObject = {
 };
 export const savedAttendanceSchema: SchemaObject = {
   type: 'object',
-  required: ['items', 'sesion'],
+  required: ['items', 'sesion', 'resumenes'],
   properties: {
     items: { type: 'array', items: attendanceSchema },
     sesion: sessionSchema,
+    resumenes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['matriculaId', 'resumenAsistencia'],
+        properties: {
+          matriculaId: text,
+          resumenAsistencia: attendanceSummarySchema,
+        },
+      },
+    },
   },
 };

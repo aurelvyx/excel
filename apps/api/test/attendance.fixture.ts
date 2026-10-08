@@ -36,9 +36,13 @@ export async function attendanceFixture(
 ) {
   if (
     process.env.NODE_ENV !== 'test' ||
-    !/^excel_attendance(_web)?_test$/.test(process.env.DB_NAME ?? '')
+    !/^excel_attendance(_calculation)?(_web)?_test$/.test(
+      process.env.DB_NAME ?? '',
+    )
   )
-    throw new Error('El fixture B12 requiere una base aislada de pruebas');
+    throw new Error(
+      'El fixture de asistencia requiere una base aislada de pruebas',
+    );
   await seedDemo(source);
   const [teacher] = (await source.query(
     "SELECT id,persona_id FROM docentes WHERE codigo_docente='DEMO-DOC-001'",
@@ -135,6 +139,7 @@ export async function attendanceFixture(
     g: AttendanceFixtureGroup,
     owner: AttendanceFixtureStudent,
     state: 'ACTIVA' | 'PENDIENTE' | 'CERRADA' | 'ANULADA' = 'ACTIVA',
+    parametroId = parameter!.id,
   ): Promise<AttendanceFixtureEnrollment> {
     const code = unique();
     const [attempt] = (await source.query(
@@ -158,7 +163,7 @@ export async function attendanceFixture(
         g.id,
         g.nivel_id,
         voucherId,
-        parameter!.id,
+        parametroId,
         attempt!.n,
         dates!.ayer,
         state,

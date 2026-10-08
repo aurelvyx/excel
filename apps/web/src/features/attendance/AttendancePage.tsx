@@ -13,6 +13,7 @@ import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { GroupContext } from "./GroupContext";
+import { AttendanceSummary } from "./AttendanceSummary";
 import {
   attendanceCodes,
   sessionDate,
@@ -22,6 +23,7 @@ import {
   type AttendancePageData,
   type AttendanceRecord,
   type AttendanceRow,
+  type AttendanceSummaryData,
   type ClassSession,
 } from "./model";
 
@@ -49,6 +51,7 @@ export function AttendancePage({
         initial={data}
         path={path}
         endpoint={endpoint}
+        queryPath={`${endpoint}?${search}`}
         after={after}
         reload={reload}
       />
@@ -87,28 +90,33 @@ function AttendanceMatrix({
   initial,
   path,
   endpoint,
+  queryPath,
   after,
   reload,
 }: {
   initial: AttendancePageData;
   path: string;
   endpoint: string;
+  queryPath: string;
   after: string;
   reload: () => void;
 }) {
-  const [rows, setRows] = useState(initial.items);
-  const [session, setSession] = useState(initial.sesion);
+  const [snapshot, setSnapshot] = useState(initial);
+  const rows = snapshot.items;
+  const session = snapshot.sesion;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [issues, setIssues] = useState<Record<string, string>>({});
   const [error, fail] = useState("");
   const [success, notify] = useState("");
   const [conflict, setConflict] = useState(false);
   const [busy, pending] = useState(false);
+  const [summaryCurrent, setSummaryCurrent] = useState(true);
+  const [summaryError, failSummary] = useState("");
   const saving = useRef(false);
   const changedRows = Object.keys(drafts).length;
   const dirty = changedRows > 0;
   const guard = useUnsavedChanges(dirty, busy);
-  const canEdit = initial.puedeEditar;
+  const canEdit = snapshot.puedeEditar;
   function change(row: AttendanceRow, patch: Partial<Draft>) {
     notify("");
     setIssues((old) => ({ ...old, [row.matricula_id]: "" }));
@@ -157,6 +165,10 @@ function AttendanceMatrix({
       const response = await api<{
         items: AttendanceRecord[];
         sesion: ClassSession;
+        resumenes: {
+          matriculaId: string;
+          resumenAsistencia: AttendanceSummaryData;
+        }[];
       }>(endpoint, {
         method: "PATCH",
         body: {
@@ -171,19 +183,47 @@ function AttendanceMatrix({
       const saved = new Map(
         response.items.map((item) => [item.matricula_id, item]),
       );
-      setRows((old) =>
-        old.map((row) =>
+      const summaries = new Map(
+        (response.resumenes ?? []).map((item) => [
+          item.matriculaId,
+          item.resumenAsistencia,
+        ]),
+      );
+      setSnapshot((old) => ({
+        ...old,
+        sesion: response.sesion,
+        items: old.items.map((row) =>
           saved.has(row.matricula_id)
-            ? { ...row, asistencia: saved.get(row.matricula_id)! }
+            ? {
+                ...row,
+                asistencia: saved.get(row.matricula_id)!,
+                resumenAsistencia:
+                  summaries.get(row.matricula_id) ?? row.resumenAsistencia,
+              }
             : row,
         ),
-      );
-      setSession(response.sesion);
+      }));
       setDrafts({});
       notify("Asistencia guardada.");
+      setSummaryCurrent(false);
+      failSummary("");
+      // Una clase recién realizada cambia el denominador de todas las matrículas,
+      // incluso de las filas que no se enviaron en este guardado.
+      try {
+        const current = await api<AttendancePageData>(queryPath);
+        setSnapshot(current);
+        setSummaryCurrent(true);
+      } catch {
+        failSummary(
+          "La asistencia se guardó, pero no se pudo actualizar el resumen. Recarga la asistencia para consultar los cálculos vigentes.",
+        );
+      }
     } catch (e) {
       fail(errorText(e));
-      if (e instanceof ApiError && e.status === 409) setConflict(true);
+      if (e instanceof ApiError && e.status === 409) {
+        setConflict(true);
+        setSummaryCurrent(false);
+      }
     } finally {
       saving.current = false;
       pending(false);
@@ -191,11 +231,11 @@ function AttendanceMatrix({
   }
   return (
     <section>
-      <a href={`#/asistencia/grupos/${initial.grupo.id}`}>
+      <a href={`#/asistencia/grupos/${snapshot.grupo.id}`}>
         ← Volver a sesiones
       </a>
       <AttendanceHeading />
-      <GroupContext group={initial.grupo} />
+      <GroupContext group={snapshot.grupo} />
       <section
         className="panel enrollment-context"
         aria-label="Sesión seleccionada"
@@ -211,7 +251,7 @@ function AttendanceMatrix({
       {!canEdit && (
         <p className="readonly">
           Solo lectura ·{" "}
-          {initial.motivoSoloLectura ??
+          {snapshot.motivoSoloLectura ??
             "Tu cuenta puede consultar la asistencia de esta sesión."}
         </p>
       )}
@@ -222,6 +262,7 @@ function AttendanceMatrix({
         </p>
       )}
       <Feedback tone="success">{success}</Feedback>
+      <Feedback tone="notice">{summaryError}</Feedback>
       <Feedback>{error}</Feedback>
       {conflict && (
         <p className="notice">
@@ -229,6 +270,11 @@ function AttendanceMatrix({
           registros vigentes antes de continuar.
         </p>
       )}
+      <p className="help">
+        Resumen de asistencia guardada por intento: incluye las sesiones
+        realizadas del grupo hasta hoy en Lima. Las programadas y canceladas no
+        computan. Los cambios sin guardar no modifican este resumen.
+      </p>
       <ListPanel
         loading={false}
         loadingLabel="Cargando asistencia…"
@@ -264,7 +310,7 @@ function AttendanceMatrix({
           <Pagination
             count={rows.length}
             after={after}
-            nextCursor={initial.nextCursor}
+            nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
                 () => navigate(cursor ? `${path}?after=${cursor}` : path),
@@ -365,8 +411,22 @@ function AttendanceMatrix({
                 ),
             },
             {
+              key: "resumen",
+              header: "Resumen del intento",
+              className: "attendance-calculation",
+              cell: (row) => (
+                <AttendanceSummary
+                  summary={row.resumenAsistencia}
+                  label={`Resumen de asistencia de ${row.estudiante}`}
+                  compact
+                  stale={!summaryCurrent}
+                />
+              ),
+            },
+            {
               key: "registro",
               header: "Registro",
+              className: "attendance-status",
               cell: (row) =>
                 drafts[row.matricula_id]
                   ? "Sin guardar"

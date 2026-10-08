@@ -7,7 +7,13 @@ import { Button } from "../../shared/ui/Button";
 import { useState } from "react";
 import { api, errorText, text, type Page, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
-type HistoryPage = Page & { opciones: Row[] };
+import { AttendanceSummary } from "../attendance/AttendanceSummary";
+import type { AttendanceSummaryData } from "../attendance/model";
+type HistoryRow = Row & { resumenAsistencia?: AttendanceSummaryData };
+type HistoryPage = Omit<Page, "items"> & {
+  items: HistoryRow[];
+  opciones: Row[];
+};
 const condition: Record<string, string> = {
   APROBADO: "Aprobado",
   DESAPROBADO: "Desaprobado",
@@ -15,7 +21,9 @@ const condition: Record<string, string> = {
 };
 function Result({ row }: { row: Row }) {
   const result = row.resultado as Record<string, unknown> | null;
-  return result ? (
+  if (!result) return <p>Resultado pendiente de cálculo.</p>;
+  const attendanceLabel = `Asistencia del resultado ${result.confirmadoAt ? "confirmado" : "provisional"}`;
+  return (
     <div className="notice">
       <p>
         {result.confirmadoAt ? "Resultado confirmado" : "Resultado provisional"}
@@ -23,18 +31,24 @@ function Result({ row }: { row: Row }) {
       </p>
       <p>
         Promedio: {text(result, "promedio") || "Pendiente"} · Nota oficial:{" "}
-        {text(result, "notaOficial") || "Pendiente"} · Inasistencia:{" "}
-        {result.inasistenciaPct == null
-          ? "Pendiente"
-          : `${text(result, "inasistenciaPct")} %`}
+        {text(result, "notaOficial") || "Pendiente"}
       </p>
-      <p>
-        Tardanzas: {text(result, "tardanzas")} · Faltas equivalentes:{" "}
-        {text(result, "faltasEquivalentes")}
-      </p>
+      <section aria-label={attendanceLabel}>
+        <p>
+          <strong>{attendanceLabel}</strong>
+        </p>
+        <p>
+          Inasistencia:{" "}
+          {result.inasistenciaPct == null
+            ? "Pendiente"
+            : `${text(result, "inasistenciaPct").replace(".", ",")} %`}
+        </p>
+        <p>
+          Tardanzas: {text(result, "tardanzas") || "Pendiente"} · Faltas
+          equivalentes: {text(result, "faltasEquivalentes") || "Pendiente"}
+        </p>
+      </section>
     </div>
-  ) : (
-    <p>Resultado pendiente de cálculo.</p>
   );
 }
 export function StudentHistory({
@@ -48,7 +62,7 @@ export function StudentHistory({
   const [periodo, setPeriodo] = useState("");
   const [after, setAfter] = useState("");
   const [actionError, fail] = useState("");
-  const [detail, setDetail] = useState<Row | null>(null);
+  const [detail, setDetail] = useState<HistoryRow | null>(null);
   const [opening, open] = useState(false);
   const query = new URLSearchParams({ limit: "20" });
   if (nivel) query.set("nivelId", nivel);
@@ -66,7 +80,7 @@ export function StudentHistory({
     open(true);
     fail("");
     try {
-      setDetail(await api<Row>(`estudiantes/${id}/historial/${row.id}`));
+      setDetail(await api<HistoryRow>(`estudiantes/${id}/historial/${row.id}`));
     } catch (e) {
       fail(errorText(e));
     } finally {
@@ -178,6 +192,18 @@ export function StudentHistory({
                   ),
                 },
                 {
+                  key: "asistencia",
+                  header: "Resumen de asistencia",
+                  className: "attendance-calculation",
+                  cell: (row) => (
+                    <AttendanceSummary
+                      summary={row.resumenAsistencia}
+                      label={`Resumen de asistencia del intento ${text(row, "numero_intento")}`}
+                      compact
+                    />
+                  ),
+                },
+                {
                   key: "resultado",
                   header: "Resultado",
                   cell: (row) => <Result row={row} />,
@@ -224,6 +250,10 @@ export function StudentHistory({
             Matrícula {text(detail, "codigo")} · {text(detail, "estado")}
           </p>
           <Result row={detail} />
+          <AttendanceSummary
+            summary={detail.resumenAsistencia}
+            label="Resumen de asistencia guardada"
+          />
           <h3>Asistencia registrada</h3>
           <p className="muted">
             P: presente · F: falta · T: tardanza · J: justificación. Las marcas
@@ -244,6 +274,11 @@ export function StudentHistory({
                 key: "sesion",
                 header: "Sesión",
                 cell: (row) => text(row, "estado"),
+              },
+              {
+                key: "computable",
+                header: "Computa en asistencia",
+                cell: (row) => (row.computable ? "Sí" : "No"),
               },
               {
                 key: "marca",
