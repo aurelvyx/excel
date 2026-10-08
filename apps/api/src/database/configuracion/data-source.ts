@@ -10,6 +10,7 @@ import { Vouchers1790208005000 } from '../migraciones/1790208005000-vouchers.js'
 import { Matriculas1790208006000 } from '../migraciones/1790208006000-matriculas.js';
 import { SolicitudReintento1790208007000 } from '../migraciones/1790208007000-solicitud-reintento.js';
 import { Sesiones1790208008000 } from '../migraciones/1790208008000-sesiones.js';
+import { Asistencia1790208009000 } from '../migraciones/1790208009000-asistencia.js';
 
 export function databaseOptions(
   env: NodeJS.ProcessEnv = process.env,
@@ -32,6 +33,7 @@ export function databaseOptions(
       Matriculas1790208006000,
       SolicitudReintento1790208007000,
       Sesiones1790208008000,
+      Asistencia1790208009000,
     ],
     logging: false,
   };

@@ -78,3 +78,5 @@ export const sessionsPageSchema: SchemaObject = {
     },
   },
 };
+export const academicGroupSchema = sessionsPageSchema.properties!
+  .grupo as SchemaObject;

@@ -30,6 +30,43 @@ export type SessionsPageData = {
   grupo: SessionGroup;
   puedeProgramar: boolean;
 };
+export type AttendanceCode = "P" | "F" | "T" | "J";
+export type AttendanceRecord = {
+  id: string;
+  matricula_id: string;
+  codigo: AttendanceCode;
+  observacion: string | null;
+  version: number;
+  registrado_por: string;
+  registrado_at: string;
+  actualizado_at: string | null;
+};
+export type AttendanceRow = {
+  matricula_id: string;
+  codigo_matricula: string;
+  estudiante_id: string;
+  estudiante: string;
+  tipo_documento: string;
+  numero_documento: string;
+  numero_intento: number;
+  estado_matricula: string;
+  editable: boolean;
+  asistencia: Omit<AttendanceRecord, "matricula_id"> | null;
+};
+export type AttendancePageData = {
+  items: AttendanceRow[];
+  nextCursor: string | null;
+  grupo: SessionGroup;
+  sesion: ClassSession;
+  puedeEditar: boolean;
+  motivoSoloLectura: string | null;
+};
+export const attendanceCodes: Record<AttendanceCode, string> = {
+  P: "Presente",
+  F: "Falta",
+  T: "Tardanza",
+  J: "Falta justificada",
+};
 export const sessionStates: Record<ClassSession["estado"], string> = {
   PROGRAMADA: "Programada",
   REALIZADA: "Realizada",
