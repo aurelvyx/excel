@@ -31,6 +31,7 @@ import {
   type AttendanceCode,
 } from './attendance.policy.js';
 import type { SaveAttendanceDto } from './attendance.dto.js';
+import { AttendanceCalculationService } from './attendance-calculation.service.js';
 
 type Attendance = Record<string, unknown> & {
   id: string;
@@ -50,6 +51,8 @@ export class AttendanceService {
   constructor(
     @InjectDataSource() private readonly source: DataSource,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(AttendanceCalculationService)
+    private readonly calculation: AttendanceCalculationService,
   ) {}
 
   private async canWrite(
@@ -112,8 +115,15 @@ export class AttendanceService {
         [groupId, after, sessionId, limit + 1, reason === null],
       )) as RosterRow[];
       const items = rows.slice(0, limit);
+      const summaries = await this.calculation.summaries(
+        manager,
+        items.map((row) => row.matricula_id),
+      );
       return {
-        items,
+        items: items.map((row) => ({
+          ...row,
+          resumenAsistencia: summaries.get(row.matricula_id)!,
+        })),
         nextCursor: rows.length > limit ? items.at(-1)!.matricula_id : null,
         grupo: group,
         sesion: session,
@@ -236,7 +246,15 @@ export class AttendanceService {
         );
         items.push(saved!);
       }
-      return { items, sesion: session };
+      const summaries = await this.calculation.summaries(manager, ids);
+      return {
+        items,
+        sesion: session,
+        resumenes: ids.map((id) => ({
+          matriculaId: id,
+          resumenAsistencia: summaries.get(id)!,
+        })),
+      };
     });
   }
 }

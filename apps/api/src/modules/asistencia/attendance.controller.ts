@@ -31,7 +31,7 @@ import {
 import { sessionReaders } from './sessions.service.js';
 
 @Controller('asistencia/grupos/:grupoId/sesiones/:sesionId/asistencias')
-@ApiTags('Asistencia — B12')
+@ApiTags('Asistencia — B12/B13')
 @ApiCookieAuth(COOKIE_NAME)
 @ApiHeader({
   name: 'X-CSRF-Token',
@@ -49,7 +49,7 @@ export class AttendanceController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiOperation({
     summary:
-      'Consultar matriz por sesión, matrículas activas y marcas históricas; docente solo en su alcance',
+      'Consultar matriz y resumen de asistencia por intento; docente solo en su alcance',
   })
   list(
     @Req() req: AuthRequest,
@@ -72,7 +72,7 @@ export class AttendanceController {
   })
   @ApiOperation({
     summary:
-      'Guardar hasta 100 marcas P/F/T/J en una transacción; confirma clase realizada y conserva auditoría',
+      'Guardar hasta 100 marcas P/F/T/J y recalcular asistencia; confirma clase realizada y conserva auditoría',
   })
   save(
     @Req() req: AuthRequest,

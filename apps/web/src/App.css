@@ -787,9 +787,34 @@ dialog::backdrop {
 .attendance-observation {
   min-width: 260px;
 }
+.attendance-status {
+  white-space: nowrap;
+}
 .attendance-mark label,
 .attendance-observation label {
   margin-top: 0;
+}
+.attendance-calculation {
+  min-width: 280px;
+  max-width: 360px;
+}
+.attendance-summary p {
+  margin-bottom: 8px;
+}
+.attendance-summary .badge {
+  white-space: normal;
+}
+.attendance-summary details > summary {
+  cursor: pointer;
+  color: #1c6954;
+  margin: 12px 0;
+}
+.attendance-summary.compact .facts {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.attendance-summary:not(.compact) {
+  margin: 24px 0;
 }
 @media (max-width: 650px) {
   .wizard-steps {
