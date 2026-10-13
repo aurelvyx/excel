@@ -33,8 +33,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 - **B13:** cálculo por intento de tardanzas, faltas computables y porcentaje exacto,
   condición por límite del 30 %, resúmenes compartidos en matriz e historial y
   distinción de marcas pendientes y justificaciones provisionales.
-- Justificaciones, cierres, notas y reportes se
-  desarrollan en historias posteriores.
+- **B14:** registro, resolución y recuperación de justificaciones por grupo, con
+  responsables, fechas, versiones, historial y recálculo transaccional de asistencia.
+- Cierres, notas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -50,6 +51,7 @@ Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas
 Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-clase.md).
 Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-registro-asistencia.md).
 Para consultar los cálculos, consulta [B13: faltas e inasistencia](docs/B13-calculo-asistencia.md).
+Para gestionar solicitudes, consulta [B14: justificaciones y recuperación](docs/B14-justificaciones.md).
 
 ## Instalación desde cero
 
@@ -132,7 +134,8 @@ pnpm test:db
 local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
-Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones y asistencia con Chromium. En Linux/CI, instalar
+Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones,
+asistencia y justificaciones con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 `pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra

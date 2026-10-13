@@ -80,6 +80,8 @@ export type AttendanceRow = {
   estado_matricula: string;
   editable: boolean;
   asistencia: Omit<AttendanceRecord, "matricula_id"> | null;
+  justificacionId: string | null;
+  justificacionEstado: string | null;
   resumenAsistencia: AttendanceSummaryData;
 };
 export type AttendancePageData = {

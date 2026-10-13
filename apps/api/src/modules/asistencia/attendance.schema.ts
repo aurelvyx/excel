@@ -54,6 +54,8 @@ const rosterSchema: SchemaObject = {
     editable: { type: 'boolean' },
     asistencia: { ...attendanceSchema, nullable: true },
     resumenAsistencia: attendanceSummarySchema,
+    justificacionId: { ...text, nullable: true },
+    justificacionEstado: { ...text, nullable: true },
   },
 };
 export const attendancePageSchema: SchemaObject = {

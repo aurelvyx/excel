@@ -87,6 +87,8 @@ export const attemptDetailSchema: SchemaObject = {
             description:
               'La sesión entra en el denominador del resumen de asistencia.',
           },
+          justificacionId: { ...text, nullable: true },
+          justificacionEstado: { ...text, nullable: true },
         },
       },
     },

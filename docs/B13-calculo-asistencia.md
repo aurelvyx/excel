@@ -142,10 +142,11 @@ La demostración se reproduce con los comandos anteriores; sus datos son sintét
 
 ## Límites y pendientes
 
-B14 incorpora la solicitud, aprobación/rechazo y recuperación de J. En B13 una
-marca J guardada permanece sin resolver, no se simula una aprobación ni se descuenta
-automáticamente. La política ya prueba categorías recuperada/rechazada/no recuperada
-y el efecto al cierre, pero todavía no existe su flujo persistido HTTP.
+[B14](B14-justificaciones.md) incorpora la solicitud, aprobación/rechazo y
+recuperación persistidas de J. Una marca J sin solicitud, pendiente de resolución
+o aprobada con recuperación pendiente conserva el cálculo provisional. Recuperada
+no cuenta como falta; rechazada o confirmada no recuperada sí cuenta. La marca
+original permanece J y el historial de decisiones se conserva.
 
 B15 incorpora el cierre específico y correcciones administrativas posteriores;
 `cierreConfirmado` permanece false en B13. Un grupo o intento cerrado no sustituye

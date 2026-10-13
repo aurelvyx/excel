@@ -816,6 +816,20 @@ dialog::backdrop {
 .attendance-summary:not(.compact) {
   margin: 24px 0;
 }
+.justification-detail {
+  margin: 24px 0;
+}
+.justification-detail > summary {
+  cursor: pointer;
+  color: #1c6954;
+  margin-bottom: 12px;
+}
+.readonly-reason {
+  display: block;
+  margin-top: 10px;
+  white-space: normal;
+  min-width: 180px;
+}
 @media (max-width: 650px) {
   .wizard-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));

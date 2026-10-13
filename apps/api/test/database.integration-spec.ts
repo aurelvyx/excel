@@ -40,7 +40,7 @@ describe('B02 sobre PostgreSQL real', () => {
 
   it('migra desde cero, siembra cuatro roles y no repite migraciones', async () => {
     expect(await source.runMigrations()).toHaveLength(source.migrations.length);
-    expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(26);
+    expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(27);
     expect(await source.query('SELECT codigo FROM roles ORDER BY codigo')).toEqual([
       { codigo: 'ADMIN' }, { codigo: 'COORDINADOR' }, { codigo: 'DOCENTE' }, { codigo: 'SECRETARIA' },
     ]);
@@ -162,13 +162,8 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('revertir roles asignados falla y conserva los datos e historial', async () => {
-    await source.undoLastMigration(); // Versiones B12 sin asistencia.
-    await source.undoLastMigration(); // Fechas de sesiones B11.
-    await source.undoLastMigration(); // Reintentos B09 sin matrículas.
-    await source.undoLastMigration(); // Protección B08 sin matrículas.
-    await source.undoLastMigration(); // Protección B07 sin vouchers.
-    await source.undoLastMigration(); // Historial B06 todavía vacío.
-    await source.undoLastMigration(); // Acceso todavía sin sesiones ni auditoría en esta suite.
+    // Conserva identidad, oferta y roles; incluye automáticamente las nuevas migraciones vacías.
+    for (let i = source.migrations.length; i > 3; i--) await source.undoLastMigration();
     await expect(source.undoLastMigration()).rejects.toMatchObject({ driverError: { code: '23001' } });
     expect(await source.query('SELECT * FROM roles')).toHaveLength(4);
     expect(await source.query('SELECT * FROM migraciones')).toHaveLength(3);

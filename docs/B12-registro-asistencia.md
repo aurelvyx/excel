@@ -169,9 +169,12 @@ pendientes. No se realizó un piloto institucional ni se ejecutó remotamente
 GitHub Actions durante esta implementación.
 
 **B13** incorpora sesiones computables, tardanzas, faltas y límite del 30 %;
-**B14**, el proceso de resolución y recuperación de `J`; **B15**, cierres y
+**[B14](B14-justificaciones.md)**, el proceso de resolución y recuperación de `J`; **B15**, cierres y
 correcciones posteriores. Registrar `J` en B12 conserva la marca y no aprueba una
 justificación ni descuenta faltas confirmadas. B13 la incluye provisionalmente y
-mantiene la condición pendiente hasta que se resuelva.
+mantiene la condición pendiente mientras la J carezca de una decisión definitiva.
+Desde B14, una marca J con expediente conserva su código: la matriz permite
+actualizar su observación, pero no sustituirla por P/F/T ni incluirla en «Marcar
+presentes». Secretaría gestiona la solicitud en la pantalla de justificaciones.
 
 Decisiones técnicas: [ADR-007](decisiones/ADR-007-registro-asistencia.md).

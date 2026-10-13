@@ -102,3 +102,24 @@ export function SelectField({
     </FieldFrame>
   );
 }
+
+type TextAreaProps = Omit<
+  ComponentProps<"textarea">,
+  "id" | "aria-invalid" | "aria-describedby"
+> &
+  FieldProps;
+export function TextAreaField({
+  id,
+  label,
+  hint,
+  error,
+  required,
+  fieldClassName,
+  ...props
+}: TextAreaProps) {
+  return (
+    <FieldFrame {...{ id, label, hint, error, required, fieldClassName }}>
+      {(control) => <textarea {...props} {...control} required={required} />}
+    </FieldFrame>
+  );
+}

@@ -29,8 +29,8 @@ export function AttendanceSummary({
     return (
       <section className="attendance-summary" aria-label={label}>
         <p className="muted">
-          Resumen no actualizado. Recarga la asistencia para consultar el
-          cálculo vigente.
+          Resumen no actualizado. Recarga los datos para consultar el cálculo
+          vigente.
         </p>
       </section>
     );
@@ -126,8 +126,9 @@ export function AttendanceSummary({
           )}
           {summary.justificadasPendientes > 0 && (
             <p className="help">
-              Las justificaciones pendientes se incluyen provisionalmente en las
-              faltas computables. La condición queda pendiente hasta
+              Las marcas J sin solicitud, las solicitudes pendientes y las
+              aprobadas con recuperación pendiente se incluyen provisionalmente
+              en las faltas computables. La condición queda pendiente hasta
               resolverlas.
             </p>
           )}

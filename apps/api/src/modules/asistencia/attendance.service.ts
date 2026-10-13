@@ -106,10 +106,12 @@ export class AttendanceService {
         `SELECT m.id AS matricula_id,m.codigo AS codigo_matricula,m.estudiante_id,m.numero_intento,m.estado AS estado_matricula,
         concat_ws(' ',p.apellido_paterno,p.apellido_materno,p.nombres) AS estudiante,p.tipo_documento,p.numero_documento,
         ($5::boolean AND m.estado='ACTIVA') AS editable,
+        j.id AS "justificacionId",j.estado AS "justificacionEstado",
         CASE WHEN a.id IS NULL THEN NULL ELSE jsonb_build_object('id',a.id::text,'codigo',a.codigo,'observacion',a.observacion,
           'version',a.version,'registrado_por',a.registrado_por::text,'registrado_at',a.registrado_at,'actualizado_at',a.actualizado_at) END AS asistencia
         FROM matriculas m JOIN estudiantes e ON e.id=m.estudiante_id JOIN personas p ON p.id=e.persona_id
         LEFT JOIN asistencias a ON a.matricula_id=m.id AND a.sesion_id=$3::bigint
+        LEFT JOIN justificaciones j ON j.asistencia_id=a.id
         WHERE m.grupo_id=$1::bigint AND m.id>$2::bigint AND (m.estado='ACTIVA' OR a.id IS NOT NULL)
         ORDER BY m.id LIMIT $4`,
         [groupId, after, sessionId, limit + 1, reason === null],
@@ -182,6 +184,18 @@ export class AttendanceService {
           throw error;
         }
       });
+      const protectedMarks = (await manager.query(
+        'SELECT asistencia_id FROM justificaciones WHERE asistencia_id=ANY($1::bigint[])',
+        [
+          changes
+            .filter((row) => row.before && row.codigo !== 'J')
+            .map((row) => row.before!.id),
+        ],
+      )) as { asistencia_id: string }[];
+      if (protectedMarks.length)
+        throw new ConflictException(
+          'Una asistencia con expediente de justificación conserva la marca J. No se puede sustituir su historial',
+        );
       // La transición de sesión y cada marca comparten la transacción y su evidencia.
       if (
         session.estado === 'PROGRAMADA' &&
