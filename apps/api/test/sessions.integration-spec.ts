@@ -306,8 +306,9 @@ describe('B11 sesiones HTTP y PostgreSQL', () => {
       const listed = (await call('get', path(g.id)).expect(200)).body;
       expect(listed.items).toHaveLength(1);
       expect(listed.puedeProgramar).toBe(false);
-      if (target === 'grupo')
-        expect(listed.grupo.asistencia_cerrada).toBe(true);
+      // Grupo/periodo cerrado bloquea programación, pero no sustituye el evento B15.
+      expect(listed.grupo.asistencia_cerrada).toBe(false);
+      expect(listed.grupo.cierre_asistencia).toBeNull();
       await call('post', path(g.id))
         .send({ fechas: ['2026-10-06'] })
         .expect(409);

@@ -29,8 +29,8 @@ revierte el lote completo; no se guardan filas parciales.
 
 | Rol efectivo | Consulta | Programación |
 | --- | --- | --- |
-| Administrador | Todos los grupos | Grupos y periodos sin cerrar |
-| Docente | Sus asignaciones activas | Sus asignaciones activas, sin cierre de grupo o periodo |
+| Administrador | Todos los grupos | Sin cierre de asistencia, grupo o periodo |
+| Docente | Sus asignaciones activas | Sus asignaciones activas, sin cierre de asistencia, grupo o periodo |
 | Secretaría | Todos los grupos | Sin permiso por ese rol |
 | Coordinación | Todos los grupos | Sin permiso por ese rol |
 
@@ -42,8 +42,9 @@ Las escrituras usan la protección existente de Origin, sesión HttpOnly y CSRF.
 Se permite preparar fechas de grupos y periodos `PLANIFICADO`, además de grupos
 `ACTIVO` en periodos `ABIERTO`. La programación anticipada no activa grupos,
 matrículas ni asistencias. Grupo o periodo `CERRADO` conserva la consulta y bloquea
-la programación, también para administrador; la corrección administrativa posterior
-requiere el flujo separado previsto en historias de cierre.
+la programación, también para administrador. El cierre específico de asistencia de
+[B15](B15-cierre-asistencia.md) también bloquea programación aunque el grupo y el
+periodo sigan abiertos; su corrección administrativa afecta marcas, no sesiones.
 
 ## Uso de la interfaz
 
@@ -95,9 +96,11 @@ guardada produce HTTP 409. HTTP 403 indica falta de permisos o grupo ajeno;
 HTTP 401 requiere autenticación; HTTP 404 indica grupo inexistente en el alcance
 autorizado. No existen rutas de eliminación ni de modificación en B11.
 
-`grupo.asistencia_cerrada` refleja únicamente `grupo.estado = CERRADO` en esta
-entrega; no representa un cierre específico de asistencia ya implementado.
-La tabla y operación de cierre de asistencia se incorporarán en B15.
+En la entrega original B11, `grupo.asistencia_cerrada` reflejaba el estado del grupo.
+Desde [B15](B15-cierre-asistencia.md), refleja exclusivamente el evento específico
+de cierre; `grupo.cierre_asistencia` muestra sus datos. Grupo `CERRADO` sin ese
+evento no acredita cierre de asistencia, aunque conserva el bloqueo de programación
+por su propio estado. Las evidencias fechadas de B11 se conservan abajo.
 
 ## Migración y puesta en marcha local
 
@@ -157,9 +160,9 @@ Verificación local finalizada el **6 de octubre de 2026**:
 El workflow incluye B11 y sus capturas, pero no se ha ejecutado remotamente en
 GitHub Actions durante esta implementación. La base local existente no se modificó.
 
-B11 construye la base persistida de sesiones. Todavía no registra marcas P/F/T/J
-(B12), ni calcula el denominador computable, tardanzas o retiros (B13), ni resuelve
-justificaciones (B14), ni cierra asistencia (B15). Una sesión programada no equivale
+B11 construye la base persistida de sesiones. El registro de marcas P/F/T/J,
+cálculo y justificaciones corresponden a B12–B14; el cierre específico está en
+[B15](B15-cierre-asistencia.md). Una sesión programada no equivale
 por sí sola a una clase realizada ni determina la condición de un estudiante.
 La revisión y aceptación del equipo/centro siguen pendientes.
 

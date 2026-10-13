@@ -171,9 +171,10 @@ function JustificationsList({
       <JustificationsHeading />
       <GroupContext group={snapshot.grupo} />
       <p className="notice">
-        Una marca J sin solicitud es distinta de una solicitud pendiente. Las
-        solicitudes pendientes y aprobadas con recuperación pendiente computan
-        provisionalmente; la marca original y las decisiones se conservan.
+        Una marca J sin solicitud es distinta de una solicitud pendiente.{" "}
+        {snapshot.grupo.asistencia_cerrada
+          ? "La asistencia está cerrada: las J sin recuperación confirmada computan como falta. Las solicitudes conservan su estado y sus decisiones."
+          : "Las solicitudes pendientes y aprobadas con recuperación pendiente computan provisionalmente; la marca original y las decisiones se conservan."}
       </p>
       <Feedback tone="success">{success}</Feedback>
       <Feedback>{error}</Feedback>

@@ -781,8 +781,9 @@ describe('B13 cálculo de asistencia HTTP y PostgreSQL', () => {
     expect(JSON.stringify(matrix.patch.responses['200'])).toContain(
       'resumenes',
     );
-    const histories = Object.entries(spec.paths).filter(([route]) =>
-      route.includes('/historial'),
+    const histories = Object.entries(spec.paths).filter(
+      ([route]) =>
+        route.includes('/estudiantes/') && route.includes('/historial'),
     );
     expect(histories).toHaveLength(2);
     for (const [, contract] of histories)

@@ -16,6 +16,7 @@ export type SessionGroup = {
   fecha_fin: string;
   periodo_estado: string;
   asistencia_cerrada: boolean;
+  cierre_asistencia: AttendanceClosureEvent | null;
   contexto: {
     periodo: string;
     idioma: string;
@@ -23,6 +24,18 @@ export type SessionGroup = {
     turno: string;
     seccion: string;
   };
+};
+export type AttendanceClosureEvent = {
+  id: string;
+  grupo_id: string;
+  tipo: "ASISTENCIA";
+  estado: "CERRADO";
+  motivo: string | null;
+  realizado_por: string;
+  realizado_at: string;
+  realizado_nombre: string;
+  revision: string;
+  resumen: unknown;
 };
 export type SessionsPageData = {
   items: ClassSession[];
@@ -67,7 +80,9 @@ export type AttendanceSummaryData = {
     tardanzasPorFalta: number;
   };
   cierreConfirmado: boolean;
-  criterioSesiones: "REALIZADAS_DEL_GRUPO_HASTA_HOY";
+  criterioSesiones:
+    "REALIZADAS_DEL_GRUPO_HASTA_HOY" | "REALIZADAS_DEL_GRUPO_HASTA_EL_CIERRE";
+  fechaCorte: string;
 };
 export type AttendanceRow = {
   matricula_id: string;
@@ -79,6 +94,7 @@ export type AttendanceRow = {
   numero_intento: number;
   estado_matricula: string;
   editable: boolean;
+  corregible: boolean;
   asistencia: Omit<AttendanceRecord, "matricula_id"> | null;
   justificacionId: string | null;
   justificacionEstado: string | null;
@@ -90,7 +106,16 @@ export type AttendancePageData = {
   grupo: SessionGroup;
   sesion: ClassSession;
   puedeEditar: boolean;
+  puedeCorregir: boolean;
   motivoSoloLectura: string | null;
+};
+export type SavedAttendance = {
+  items: AttendanceRecord[];
+  sesion: ClassSession;
+  resumenes: {
+    matriculaId: string;
+    resumenAsistencia: AttendanceSummaryData;
+  }[];
 };
 export const attendanceCodes: Record<AttendanceCode, string> = {
   P: "Presente",
@@ -114,4 +139,14 @@ export function sessionTime(start: string | null, end: string | null) {
   return start && end
     ? `${start.slice(0, 5)} – ${end.slice(0, 5)}`
     : "Sin horario";
+}
+
+export function academicTime(value: string | null) {
+  return value
+    ? new Intl.DateTimeFormat("es-PE", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "America/Lima",
+      }).format(new Date(value))
+    : "Pendiente";
 }

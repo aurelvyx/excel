@@ -35,7 +35,10 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   distinción de marcas pendientes y justificaciones provisionales.
 - **B14:** registro, resolución y recuperación de justificaciones por grupo, con
   responsables, fechas, versiones, historial y recálculo transaccional de asistencia.
-- Cierres, notas y reportes se desarrollan en historias posteriores.
+- **B15:** cierre específico de asistencia por grupo, revisión y reconocimiento de
+  pendientes, corte temporal persistido y corrección administrativa con motivo,
+  versiones e historial. No modifica notas ni resultados académicos almacenados.
+- Notas, cierre de actas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -52,6 +55,7 @@ Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-cl
 Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-registro-asistencia.md).
 Para consultar los cálculos, consulta [B13: faltas e inasistencia](docs/B13-calculo-asistencia.md).
 Para gestionar solicitudes, consulta [B14: justificaciones y recuperación](docs/B14-justificaciones.md).
+Para revisar y cerrar el grupo, consulta [B15: cierre de asistencia y corrección](docs/B15-cierre-asistencia.md).
 
 ## Instalación desde cero
 
@@ -106,6 +110,9 @@ estructurales rechazan tablas con datos y los roles no se retiran si están asig
 La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
 Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
 
+El esquema incluye doce migraciones versionadas hasta B15. La reversión del cierre
+rechaza eventos existentes; no elimina evidencia académica para retirar la migración.
+
 Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
 No crean credenciales de acceso ni catálogos institucionales supuestos.
 Para cargar ejemplos sintéticos en desarrollo, en PowerShell:
@@ -135,7 +142,7 @@ local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
 Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones,
-asistencia y justificaciones con Chromium. En Linux/CI, instalar
+asistencia, justificaciones y cierre con corrección administrativa con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 `pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra

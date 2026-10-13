@@ -106,6 +106,8 @@ export class JustificationsService {
     };
   }
   private reason(row: Absence, context: Context) {
+    if (context.group.asistencia_cerrada)
+      return 'La asistencia está cerrada; las decisiones de justificación se conservan para consulta';
     return justificationReadOnlyReason({
       groupState: context.group.estado,
       periodState: context.group.periodo_estado,

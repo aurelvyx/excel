@@ -1,4 +1,8 @@
-import type { AttendanceSummaryData, SessionGroup } from "./model";
+import {
+  academicTime,
+  type AttendanceSummaryData,
+  type SessionGroup,
+} from "./model";
 
 export type JustificationState =
   "PENDIENTE" | "APROBADA" | "RECHAZADA" | "RECUPERADA" | "NO_RECUPERADA";
@@ -88,12 +92,4 @@ export const justificationEventLabels: Record<string, string> = {
   NOT_RECOVERED: "No recuperada",
 };
 
-export function justificationTime(value: string | null) {
-  return value
-    ? new Intl.DateTimeFormat("es-PE", {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "America/Lima",
-      }).format(new Date(value))
-    : "Pendiente";
-}
+export const justificationTime = academicTime;

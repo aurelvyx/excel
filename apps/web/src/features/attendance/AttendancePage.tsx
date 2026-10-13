@@ -14,6 +14,8 @@ import { Pagination } from "../../shared/ui/Pagination";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { GroupContext } from "./GroupContext";
 import { AttendanceSummary } from "./AttendanceSummary";
+import { AttendanceCorrectionDialog } from "./AttendanceCorrectionDialog";
+import { AttendanceHistoryDialog } from "./AttendanceHistoryDialog";
 import {
   justificationStates,
   type JustificationState,
@@ -25,10 +27,8 @@ import {
   sessionTime,
   type AttendanceCode,
   type AttendancePageData,
-  type AttendanceRecord,
   type AttendanceRow,
-  type AttendanceSummaryData,
-  type ClassSession,
+  type SavedAttendance,
 } from "./model";
 
 export function AttendancePage({
@@ -116,6 +116,8 @@ function AttendanceMatrix({
   const [busy, pending] = useState(false);
   const [summaryCurrent, setSummaryCurrent] = useState(true);
   const [summaryError, failSummary] = useState("");
+  const [correcting, setCorrecting] = useState<AttendanceRow | null>(null);
+  const [history, showHistory] = useState<AttendanceRow | null>(null);
   const saving = useRef(false);
   const changedRows = Object.keys(drafts).length;
   const dirty = changedRows > 0;
@@ -142,6 +144,45 @@ function AttendanceMatrix({
       if (canEdit && row.editable && !row.justificacionId)
         change(row, { codigo: "P" });
   }
+  async function applySaved(response: SavedAttendance, message: string) {
+    const saved = new Map(
+      response.items.map((item) => [item.matricula_id, item]),
+    );
+    const summaries = new Map(
+      (response.resumenes ?? []).map((item) => [
+        item.matriculaId,
+        item.resumenAsistencia,
+      ]),
+    );
+    setSnapshot((old) => ({
+      ...old,
+      sesion: response.sesion,
+      items: old.items.map((row) =>
+        saved.has(row.matricula_id)
+          ? {
+              ...row,
+              asistencia: saved.get(row.matricula_id)!,
+              resumenAsistencia:
+                summaries.get(row.matricula_id) ?? row.resumenAsistencia,
+            }
+          : row,
+      ),
+    }));
+    setDrafts({});
+    notify(message);
+    setSummaryCurrent(false);
+    failSummary("");
+    // La sesión realizada cambia el denominador de todas las filas; una
+    // corrección también puede modificar el resumen del intento consultado.
+    try {
+      setSnapshot(await api<AttendancePageData>(queryPath));
+      setSummaryCurrent(true);
+    } catch {
+      failSummary(
+        "La asistencia se guardó, pero no se pudo actualizar el resumen. Recarga la asistencia para consultar los cálculos vigentes.",
+      );
+    }
+  }
   async function save() {
     if (saving.current || !dirty || !canEdit || conflict) return;
     const changes = rows.filter(
@@ -167,14 +208,7 @@ function AttendanceMatrix({
     fail("");
     notify("");
     try {
-      const response = await api<{
-        items: AttendanceRecord[];
-        sesion: ClassSession;
-        resumenes: {
-          matriculaId: string;
-          resumenAsistencia: AttendanceSummaryData;
-        }[];
-      }>(endpoint, {
+      const response = await api<SavedAttendance>(endpoint, {
         method: "PATCH",
         body: {
           registros: changes.map((row) => ({
@@ -185,44 +219,7 @@ function AttendanceMatrix({
           })),
         },
       });
-      const saved = new Map(
-        response.items.map((item) => [item.matricula_id, item]),
-      );
-      const summaries = new Map(
-        (response.resumenes ?? []).map((item) => [
-          item.matriculaId,
-          item.resumenAsistencia,
-        ]),
-      );
-      setSnapshot((old) => ({
-        ...old,
-        sesion: response.sesion,
-        items: old.items.map((row) =>
-          saved.has(row.matricula_id)
-            ? {
-                ...row,
-                asistencia: saved.get(row.matricula_id)!,
-                resumenAsistencia:
-                  summaries.get(row.matricula_id) ?? row.resumenAsistencia,
-              }
-            : row,
-        ),
-      }));
-      setDrafts({});
-      notify("Asistencia guardada.");
-      setSummaryCurrent(false);
-      failSummary("");
-      // Una clase recién realizada cambia el denominador de todas las matrículas,
-      // incluso de las filas que no se enviaron en este guardado.
-      try {
-        const current = await api<AttendancePageData>(queryPath);
-        setSnapshot(current);
-        setSummaryCurrent(true);
-      } catch {
-        failSummary(
-          "La asistencia se guardó, pero no se pudo actualizar el resumen. Recarga la asistencia para consultar los cálculos vigentes.",
-        );
-      }
+      await applySaved(response, "Asistencia guardada.");
     } catch (e) {
       fail(errorText(e));
       if (e instanceof ApiError && e.status === 409) {
@@ -241,6 +238,11 @@ function AttendanceMatrix({
       </a>
       <AttendanceHeading />
       <GroupContext group={snapshot.grupo} />
+      <p>
+        <a href={`#/asistencia/grupos/${snapshot.grupo.id}/cierre`}>
+          Cierre de asistencia
+        </a>
+      </p>
       <section
         className="panel enrollment-context"
         aria-label="Sesión seleccionada"
@@ -277,8 +279,12 @@ function AttendanceMatrix({
       )}
       <p className="help">
         Resumen de asistencia guardada por intento: incluye las sesiones
-        realizadas del grupo hasta hoy en Lima. Las programadas y canceladas no
-        computan. Los cambios sin guardar no modifican este resumen.
+        realizadas del grupo{" "}
+        {snapshot.grupo.cierre_asistencia
+          ? "hasta el cierre de asistencia"
+          : "hasta hoy en Lima"}
+        . Las programadas y canceladas no computan. Los cambios sin guardar no
+        modifican este resumen.
       </p>
       <ListPanel
         loading={false}
@@ -466,6 +472,31 @@ function AttendanceMatrix({
                 </>
               ),
             },
+            {
+              key: "historial",
+              header: "Acciones",
+              className: "row-actions",
+              cell: (row) => (
+                <>
+                  {snapshot.puedeCorregir && row.corregible && (
+                    <Button
+                      variant="link"
+                      disabled={busy || conflict || !summaryCurrent}
+                      onClick={() => setCorrecting(row)}
+                    >
+                      Corregir asistencia
+                    </Button>
+                  )}
+                  <Button
+                    variant="link"
+                    disabled={busy}
+                    onClick={() => showHistory(row)}
+                  >
+                    Ver historial de asistencia
+                  </Button>
+                </>
+              ),
+            },
           ]}
         />
       </ListPanel>
@@ -483,6 +514,41 @@ function AttendanceMatrix({
         </footer>
       )}
       {guard.confirmation}
+      {correcting && snapshot.grupo.cierre_asistencia && (
+        <AttendanceCorrectionDialog
+          row={correcting}
+          session={session}
+          closure={snapshot.grupo.cierre_asistencia}
+          endpoint={endpoint}
+          onClose={() => setCorrecting(null)}
+          onSaved={async (response) => {
+            setCorrecting(null);
+            pending(true);
+            fail("");
+            try {
+              await applySaved(
+                response,
+                "Corrección de asistencia registrada.",
+              );
+            } finally {
+              pending(false);
+            }
+          }}
+          onConflict={() => setSummaryCurrent(false)}
+          onReload={() => {
+            setCorrecting(null);
+            reload();
+          }}
+        />
+      )}
+      {history && (
+        <AttendanceHistoryDialog
+          row={history}
+          session={session}
+          endpoint={endpoint}
+          onClose={() => showHistory(null)}
+        />
+      )}
     </section>
   );
 }

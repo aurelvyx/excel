@@ -44,9 +44,10 @@ guardado confirma que la clase ocurrió. Esta transición, las marcas y sus even
 de auditoría se guardan en una sola transacción.
 
 Grupo o periodo cerrado conserva la consulta y bloquea el guardado ordinario
-del docente. `grupo.asistencia_cerrada` continúa reflejando el estado del grupo.
-El cierre específico de asistencia y las correcciones administrativas posteriores
-con motivo corresponden a **B15**; no se simula ese flujo en esta entrega.
+del docente. Desde [B15](B15-cierre-asistencia.md), `grupo.asistencia_cerrada`
+refleja exclusivamente el evento de cierre de asistencia. Este cierre también
+bloquea el guardado ordinario y habilita la corrección administrativa separada
+con motivo, versión e historial. Las evidencias fechadas de B12 se conservan.
 
 ## Correcciones, concurrencia e historial
 
@@ -169,10 +170,12 @@ pendientes. No se realizó un piloto institucional ni se ejecutó remotamente
 GitHub Actions durante esta implementación.
 
 **B13** incorpora sesiones computables, tardanzas, faltas y límite del 30 %;
-**[B14](B14-justificaciones.md)**, el proceso de resolución y recuperación de `J`; **B15**, cierres y
+**[B14](B14-justificaciones.md)**, el proceso de resolución y recuperación de `J`; **[B15](B15-cierre-asistencia.md)**, cierres y
 correcciones posteriores. Registrar `J` en B12 conserva la marca y no aprueba una
-justificación ni descuenta faltas confirmadas. B13 la incluye provisionalmente y
-mantiene la condición pendiente mientras la J carezca de una decisión definitiva.
+justificación ni descuenta faltas confirmadas. Mientras el registro está abierto,
+B13 la incluye provisionalmente y mantiene la condición pendiente mientras la J
+carezca de una decisión definitiva. Al cerrar conforme a B15, una J sin recuperación
+confirmada computa como falta y conserva su expediente.
 Desde B14, una marca J con expediente conserva su código: la matriz permite
 actualizar su observación, pero no sustituirla por P/F/T ni incluirla en «Marcar
 presentes». Secretaría gestiona la solicitud en la pantalla de justificaciones.

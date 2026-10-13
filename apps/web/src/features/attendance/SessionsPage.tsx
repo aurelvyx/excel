@@ -77,14 +77,18 @@ export function SessionsPage({
       {group && (
         <p>
           <a href={`#${path}/justificaciones`}>Justificaciones</a>
+          {" · "}
+          <a href={`#${path}/cierre`}>Cierre de asistencia</a>
         </p>
       )}
       {data && !data.puedeProgramar && (
         <p className="readonly">
           Solo lectura ·{" "}
-          {group?.asistencia_cerrada || group?.periodo_estado === "CERRADO"
-            ? "El grupo o periodo está cerrado."
-            : "Tu cuenta puede consultar las sesiones de este grupo."}
+          {group?.asistencia_cerrada
+            ? "La asistencia del grupo está cerrada."
+            : group?.estado === "CERRADO" || group?.periodo_estado === "CERRADO"
+              ? "El grupo o periodo está cerrado."
+              : "Tu cuenta puede consultar las sesiones de este grupo."}
         </p>
       )}
       <Feedback tone="success">{success}</Feedback>

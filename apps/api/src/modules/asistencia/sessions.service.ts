@@ -53,6 +53,7 @@ export class SessionsService {
         grupo: group,
         puedeProgramar:
           (roles.includes('ADMIN') || assigned) &&
+          !group.asistencia_cerrada &&
           group.estado !== 'CERRADO' &&
           group.periodo_estado !== 'CERRADO',
       };
@@ -74,9 +75,13 @@ export class SessionsService {
       )
         throw new ForbiddenException('Grupo no asignado');
       const group = await loadAcademicGroup(manager, groupId);
-      if (group.estado === 'CERRADO' || group.periodo_estado === 'CERRADO')
+      if (
+        group.asistencia_cerrada ||
+        group.estado === 'CERRADO' ||
+        group.periodo_estado === 'CERRADO'
+      )
         throw new ConflictException(
-          'El grupo o periodo está cerrado; no admite programación',
+          'La asistencia, el grupo o el periodo está cerrado; no admite programación',
         );
       try {
         validateSessionSchedule(dto, group);

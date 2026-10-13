@@ -2,6 +2,7 @@ import type { SchemaObject } from '@nestjs/swagger';
 import { pageSchema } from '../../common/http-schema.js';
 import { academicGroupSchema, sessionSchema } from './sessions.schema.js';
 import { attendanceSummarySchema } from './attendance-calculation.schema.js';
+import { academicClosureSchema } from './academic-closure.schema.js';
 const text: SchemaObject = { type: 'string' };
 export const attendanceSchema: SchemaObject = {
   type: 'object',
@@ -39,6 +40,7 @@ const rosterSchema: SchemaObject = {
     'numero_intento',
     'estado_matricula',
     'editable',
+    'corregible',
     'asistencia',
     'resumenAsistencia',
   ],
@@ -52,6 +54,7 @@ const rosterSchema: SchemaObject = {
     numero_intento: { type: 'integer' },
     estado_matricula: { ...text, enum: ['ACTIVA', 'CERRADA', 'ANULADA'] },
     editable: { type: 'boolean' },
+    corregible: { type: 'boolean' },
     asistencia: { ...attendanceSchema, nullable: true },
     resumenAsistencia: attendanceSummarySchema,
     justificacionId: { ...text, nullable: true },
@@ -66,6 +69,7 @@ export const attendancePageSchema: SchemaObject = {
     'grupo',
     'sesion',
     'puedeEditar',
+    'puedeCorregir',
     'motivoSoloLectura',
   ],
   properties: {
@@ -73,6 +77,7 @@ export const attendancePageSchema: SchemaObject = {
     grupo: academicGroupSchema,
     sesion: sessionSchema,
     puedeEditar: { type: 'boolean' },
+    puedeCorregir: { type: 'boolean' },
     motivoSoloLectura: { ...text, nullable: true },
   },
 };
@@ -90,6 +95,49 @@ export const savedAttendanceSchema: SchemaObject = {
         properties: {
           matriculaId: text,
           resumenAsistencia: attendanceSummarySchema,
+        },
+      },
+    },
+  },
+};
+const historyValue: SchemaObject = {
+  type: 'object',
+  required: ['codigo', 'observacion', 'version'],
+  properties: {
+    codigo: { ...text, enum: ['P', 'F', 'T', 'J'] },
+    observacion: { ...text, nullable: true },
+    version: { type: 'integer', minimum: 1 },
+  },
+};
+export const attendanceHistorySchema: SchemaObject = {
+  type: 'object',
+  required: ['asistencia', 'cierre', 'items'],
+  properties: {
+    asistencia: { ...attendanceSchema, nullable: true },
+    cierre: { ...academicClosureSchema, nullable: true },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: [
+          'id',
+          'accion',
+          'usuario_id',
+          'nombre_usuario',
+          'ocurrido_at',
+          'motivo',
+          'valor_anterior',
+          'valor_nuevo',
+        ],
+        properties: {
+          id: text,
+          accion: text,
+          usuario_id: { ...text, nullable: true },
+          nombre_usuario: { ...text, nullable: true },
+          ocurrido_at: { ...text, format: 'date-time' },
+          motivo: { ...text, nullable: true },
+          valor_anterior: { ...historyValue, nullable: true },
+          valor_nuevo: historyValue,
         },
       },
     },

@@ -1,6 +1,12 @@
 import { NotFoundException } from '@nestjs/common';
 import type { EntityManager } from 'typeorm';
 import { groupContext } from '../oferta-academica/group-context.js';
+import { academicDateSql } from './academic-date.js';
+import {
+  loadAttendanceClosure,
+  type AcademicClosure,
+} from './academic-closure.js';
+export { academicDateSql } from './academic-date.js';
 
 export type ClassSession = Record<string, unknown> & {
   id: string;
@@ -20,25 +26,32 @@ export type AcademicGroup = Record<string, unknown> & {
   fecha_fin: string;
   periodo_estado: string;
   asistencia_cerrada: boolean;
+  cierre_asistencia: AcademicClosure | null;
 };
 export const sessionColumns =
   'id,grupo_id,fecha::text,hora_inicio::text,hora_fin::text,estado,creado_por';
-export const academicDateSql =
-  "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date";
 
 /** Contexto académico consistente para programación y registro, sin ampliar el alcance del actor. */
 export async function loadAcademicGroup(
   manager: EntityManager,
   id: string,
+  write = false,
 ): Promise<AcademicGroup> {
   const [group] = (await manager.query(
     `SELECT t.id,t.codigo,t.estado,t.periodo_id,p.fecha_inicio::text,p.fecha_fin::text,
-    p.estado AS periodo_estado,(t.estado='CERRADO') AS asistencia_cerrada,${groupContext}
-    FROM grupos t JOIN periodos_academicos p ON p.id=t.periodo_id WHERE t.id=$1::bigint FOR SHARE OF t,p`,
+    p.estado AS periodo_estado,${groupContext}
+    FROM grupos t JOIN periodos_academicos p ON p.id=t.periodo_id WHERE t.id=$1::bigint
+    FOR ${write ? 'UPDATE' : 'SHARE'} OF t FOR SHARE OF p`,
     [id],
   )) as AcademicGroup[];
   if (!group) throw new NotFoundException('Grupo no encontrado');
-  return group;
+  // Leer el evento después del bloqueo permite observar un cierre que hizo esperar esta operación.
+  const closure = await loadAttendanceClosure(manager, id);
+  return {
+    ...group,
+    asistencia_cerrada: closure !== null,
+    cierre_asistencia: closure,
+  };
 }
 export async function loadClassSession(
   manager: EntityManager,

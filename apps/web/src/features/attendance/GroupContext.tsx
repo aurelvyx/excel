@@ -1,6 +1,6 @@
 import { labels } from "../configuration/model";
 import { Facts } from "../../shared/ui/Facts";
-import { sessionDate, type SessionGroup } from "./model";
+import { academicTime, sessionDate, type SessionGroup } from "./model";
 
 export function GroupContext({ group }: { group: SessionGroup }) {
   return (
@@ -13,6 +13,19 @@ export function GroupContext({ group }: { group: SessionGroup }) {
         items={[
           ["Grupo", group.codigo],
           ["Estado del grupo", labels[group.estado] ?? group.estado],
+          [
+            "Estado de asistencia",
+            group.asistencia_cerrada ? "Cerrada" : "Abierta",
+          ],
+          ...(group.cierre_asistencia
+            ? ([
+                ["Cerrada por", group.cierre_asistencia.realizado_nombre],
+                [
+                  "Fecha del cierre",
+                  academicTime(group.cierre_asistencia.realizado_at),
+                ],
+              ] as const)
+            : []),
           ["Periodo", group.contexto.periodo],
           [
             "Estado del periodo",

@@ -12,6 +12,7 @@ import { SolicitudReintento1790208007000 } from '../migraciones/1790208007000-so
 import { Sesiones1790208008000 } from '../migraciones/1790208008000-sesiones.js';
 import { Asistencia1790208009000 } from '../migraciones/1790208009000-asistencia.js';
 import { Justificaciones1790208010000 } from '../migraciones/1790208010000-justificaciones.js';
+import { CierresAsistencia1790208011000 } from '../migraciones/1790208011000-cierres-asistencia.js';
 
 export function databaseOptions(
   env: NodeJS.ProcessEnv = process.env,
@@ -36,6 +37,7 @@ export function databaseOptions(
       Sesiones1790208008000,
       Asistencia1790208009000,
       Justificaciones1790208010000,
+      CierresAsistencia1790208011000,
     ],
     logging: false,
   };
