@@ -11,6 +11,7 @@ import { VouchersPage } from "./features/vouchers/VouchersPage";
 import { EnrollmentsPage } from "./features/enrollments/EnrollmentsPage";
 import { SessionsPage } from "./features/attendance/SessionsPage";
 import { AttendancePage } from "./features/attendance/AttendancePage";
+import { JustificationsPage } from "./features/attendance/JustificationsPage";
 import { requestPageExit } from "./shared/useUnsavedChanges";
 
 export default function App() {
@@ -150,9 +151,11 @@ function Workspace() {
                     : path.startsWith("/matriculas")
                       ? "Matrículas"
                       : path.startsWith("/asistencia/grupos/")
-                        ? path.includes("/sesiones/")
-                          ? "Registro de asistencia"
-                          : "Sesiones de clase"
+                        ? path.endsWith("/justificaciones")
+                          ? "Justificaciones"
+                          : path.includes("/sesiones/")
+                            ? "Registro de asistencia"
+                            : "Sesiones de clase"
                         : (resource?.title ?? "Página")}
           </span>
           <div className="account">
@@ -271,6 +274,14 @@ function Workspace() {
               key={`${path}:${query.get("estudianteId") ?? ""}`}
               id={path.split("/")[2]}
               studentId={query.get("estudianteId") ?? undefined}
+            />
+          ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/justificaciones$/.test(
+              path,
+            ) ? (
+            <JustificationsPage
+              key={path}
+              groupId={path.split("/")[3]}
+              query={query}
             />
           ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/sesiones\/[1-9][0-9]{0,17}$/.test(
               path,

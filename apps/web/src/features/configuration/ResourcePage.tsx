@@ -305,7 +305,12 @@ export function ResourcePage({
               cell: (row) => (
                 <>
                   {resource.key === "grupos" && (
-                    <a href={`#/asistencia/grupos/${row.id}`}>Sesiones</a>
+                    <>
+                      <a href={`#/asistencia/grupos/${row.id}`}>Sesiones</a>
+                      <a href={`#/asistencia/grupos/${row.id}/justificaciones`}>
+                        Justificaciones
+                      </a>
+                    </>
                   )}
                   {admin ? (
                     <>

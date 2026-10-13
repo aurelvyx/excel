@@ -5,11 +5,22 @@ import { SessionsService } from './sessions.service.js';
 import { AttendanceController } from './attendance.controller.js';
 import { AttendanceService } from './attendance.service.js';
 import { AttendanceCalculationService } from './attendance-calculation.service.js';
+import { JustificationsController } from './justifications.controller.js';
+import { JustificationsService } from './justifications.service.js';
 
 @Module({
   imports: [ControlModule],
-  controllers: [SessionsController, AttendanceController],
-  providers: [SessionsService, AttendanceService, AttendanceCalculationService],
+  controllers: [
+    SessionsController,
+    AttendanceController,
+    JustificationsController,
+  ],
+  providers: [
+    SessionsService,
+    AttendanceService,
+    AttendanceCalculationService,
+    JustificationsService,
+  ],
   exports: [AttendanceCalculationService],
 })
 export class AsistenciaModule {}

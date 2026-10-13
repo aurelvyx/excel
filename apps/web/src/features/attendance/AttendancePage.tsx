@@ -15,6 +15,10 @@ import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { GroupContext } from "./GroupContext";
 import { AttendanceSummary } from "./AttendanceSummary";
 import {
+  justificationStates,
+  type JustificationState,
+} from "./justification-model";
+import {
   attendanceCodes,
   sessionDate,
   sessionStates,
@@ -135,7 +139,8 @@ function AttendanceMatrix({
   }
   function markPresent() {
     for (const row of rows)
-      if (canEdit && row.editable) change(row, { codigo: "P" });
+      if (canEdit && row.editable && !row.justificacionId)
+        change(row, { codigo: "P" });
   }
   async function save() {
     if (saving.current || !dirty || !canEdit || conflict) return;
@@ -288,7 +293,9 @@ function AttendanceMatrix({
               {canEdit && (
                 <Button
                   disabled={
-                    busy || conflict || !rows.some((row) => row.editable)
+                    busy ||
+                    conflict ||
+                    !rows.some((row) => row.editable && !row.justificacionId)
                   }
                   onClick={markPresent}
                 >
@@ -362,7 +369,12 @@ function AttendanceMatrix({
                     label={`Asistencia de ${row.estudiante}`}
                     id={`attendance-${row.matricula_id}`}
                     value={(drafts[row.matricula_id] ?? recorded(row)).codigo}
-                    disabled={busy || conflict}
+                    disabled={busy || conflict || !!row.justificacionId}
+                    hint={
+                      row.justificacionId
+                        ? "Esta marca J tiene una solicitud registrada y se conserva como evidencia."
+                        : undefined
+                    }
                     error={issues[row.matricula_id]}
                     onChange={(event) =>
                       change(row, {
@@ -427,12 +439,32 @@ function AttendanceMatrix({
               key: "registro",
               header: "Registro",
               className: "attendance-status",
-              cell: (row) =>
-                drafts[row.matricula_id]
-                  ? "Sin guardar"
-                  : row.asistencia
-                    ? "Registrado"
-                    : "Pendiente",
+              cell: (row) => (
+                <>
+                  {drafts[row.matricula_id]
+                    ? "Sin guardar"
+                    : row.asistencia
+                      ? "Registrado"
+                      : "Pendiente"}
+                  {row.asistencia?.codigo === "J" && (
+                    <>
+                      <small className="attendance-document">
+                        {
+                          justificationStates[
+                            (row.justificacionEstado as JustificationState) ??
+                              "SIN_SOLICITUD"
+                          ]
+                        }
+                      </small>
+                      <a
+                        href={`#/asistencia/grupos/${snapshot.grupo.id}/justificaciones?q=${encodeURIComponent(row.numero_documento)}`}
+                      >
+                        Gestionar justificación
+                      </a>
+                    </>
+                  )}
+                </>
+              ),
             },
           ]}
         />

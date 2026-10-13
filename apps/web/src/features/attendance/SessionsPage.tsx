@@ -74,6 +74,11 @@ export function SessionsPage({
         }
       />
       {group && <GroupContext group={group} />}
+      {group && (
+        <p>
+          <a href={`#${path}/justificaciones`}>Justificaciones</a>
+        </p>
+      )}
       {data && !data.puedeProgramar && (
         <p className="readonly">
           Solo lectura ·{" "}

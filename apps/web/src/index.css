@@ -23,7 +23,8 @@ textarea {
 button,
 a,
 input,
-select {
+select,
+textarea {
   -webkit-tap-highlight-color: transparent;
 }
 button,
@@ -50,7 +51,8 @@ a {
   color: #176c55;
 }
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 43px;
   border: 1px solid #a6b9b0;
@@ -60,9 +62,13 @@ select {
   color: #1c302e;
 }
 input:disabled,
-select:disabled {
+select:disabled,
+textarea:disabled {
   background: #edf1ee;
   color: #566a61;
+}
+textarea {
+  resize: vertical;
 }
 input[type="checkbox"] {
   width: 18px;
@@ -101,6 +107,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 3px solid #bc8731;
   outline-offset: 3px;

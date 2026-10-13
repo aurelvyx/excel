@@ -9,6 +9,10 @@ import { api, errorText, text, type Page, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
 import { AttendanceSummary } from "../attendance/AttendanceSummary";
 import type { AttendanceSummaryData } from "../attendance/model";
+import {
+  justificationStates,
+  type JustificationState,
+} from "../attendance/justification-model";
 type HistoryRow = Row & { resumenAsistencia?: AttendanceSummaryData };
 type HistoryPage = Omit<Page, "items"> & {
   items: HistoryRow[];
@@ -284,6 +288,18 @@ export function StudentHistory({
                 key: "marca",
                 header: "Marca",
                 cell: (row) => text(row, "codigo") || "Sin registro",
+              },
+              {
+                key: "justificacion",
+                header: "Justificación",
+                cell: (row) =>
+                  row.justificacionEstado
+                    ? justificationStates[
+                        row.justificacionEstado as JustificationState
+                      ]
+                    : row.codigo === "J"
+                      ? "Sin solicitud"
+                      : "—",
               },
             ]}
           />
