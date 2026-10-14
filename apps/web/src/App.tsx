@@ -13,6 +13,9 @@ import { SessionsPage } from "./features/attendance/SessionsPage";
 import { AttendancePage } from "./features/attendance/AttendancePage";
 import { JustificationsPage } from "./features/attendance/JustificationsPage";
 import { AttendanceClosurePage } from "./features/attendance/AttendanceClosurePage";
+import { EvaluationLevelsPage } from "./features/evaluation/EvaluationLevelsPage";
+import { EvaluationPlanPage } from "./features/evaluation/EvaluationPlanPage";
+import { GroupEvaluationPage } from "./features/evaluation/GroupEvaluationPage";
 import { requestPageExit } from "./shared/useUnsavedChanges";
 
 export default function App() {
@@ -119,11 +122,19 @@ function Workspace() {
             <a
               key={item.key}
               href={`#${url(item.key)}`}
-              aria-current={selected === item.key ? "page" : undefined}
+              aria-current={
+                allowed && selected === item.key ? "page" : undefined
+              }
             >
               {!reader ? "Mis grupos" : item.title}
             </a>
           ))}
+          <a
+            href="#/evaluacion/niveles"
+            aria-current={path.startsWith("/evaluacion/") ? "page" : undefined}
+          >
+            Criterios de evaluación
+          </a>
         </nav>
         <div className="sidebar-bottom">
           <span className="status-dot" />
@@ -151,15 +162,17 @@ function Workspace() {
                     ? "Vouchers"
                     : path.startsWith("/matriculas")
                       ? "Matrículas"
-                      : path.startsWith("/asistencia/grupos/")
-                        ? path.endsWith("/cierre")
-                          ? "Cierre de asistencia"
-                          : path.endsWith("/justificaciones")
-                            ? "Justificaciones"
-                            : path.includes("/sesiones/")
-                              ? "Registro de asistencia"
-                              : "Sesiones de clase"
-                        : (resource?.title ?? "Página")}
+                      : path.startsWith("/evaluacion/")
+                        ? "Criterios de evaluación"
+                        : path.startsWith("/asistencia/grupos/")
+                          ? path.endsWith("/cierre")
+                            ? "Cierre de asistencia"
+                            : path.endsWith("/justificaciones")
+                              ? "Justificaciones"
+                              : path.includes("/sesiones/")
+                                ? "Registro de asistencia"
+                                : "Sesiones de clase"
+                          : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -278,6 +291,12 @@ function Workspace() {
               id={path.split("/")[2]}
               studentId={query.get("estudianteId") ?? undefined}
             />
+          ) : /^\/evaluacion\/niveles(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
+            <EvaluationLevelsPage key={path} levelId={path.split("/")[3]} />
+          ) : /^\/evaluacion\/planes\/[1-9][0-9]{0,17}$/.test(path) ? (
+            <EvaluationPlanPage key={path} planId={path.split("/")[3]} />
+          ) : /^\/evaluacion\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
+            <GroupEvaluationPage key={path} groupId={path.split("/")[3]} />
           ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/cierre$/.test(path) ? (
             <AttendanceClosurePage key={path} groupId={path.split("/")[3]} />
           ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/justificaciones$/.test(

@@ -17,10 +17,10 @@ export function configureApp(app: INestApplication): void {
   const config = new DocumentBuilder()
     .setTitle('Centro de Idiomas Excel')
     .setDescription(
-      'B03–B15: acceso, usuarios, oferta académica, estudiantes, vouchers, matrículas, sesiones, asistencia, justificaciones, recuperación, cierre y corrección administrativa con auditoría. Cookie de sesión, Origin y CSRF para escrituras.',
+      'B03–B16: acceso, usuarios, oferta académica, estudiantes, vouchers, matrículas, sesiones, asistencia, justificaciones, cierre, correcciones y criterios de evaluación versionados con aprobación y auditoría. Cookie de sesión, Origin y CSRF para escrituras.',
     )
     .addCookieAuth(COOKIE_NAME, { type: 'apiKey', in: 'cookie' }, COOKIE_NAME)
-    .setVersion('0.15.0')
+    .setVersion('0.16.0')
     .build();
   SwaggerModule.setup(
     'api/docs',
