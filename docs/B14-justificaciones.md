@@ -1,7 +1,8 @@
 # B14 — Justificaciones y recuperación
 
 Sprint 3. Trazabilidad: **B14, RF33–RF35, CU12, UI07, RN15–RN18 y RN20**;
-**RN19 parcial**, pendiente del cierre de B15.
+**RN19 durante el registro abierto**, con tratamiento del cierre en
+[B15](B15-cierre-asistencia.md).
 Integra el recálculo de RF30–RF32/B13 y la conservación del historial de B12.
 Fuentes consultadas: `AGENTS.md` y los seis documentos DOCX de requisitos,
 casos de uso, modelo, arquitectura, prototipos y backlog del repositorio.
@@ -26,7 +27,8 @@ la solicitud y las decisiones anteriores, con versión e historial auditable.
 
 El registro ordinario exige grupo y periodo abiertos, matrícula activa y sesión
 realizada no futura. Los demás casos se muestran en consulta con su motivo.
-Esto no implementa ni simula el cierre específico de B15. La fecha de presentación
+El cierre específico implementado en [B15](B15-cierre-asistencia.md) bloquea la
+gestión ordinaria de expedientes. La fecha de presentación
 debe estar entre la clase y el día actual del servidor en **America/Lima**; se
 valida la cronología, sin inventar un plazo institucional de presentación.
 
@@ -184,11 +186,13 @@ pnpm db:migrate
 
 ## Límites y pendientes
 
-El cierre específico y las correcciones administrativas posteriores pertenecen a
-**B15**. `cierreConfirmado` sigue false; no se interpreta un grupo cerrado como
-evidencia de cierre de asistencia. La incidencia definitiva de una aprobada aún
-no recuperada al cierre se integrará allí, conforme a RN19; B14 la muestra
-provisional durante el registro abierto.
+[B15](B15-cierre-asistencia.md) incorpora el cierre específico y la corrección
+administrativa de marcas. `cierreConfirmado` es true únicamente cuando existe
+ese evento; no se interpreta un grupo cerrado como evidencia de cierre de
+asistencia. Las J sin recuperación confirmada computan como falta al cierre,
+conforme a RN19, conservando sus estados. B14 las muestra provisionales mientras
+el registro está abierto. La corrección B15 no sustituye decisiones del expediente.
+Las evidencias originales fechadas de B14 y ADR-009 se conservan.
 
 La revisión y aceptación de una persona del equipo y el piloto institucional
 siguen pendientes. Las pruebas locales no constituyen evidencia institucional

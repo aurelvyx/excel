@@ -310,6 +310,9 @@ export function ResourcePage({
                       <a href={`#/asistencia/grupos/${row.id}/justificaciones`}>
                         Justificaciones
                       </a>
+                      <a href={`#/asistencia/grupos/${row.id}/cierre`}>
+                        Cierre de asistencia
+                      </a>
                     </>
                   )}
                   {admin ? (

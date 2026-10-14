@@ -1,6 +1,6 @@
 import { Facts } from "../../shared/ui/Facts";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
-import type { AttendanceSummaryData } from "./model";
+import { sessionDate, type AttendanceSummaryData } from "./model";
 
 const calculationLabels: Record<AttendanceSummaryData["estado"], string> = {
   NO_APLICA: "No aplica",
@@ -76,11 +76,17 @@ export function AttendanceSummary({
           ["Tardanzas por falta", summary.reglas.tardanzasPorFalta],
           ["Versión de reglas", summary.reglas.version],
           ["Cierre confirmado", summary.cierreConfirmado ? "Sí" : "No"],
+          [
+            "Fecha de corte",
+            summary.fechaCorte ? sessionDate(summary.fechaCorte) : "Pendiente",
+          ],
         ]}
       />
       <p className="help">
-        El denominador incluye las sesiones realizadas del grupo hasta la fecha
-        actual en Lima. Las programadas y canceladas no computan.
+        {summary.cierreConfirmado
+          ? "El denominador incluye las sesiones realizadas del grupo hasta la fecha del cierre de asistencia."
+          : "El denominador incluye las sesiones realizadas del grupo hasta la fecha actual en Lima."}{" "}
+        Las programadas y canceladas no computan.
       </p>
       <p className="help">
         Presentes (P) cuenta solo las marcas P. Las tardanzas se muestran por
@@ -126,10 +132,9 @@ export function AttendanceSummary({
           )}
           {summary.justificadasPendientes > 0 && (
             <p className="help">
-              Las marcas J sin solicitud, las solicitudes pendientes y las
-              aprobadas con recuperación pendiente se incluyen provisionalmente
-              en las faltas computables. La condición queda pendiente hasta
-              resolverlas.
+              {summary.cierreConfirmado
+                ? "Al cierre, las marcas J sin recuperación confirmada computan como falta. El cierre conserva los estados de sus solicitudes y no resuelve las justificaciones."
+                : "Las marcas J sin solicitud, las solicitudes pendientes y las aprobadas con recuperación pendiente se incluyen provisionalmente en las faltas computables. La condición queda pendiente hasta resolverlas."}
             </p>
           )}
           {summary.estado === "SIN_SESIONES" && (

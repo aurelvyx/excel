@@ -148,9 +148,13 @@ o aprobada con recuperación pendiente conserva el cálculo provisional. Recuper
 no cuenta como falta; rechazada o confirmada no recuperada sí cuenta. La marca
 original permanece J y el historial de decisiones se conserva.
 
-B15 incorpora el cierre específico y correcciones administrativas posteriores;
-`cierreConfirmado` permanece false en B13. Un grupo o intento cerrado no sustituye
-ese proceso. El resultado combinado de asistencia y notas de RF43 corresponde a
+[B15](B15-cierre-asistencia.md) incorpora el cierre específico y correcciones
+administrativas posteriores. Con ese evento, `cierreConfirmado` es true, se añade
+`fechaCorte` y el criterio cambia a `REALIZADAS_DEL_GRUPO_HASTA_EL_CIERRE`. J sin
+recuperación confirmada computa como falta al cierre; las marcas faltantes siguen
+pendientes. Un grupo o intento cerrado no sustituye ese proceso. La entrega
+original B13 no tenía evento de cierre; sus resultados fechados se conservan.
+El resultado combinado de asistencia y notas de RF43 corresponde a
 B18. B13 no completa ese requisito ni emite actas con pesos supuestos.
 
 La revisión y aceptación de una persona del equipo y el piloto institucional siguen

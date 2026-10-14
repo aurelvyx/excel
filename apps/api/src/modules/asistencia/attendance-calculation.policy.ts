@@ -39,7 +39,9 @@ export type AttendanceSummary = {
   condicion: 'DENTRO_LIMITE' | 'RETIRADO_INASISTENCIA' | null;
   reglas: AttendanceRules;
   cierreConfirmado: boolean;
-  criterioSesiones: 'REALIZADAS_DEL_GRUPO_HASTA_HOY';
+  criterioSesiones:
+    'REALIZADAS_DEL_GRUPO_HASTA_HOY' | 'REALIZADAS_DEL_GRUPO_HASTA_EL_CIERRE';
+  fechaCorte?: string;
 };
 
 function count(value: number): number {
@@ -134,6 +136,8 @@ export function calculateAttendance(
         : null,
     reglas: { ...rules, inasistenciaMaxPct: decimal(maximum) },
     cierreConfirmado: closed,
-    criterioSesiones: 'REALIZADAS_DEL_GRUPO_HASTA_HOY',
+    criterioSesiones: closed
+      ? 'REALIZADAS_DEL_GRUPO_HASTA_EL_CIERRE'
+      : 'REALIZADAS_DEL_GRUPO_HASTA_HOY',
   };
 }

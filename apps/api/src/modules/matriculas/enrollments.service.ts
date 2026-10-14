@@ -10,6 +10,7 @@ import { authorize } from '../auth/authorization.js';
 import type { Identity } from '../auth/access.js';
 import { AuditService } from '../control/audit.service.js';
 import { validId } from '../../common/validation.js';
+import { loadAttendanceClosure } from '../asistencia/academic-closure.js';
 import type { EnrollmentDto, ActivationDto } from './enrollments.dto.js';
 import {
   enrollmentAvailability,
@@ -75,6 +76,10 @@ export class EnrollmentsService {
       [groupId],
     )) as Group[];
     if (!group) throw new NotFoundException('Grupo no encontrado');
+    if (await loadAttendanceClosure(manager, groupId))
+      throw new ConflictException(
+        'La asistencia del grupo está cerrada; no admite nuevas matrículas ni activaciones',
+      );
     try {
       enrollmentAvailability(group);
     } catch (error) {

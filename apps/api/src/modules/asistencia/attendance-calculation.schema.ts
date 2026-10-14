@@ -26,6 +26,7 @@ export const attendanceSummarySchema: SchemaObject = {
     'reglas',
     'cierreConfirmado',
     'criterioSesiones',
+    'fechaCorte',
   ],
   properties: {
     estado: {
@@ -93,13 +94,17 @@ export const attendanceSummarySchema: SchemaObject = {
     cierreConfirmado: {
       type: 'boolean',
       description:
-        'B13 devuelve false; el cierre específico corresponde a B15.',
+        'Existe cierre específico de asistencia B15; no se infiere del estado del grupo.',
     },
     criterioSesiones: {
       type: 'string',
-      enum: ['REALIZADAS_DEL_GRUPO_HASTA_HOY'],
+      enum: [
+        'REALIZADAS_DEL_GRUPO_HASTA_HOY',
+        'REALIZADAS_DEL_GRUPO_HASTA_EL_CIERRE',
+      ],
       description:
-        'Todas las sesiones REALIZADA del grupo con fecha hasta hoy en America/Lima, sin filtro mensual ni por fecha de solicitud de matrícula.',
+        'Sesiones REALIZADA hasta fechaCorte en America/Lima. Tras el cierre, el corte se conserva; sin filtro mensual ni por fecha de solicitud de matrícula.',
     },
+    fechaCorte: { type: 'string', format: 'date' },
   },
 };

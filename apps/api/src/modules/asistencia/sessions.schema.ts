@@ -1,5 +1,6 @@
 import type { SchemaObject } from '@nestjs/swagger';
 import { pageSchema } from '../../common/http-schema.js';
+import { academicClosureSchema } from './academic-closure.schema.js';
 const text: SchemaObject = { type: 'string' };
 export const sessionSchema: SchemaObject = {
   type: 'object',
@@ -43,6 +44,7 @@ export const sessionsPageSchema: SchemaObject = {
         'fecha_fin',
         'periodo_estado',
         'asistencia_cerrada',
+        'cierre_asistencia',
         'contexto',
       ],
       properties: {
@@ -59,8 +61,9 @@ export const sessionsPageSchema: SchemaObject = {
         asistencia_cerrada: {
           type: 'boolean',
           description:
-            'En B11 refleja el grupo cerrado; el cierre específico corresponde a B15',
+            'Existe un evento específico de cierre de asistencia B15, independiente del estado del grupo o periodo',
         },
+        cierre_asistencia: { ...academicClosureSchema, nullable: true },
         contexto: {
           type: 'object',
           properties: Object.fromEntries(

@@ -830,6 +830,13 @@ dialog::backdrop {
   white-space: normal;
   min-width: 180px;
 }
+.closure-review {
+  padding: 22px;
+  margin-bottom: 22px;
+}
+.closure-warnings {
+  margin: 22px 0;
+}
 @media (max-width: 650px) {
   .wizard-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
