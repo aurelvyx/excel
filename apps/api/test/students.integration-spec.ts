@@ -395,7 +395,7 @@ describe('B06 estudiantes e historial HTTP y PostgreSQL', () => {
         other.id,
         grade.id,
       ]),
-    ).rejects.toMatchObject({ driverError: { code: '23503' } });
+    ).rejects.toMatchObject({ driverError: { code: '23001' } });
     const row = await create();
     const [group] = await source.query(
       'SELECT id,nivel_id FROM grupos LIMIT 1',

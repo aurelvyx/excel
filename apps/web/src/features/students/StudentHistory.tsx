@@ -9,11 +9,16 @@ import { api, errorText, text, type Page, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
 import { AttendanceSummary } from "../attendance/AttendanceSummary";
 import type { AttendanceSummaryData } from "../attendance/model";
+import { GradeSummary } from "../evaluation/GradeSummary";
+import type { GradeSummaryData } from "../evaluation/grades-model";
 import {
   justificationStates,
   type JustificationState,
 } from "../attendance/justification-model";
-type HistoryRow = Row & { resumenAsistencia?: AttendanceSummaryData };
+type HistoryRow = Row & {
+  resumenAsistencia?: AttendanceSummaryData;
+  resumenNotas?: GradeSummaryData;
+};
 type HistoryPage = Omit<Page, "items"> & {
   items: HistoryRow[];
   opciones: Row[];
@@ -208,6 +213,21 @@ export function StudentHistory({
                   ),
                 },
                 {
+                  key: "notas",
+                  header: "Notas guardadas del intento",
+                  className: "attendance-calculation",
+                  cell: (row) =>
+                    row.resumenNotas ? (
+                      <GradeSummary
+                        summary={row.resumenNotas}
+                        label={`Resumen de notas del intento ${text(row, "numero_intento")}`}
+                        stale={false}
+                      />
+                    ) : (
+                      "Pendiente de consulta"
+                    ),
+                },
+                {
                   key: "resultado",
                   header: "Resultado",
                   cell: (row) => <Result row={row} />,
@@ -304,6 +324,13 @@ export function StudentHistory({
             ]}
           />
           <h3>Notas registradas</h3>
+          {detail.resumenNotas && (
+            <GradeSummary
+              summary={detail.resumenNotas}
+              label="Notas guardadas del intento"
+              stale={false}
+            />
+          )}
           <DataTable
             caption="Notas registradas"
             rows={detail.notas as Row[]}

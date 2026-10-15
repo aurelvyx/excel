@@ -6,6 +6,7 @@ import type { Identity } from '../auth/access.js';
 import { page, validId } from '../../common/validation.js';
 import { StudentsService, studentReaders } from './students.service.js';
 import { AttendanceCalculationService } from '../asistencia/attendance-calculation.service.js';
+import { GradeCalculationService } from '../evaluacion/grade-calculation.service.js';
 
 const context = `SELECT m.id,m.codigo,m.numero_intento,m.fecha_matricula::text AS fecha_matricula,m.estado,m.parametro_id,
   g.codigo AS grupo,g.id AS grupo_id,n.id AS nivel_id,n.nombre AS nivel,i.nombre AS idioma,
@@ -24,6 +25,8 @@ export class StudentHistoryService {
     @Inject(StudentsService) private readonly students: StudentsService,
     @Inject(AttendanceCalculationService)
     private readonly calculation: AttendanceCalculationService,
+    @Inject(GradeCalculationService)
+    private readonly grades: GradeCalculationService,
   ) {}
   async list(actor: Identity, id: string, query: Record<string, unknown>) {
     validId(id);
@@ -57,10 +60,15 @@ export class StudentHistoryService {
         manager,
         items.map((row) => row.id),
       );
+      const grades = await this.grades.summaries(
+        manager,
+        items.map((row) => row.id),
+      );
       return {
         items: items.map((row) => ({
           ...row,
           resumenAsistencia: summaries.get(row.id)!,
+          resumenNotas: grades.get(row.id)!,
         })),
         nextCursor: rows.length > limit ? items.at(-1)!.id : null,
         opciones: options,
@@ -82,13 +90,15 @@ export class StudentHistoryService {
         );
       const asistencias = await this.calculation.details(manager, attemptId);
       const summaries = await this.calculation.summaries(manager, [attemptId]);
+      const grades = await this.grades.summaries(manager, [attemptId]);
       const notas = await manager.query(
-        `SELECT i.id,e.nombre AS evaluacion,i.codigo,i.descripcion,i.activo,c.nota::text AS nota FROM indicadores_evaluacion i JOIN evaluaciones e ON e.id=i.evaluacion_id LEFT JOIN calificaciones c ON c.indicador_id=i.id AND c.matricula_id=$1 WHERE i.grupo_id=$2 ORDER BY e.orden,e.id,i.orden,i.id`,
+        `SELECT i.id,e.nombre AS evaluacion,i.codigo,i.descripcion,i.activo,to_char(c.nota,'FM990.00') AS nota FROM indicadores_evaluacion i JOIN evaluaciones e ON e.id=i.evaluacion_id LEFT JOIN calificaciones c ON c.indicador_id=i.id AND c.matricula_id=$1 WHERE i.grupo_id=$2 ORDER BY e.orden,e.id,i.orden,i.id`,
         [attemptId, attempt.grupo_id],
       );
       return {
         ...attempt,
         resumenAsistencia: summaries.get(attemptId)!,
+        resumenNotas: grades.get(attemptId)!,
         asistencias,
         notas,
       };

@@ -791,6 +791,22 @@ dialog::backdrop {
 .attendance-status {
   white-space: nowrap;
 }
+.grade-cell {
+  min-width: 230px;
+}
+.grade-cell label {
+  margin-top: 0;
+}
+.grade-indicator-description {
+  display: block;
+  max-width: 230px;
+  margin-top: 5px;
+  white-space: normal;
+  font-weight: 400;
+}
+.grade-summary .badge {
+  white-space: normal;
+}
 .attendance-mark label,
 .attendance-observation label {
   margin-top: 0;

@@ -81,6 +81,10 @@ export function SessionsPage({
           <a href={`#${path}/cierre`}>Cierre de asistencia</a>
           {" · "}
           <a href={`#/evaluacion/grupos/${id}`}>Evaluaciones</a>
+          {" · "}
+          <a href={`#/evaluacion/grupos/${id}/calificaciones`}>
+            Calificaciones
+          </a>
         </p>
       )}
       {data && !data.puedeProgramar && (

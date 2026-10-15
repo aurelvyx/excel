@@ -1,6 +1,7 @@
 import type { SchemaObject } from '@nestjs/swagger';
 import { personSchema } from './person.schema.js';
 import { attendanceSummarySchema } from '../asistencia/attendance-calculation.schema.js';
+import { gradeSummarySchema } from '../evaluacion/grades.schema.js';
 const text: SchemaObject = { type: 'string' };
 export const studentSchema: SchemaObject = {
   type: 'object',
@@ -55,6 +56,7 @@ export const attemptSchema: SchemaObject = {
   ),
 };
 attemptSchema.properties!.resumenAsistencia = attendanceSummarySchema;
+attemptSchema.properties!.resumenNotas = gradeSummarySchema;
 attemptSchema.properties!.resultado = {
   type: 'object',
   nullable: true,

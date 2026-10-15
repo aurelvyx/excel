@@ -1,4 +1,50 @@
 import type { DataSource } from 'typeorm';
+
+/**
+ * Carga historia sintética anterior a B17 en una base de pruebas verificada.
+ * La alteración del trigger y la inserción son atómicas: un error revierte ambas.
+ * No existe excepción ni contexto equivalente en la aplicación de producción.
+ */
+export async function insertHistoricalGrade(
+  source: DataSource,
+  input: {
+    matriculaId: string;
+    indicadorId: string;
+    grupoId: string;
+    nota: string;
+    registradoPor: string;
+  },
+): Promise<void> {
+  const database = source.options.database;
+  if (
+    process.env.NODE_ENV !== 'test' ||
+    typeof database !== 'string' ||
+    database !== process.env.DB_NAME ||
+    !/^excel_(students(_web)?|enrollments|evaluation|grades(_web)?)_test$/.test(
+      database,
+    )
+  )
+    throw new Error('La carga histórica requiere una base aislada de pruebas');
+  await source.transaction(async (manager) => {
+    await manager.query(
+      'ALTER TABLE calificaciones DISABLE TRIGGER calificaciones_abiertas_validacion',
+    );
+    await manager.query(
+      'INSERT INTO calificaciones(matricula_id,indicador_id,grupo_id,nota,registrado_por) VALUES($1,$2,$3,$4,$5)',
+      [
+        input.matriculaId,
+        input.indicadorId,
+        input.grupoId,
+        input.nota,
+        input.registradoPor,
+      ],
+    );
+    await manager.query(
+      'ALTER TABLE calificaciones ENABLE TRIGGER calificaciones_abiertas_validacion',
+    );
+  });
+}
+
 /** Datos exclusivamente sintéticos. No es un flujo de matrícula ni una fórmula oficial. */
 export async function historyFixture(
   source: DataSource,
@@ -86,16 +132,13 @@ export async function historyFixture(
         ],
       );
       if (index === 0 || order === 1)
-        await source.query(
-          'INSERT INTO calificaciones(matricula_id,indicador_id,grupo_id,nota,registrado_por) VALUES($1,$2,$3,$4,$5)',
-          [
-            attempt.id,
-            indicator.id,
-            g.id,
-            index === 0 ? '12.40' : '0.00',
-            actorId,
-          ],
-        );
+        await insertHistoricalGrade(source, {
+          matriculaId: attempt.id,
+          indicadorId: indicator.id,
+          grupoId: g.id,
+          nota: index === 0 ? '12.40' : '0.00',
+          registradoPor: actorId,
+        });
     }
     if (index === 0)
       await source.query(

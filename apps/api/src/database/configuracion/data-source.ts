@@ -14,6 +14,7 @@ import { Asistencia1790208009000 } from '../migraciones/1790208009000-asistencia
 import { Justificaciones1790208010000 } from '../migraciones/1790208010000-justificaciones.js';
 import { CierresAsistencia1790208011000 } from '../migraciones/1790208011000-cierres-asistencia.js';
 import { PlanesEvaluacion1790208012000 } from '../migraciones/1790208012000-planes-evaluacion.js';
+import { CalificacionesAbiertas1790208013000 } from '../migraciones/1790208013000-calificaciones-abiertas.js';
 
 export function databaseOptions(
   env: NodeJS.ProcessEnv = process.env,
@@ -40,6 +41,7 @@ export function databaseOptions(
       Justificaciones1790208010000,
       CierresAsistencia1790208011000,
       PlanesEvaluacion1790208012000,
+      CalificacionesAbiertas1790208013000,
     ],
     logging: false,
   };

@@ -12,6 +12,11 @@ import { ListPanel } from "../../shared/ui/ListPanel";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
+import {
+  EnrollmentAttempt,
+  StudentIdentity,
+} from "../../shared/ui/AcademicCells";
+import { CaptureToolbar } from "../../shared/ui/CaptureToolbar";
 import { GroupContext } from "./GroupContext";
 import { AttendanceSummary } from "./AttendanceSummary";
 import { AttendanceCorrectionDialog } from "./AttendanceCorrectionDialog";
@@ -294,30 +299,25 @@ function AttendanceMatrix({
         empty={!rows.length}
         emptyDescription="No hay matrículas disponibles para esta sesión en esta página."
         filters={
-          <div className="selection-toolbar attendance-toolbar">
-            <div>
-              {canEdit && (
-                <Button
-                  disabled={
-                    busy ||
-                    conflict ||
-                    !rows.some((row) => row.editable && !row.justificacionId)
-                  }
-                  onClick={markPresent}
-                >
-                  Marcar presentes
-                </Button>
-              )}
-              <Button disabled={busy} onClick={() => guard.request(reload)}>
-                Recargar asistencia
+          <CaptureToolbar
+            changes={changedRows}
+            busy={busy}
+            reloadLabel="Recargar asistencia"
+            onReload={() => guard.request(reload)}
+          >
+            {canEdit && (
+              <Button
+                disabled={
+                  busy ||
+                  conflict ||
+                  !rows.some((row) => row.editable && !row.justificacionId)
+                }
+                onClick={markPresent}
+              >
+                Marcar presentes
               </Button>
-            </div>
-            <span role="status">
-              {dirty
-                ? `${changedRows} ${changedRows === 1 ? "fila" : "filas"} con cambios sin guardar`
-                : "Sin cambios pendientes"}
-            </span>
-          </div>
+            )}
+          </CaptureToolbar>
         }
         pagination={
           <Pagination
@@ -342,27 +342,22 @@ function AttendanceMatrix({
               key: "estudiante",
               header: "Estudiante",
               cell: (row) => (
-                <>
-                  {row.estudiante}
-                  <small className="attendance-document">
-                    {row.tipo_documento} {row.numero_documento}
-                  </small>
-                </>
+                <StudentIdentity
+                  name={row.estudiante}
+                  documentType={row.tipo_documento}
+                  documentNumber={row.numero_documento}
+                />
               ),
             },
             {
               key: "matricula",
               header: "Matrícula / intento",
               cell: (row) => (
-                <>
-                  {row.codigo_matricula}
-                  <small className="attendance-document">
-                    Intento {row.numero_intento} ·{" "}
-                    {row.estado_matricula === "ACTIVA"
-                      ? "Activa"
-                      : row.estado_matricula}
-                  </small>
-                </>
+                <EnrollmentAttempt
+                  code={row.codigo_matricula}
+                  attempt={row.numero_intento}
+                  state={row.estado_matricula}
+                />
               ),
             },
             {

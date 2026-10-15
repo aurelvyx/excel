@@ -16,6 +16,7 @@ import { AttendanceClosurePage } from "./features/attendance/AttendanceClosurePa
 import { EvaluationLevelsPage } from "./features/evaluation/EvaluationLevelsPage";
 import { EvaluationPlanPage } from "./features/evaluation/EvaluationPlanPage";
 import { GroupEvaluationPage } from "./features/evaluation/GroupEvaluationPage";
+import { GradesPage } from "./features/evaluation/GradesPage";
 import { requestPageExit } from "./shared/useUnsavedChanges";
 
 export default function App() {
@@ -163,7 +164,9 @@ function Workspace() {
                     : path.startsWith("/matriculas")
                       ? "Matrículas"
                       : path.startsWith("/evaluacion/")
-                        ? "Criterios de evaluación"
+                        ? path.endsWith("/calificaciones")
+                          ? "Calificaciones"
+                          : "Criterios de evaluación"
                         : path.startsWith("/asistencia/grupos/")
                           ? path.endsWith("/cierre")
                             ? "Cierre de asistencia"
@@ -295,6 +298,10 @@ function Workspace() {
             <EvaluationLevelsPage key={path} levelId={path.split("/")[3]} />
           ) : /^\/evaluacion\/planes\/[1-9][0-9]{0,17}$/.test(path) ? (
             <EvaluationPlanPage key={path} planId={path.split("/")[3]} />
+          ) : /^\/evaluacion\/grupos\/[1-9][0-9]{0,17}\/calificaciones$/.test(
+              path,
+            ) ? (
+            <GradesPage key={path} groupId={path.split("/")[3]} query={query} />
           ) : /^\/evaluacion\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
             <GroupEvaluationPage key={path} groupId={path.split("/")[3]} />
           ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/cierre$/.test(path) ? (

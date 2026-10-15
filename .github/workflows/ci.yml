@@ -1,4 +1,4 @@
-name: Verificación B01–B16
+name: Verificación B01–B17
 on:
   push:
   pull_request:
@@ -37,6 +37,7 @@ jobs:
             .tmp/b14/*.png
             .tmp/b15/*.png
             .tmp/b16/*.png
+            .tmp/b17/*.png
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 14

@@ -89,6 +89,11 @@ function GroupEvaluation({
         }
       />
       <GroupContext group={data.grupo} />
+      <p>
+        <a href={`#/evaluacion/grupos/${data.grupo.id}/calificaciones`}>
+          Calificaciones
+        </a>
+      </p>
       <Feedback tone="success">{success}</Feedback>
       <Feedback>{error}</Feedback>
       {!data.puedeAplicar && (
