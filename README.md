@@ -38,6 +38,8 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 - **B15:** cierre específico de asistencia por grupo, revisión y reconocimiento de
   pendientes, corte temporal persistido y corrección administrativa con motivo,
   versiones e historial. No modifica notas ni resultados académicos almacenados.
+- **B16:** criterios de evaluación versionados por nivel, borradores y aprobación
+  explícita; aplicación de una versión al grupo y preparación por notas pendientes.
 - Notas, cierre de actas y reportes se desarrollan en historias posteriores.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
@@ -56,6 +58,7 @@ Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-regis
 Para consultar los cálculos, consulta [B13: faltas e inasistencia](docs/B13-calculo-asistencia.md).
 Para gestionar solicitudes, consulta [B14: justificaciones y recuperación](docs/B14-justificaciones.md).
 Para revisar y cerrar el grupo, consulta [B15: cierre de asistencia y corrección](docs/B15-cierre-asistencia.md).
+Para configurar criterios, consulta [B16: evaluaciones y versiones](docs/B16-criterios-evaluacion.md).
 
 ## Instalación desde cero
 
@@ -110,8 +113,8 @@ estructurales rechazan tablas con datos y los roles no se retiran si están asig
 La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
 Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
 
-El esquema incluye doce migraciones versionadas hasta B15. La reversión del cierre
-rechaza eventos existentes; no elimina evidencia académica para retirar la migración.
+El esquema incluye trece migraciones versionadas hasta B16. Las reversiones de
+cierres y criterios rechazan historial existente; no lo eliminan para retirar la migración.
 
 Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
 No crean credenciales de acceso ni catálogos institucionales supuestos.
@@ -142,7 +145,7 @@ local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
 Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones,
-asistencia, justificaciones y cierre con corrección administrativa con Chromium. En Linux/CI, instalar
+asistencia, justificaciones, cierre con corrección y criterios de evaluación con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 `pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra
@@ -166,10 +169,10 @@ no se presentan como una ejecución ya realizada en GitHub Actions.
 apps/api/src/
   database/             Configuración, migraciones y carga sintética
   health/               Estado técnico de la API y PostgreSQL
-  modules/              Auth, usuarios, control, oferta, personas, matrículas y asistencia
+  modules/              Auth, usuarios, control, oferta, personas, matrículas, asistencia y evaluación
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
-  features/             Acceso, configuración, estudiantes, vouchers, matrícula y asistencia
+  features/             Acceso, configuración, estudiantes, vouchers, matrícula, asistencia y evaluación
   shared/               Cliente API, navegación y diálogos
 packages/contracts/     Reservado para contratos compartidos
 infra/

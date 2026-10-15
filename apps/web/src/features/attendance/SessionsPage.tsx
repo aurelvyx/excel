@@ -79,6 +79,8 @@ export function SessionsPage({
           <a href={`#${path}/justificaciones`}>Justificaciones</a>
           {" · "}
           <a href={`#${path}/cierre`}>Cierre de asistencia</a>
+          {" · "}
+          <a href={`#/evaluacion/grupos/${id}`}>Evaluaciones</a>
         </p>
       )}
       {data && !data.puedeProgramar && (

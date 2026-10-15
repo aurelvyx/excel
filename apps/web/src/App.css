@@ -720,7 +720,8 @@ dialog::backdrop {
   border-radius: 50%;
   background: #e5eee7;
 }
-.enrollment-context {
+.enrollment-context,
+.panel-content {
   margin-bottom: 20px;
   padding: 20px;
 }
@@ -853,4 +854,23 @@ dialog::backdrop {
   .enrollment-step {
     padding: 16px;
   }
+}
+.evaluation-plan,
+.evaluation-definition {
+  display: grid;
+  gap: 1rem;
+}
+.evaluation-component {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border, #d9e0e5);
+  border-radius: 12px;
+  min-width: 0;
+}
+.evaluation-indicator {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border, #d9e0e5);
+  border-radius: 8px;
+  min-width: 0;
 }

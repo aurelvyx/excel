@@ -7,6 +7,7 @@ import { OfferModule } from './modules/oferta-academica/offer.module.js';
 import { PersonasModule } from './modules/personas/personas.module.js';
 import { MatriculasModule } from './modules/matriculas/matriculas.module.js';
 import { AsistenciaModule } from './modules/asistencia/asistencia.module.js';
+import { EvaluationModule } from './modules/evaluacion/evaluation.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AsistenciaModule } from './modules/asistencia/asistencia.module.js';
     PersonasModule,
     MatriculasModule,
     AsistenciaModule,
+    EvaluationModule,
   ],
   controllers: [HealthController],
 })
