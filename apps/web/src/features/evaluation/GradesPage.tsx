@@ -356,6 +356,10 @@ function GradesMatrix({
         <a href={`#/evaluacion/grupos/${snapshot.grupo.id}`}>
           Criterios del grupo
         </a>
+        {" · "}
+        <a href={`#/evaluacion/grupos/${snapshot.grupo.id}/acta`}>
+          Resultados y acta
+        </a>
       </p>
       <section
         className="panel panel-content"

@@ -192,3 +192,6 @@ pnpm db:migrate
 Aprobación institucional de valores concretos, aceptación humana y piloto siguen
 pendientes. RF43–RF46/B18, XLSX/B19, piloto/B20 y despliegue/respaldo/B21 conservan
 su alcance. Decisión técnica: [ADR-012](decisiones/ADR-012-notas-exactas.md).
+
+Continuación: [B18: resultados y actas](B18-resultados-actas.md) implementa RF43–RF46
+con cierre y corrección administrativos. Este documento conserva la evidencia de B17.

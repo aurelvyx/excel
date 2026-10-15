@@ -27,6 +27,12 @@ export const gradeColumns =
 
 @Injectable()
 export class GradesRepository {
+  async updateGrade(manager: EntityManager, id: string, nota: string) {
+    await manager.query(
+      'UPDATE calificaciones SET nota=$2,version=version+1,actualizado_at=CURRENT_TIMESTAMP WHERE id=$1::bigint',
+      [id, nota],
+    );
+  }
   async act(manager: EntityManager, groupId: string) {
     const [row] = await manager.query(
       "SELECT c.id,c.grupo_id,c.tipo,c.estado,c.realizado_por,c.realizado_at,c.motivo,u.nombre_usuario AS realizado_nombre FROM cierres_academicos c JOIN usuarios u ON u.id=c.realizado_por WHERE c.grupo_id=$1::bigint AND c.tipo='ACTA' AND c.estado='CERRADO' ORDER BY c.id DESC LIMIT 1",

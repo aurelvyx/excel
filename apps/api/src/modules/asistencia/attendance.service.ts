@@ -100,8 +100,12 @@ export class AttendanceService {
       await requireGroupRead(manager, actor, roles, groupId);
       const group = await loadAcademicGroup(manager, groupId);
       const session = await loadClassSession(manager, groupId, sessionId);
+      const [act] = await manager.query(
+        "SELECT id FROM cierres_academicos WHERE grupo_id=$1::bigint AND tipo='ACTA' AND estado='CERRADO'",
+        [groupId],
+      );
       const canCorrect =
-        roles.includes('ADMIN') && this.correctable(group, session);
+        roles.includes('ADMIN') && !act && this.correctable(group, session);
       const reason = await this.readOnly(
         manager,
         await this.canWrite(manager, actor, roles, groupId),
@@ -191,29 +195,54 @@ export class AttendanceService {
     validId(sessionId);
     return this.source.transaction(async (manager) => {
       await authorize(manager, actor, ['ADMIN']);
-      const group = await loadAcademicGroup(manager, groupId);
-      const session = await loadClassSession(manager, groupId, sessionId, true);
-      if (
-        !group.cierre_asistencia ||
-        group.cierre_asistencia.id !== dto.cierreId
-      )
+      await loadAcademicGroup(manager, groupId, true);
+      const [act] = await manager.query(
+        "SELECT id FROM cierres_academicos WHERE grupo_id=$1::bigint AND tipo='ACTA' AND estado='CERRADO'",
+        [groupId],
+      );
+      if (act)
         throw new ConflictException(
-          'El cierre de asistencia no corresponde al registro vigente. Recarga antes de corregir',
+          'El acta está cerrada. Corrige desde el acta para recalcular el resultado académico',
         );
-      if (!this.correctable(group, session))
-        throw new ConflictException(
-          'Solo se corrigen sesiones realizadas incluidas en el cierre de asistencia',
-        );
-      return this.persist(
+      return this.correctWithinTransaction(
         manager,
         actor,
         groupId,
-        session,
-        { registros: [dto] },
+        sessionId,
+        dto,
         ip,
-        { motivo: dto.motivo.trim(), cierreId: dto.cierreId },
       );
     });
+  }
+
+  /** Uso interno por B15/B18: el llamador conserva autorización y transacción. */
+  async correctWithinTransaction(
+    manager: EntityManager,
+    actor: Identity,
+    groupId: string,
+    sessionId: string,
+    dto: CorrectAttendanceDto,
+    ip?: string,
+  ) {
+    const group = await loadAcademicGroup(manager, groupId);
+    const session = await loadClassSession(manager, groupId, sessionId, true);
+    if (!group.cierre_asistencia || group.cierre_asistencia.id !== dto.cierreId)
+      throw new ConflictException(
+        'El cierre de asistencia no corresponde al registro vigente. Recarga antes de corregir',
+      );
+    if (!this.correctable(group, session))
+      throw new ConflictException(
+        'Solo se corrigen sesiones realizadas incluidas en el cierre de asistencia',
+      );
+    return this.persist(
+      manager,
+      actor,
+      groupId,
+      session,
+      { registros: [dto] },
+      ip,
+      { motivo: dto.motivo.trim(), cierreId: dto.cierreId },
+    );
   }
 
   async history(

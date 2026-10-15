@@ -25,6 +25,6 @@ import { AttendanceClosureService } from './attendance-closure.service.js';
     JustificationsService,
     AttendanceClosureService,
   ],
-  exports: [AttendanceCalculationService],
+  exports: [AttendanceCalculationService, AttendanceService],
 })
 export class AsistenciaModule {}

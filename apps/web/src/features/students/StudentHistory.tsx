@@ -7,6 +7,7 @@ import { Button } from "../../shared/ui/Button";
 import { useState } from "react";
 import { api, errorText, text, type Page, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
+import { academicConditionLabels } from "../../shared/academic-result";
 import { AttendanceSummary } from "../attendance/AttendanceSummary";
 import type { AttendanceSummaryData } from "../attendance/model";
 import { GradeSummary } from "../evaluation/GradeSummary";
@@ -23,11 +24,6 @@ type HistoryPage = Omit<Page, "items"> & {
   items: HistoryRow[];
   opciones: Row[];
 };
-const condition: Record<string, string> = {
-  APROBADO: "Aprobado",
-  DESAPROBADO: "Desaprobado",
-  RETIRADO_INASISTENCIA: "Retirado por inasistencia",
-};
 function Result({ row }: { row: Row }) {
   const result = row.resultado as Record<string, unknown> | null;
   if (!result) return <p>Resultado pendiente de cálculo.</p>;
@@ -36,7 +32,7 @@ function Result({ row }: { row: Row }) {
     <div className="notice">
       <p>
         {result.confirmadoAt ? "Resultado confirmado" : "Resultado provisional"}
-        : {condition[text(result, "condicion")] ?? "Pendiente"}
+        : {academicConditionLabels[text(result, "condicion")] ?? "Pendiente"}
       </p>
       <p>
         Promedio: {text(result, "promedio") || "Pendiente"} · Nota oficial:{" "}

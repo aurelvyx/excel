@@ -9,12 +9,12 @@ export function StudentIdentity({
   documentNumber: string;
 }) {
   return (
-    <>
+    <span className="academic-identity">
       {name}
       <small className="attendance-document">
         {documentType} {documentNumber}
       </small>
-    </>
+    </span>
   );
 }
 
