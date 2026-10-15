@@ -585,9 +585,12 @@ describe('B17 navegador React → API → PostgreSQL', () => {
       await save();
       await expect.poll(() => input.getAttribute('aria-invalid')).toBe('true');
       expect(await input.inputValue()).toBe(value);
-      expect(await input.evaluate((e) => e === document.activeElement)).toBe(
-        true,
-      );
+      // El error puede renderizarse antes de que el formulario enfoque el campo.
+      await expect
+        .poll(() =>
+          input.evaluate((element) => element === document.activeElement),
+        )
+        .toBe(true);
     }
     expect(writes).toBe(0);
     expect(await persisted(f.group)).toEqual([]);

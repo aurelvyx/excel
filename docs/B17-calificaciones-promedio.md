@@ -165,6 +165,24 @@ Informe: `.tmp/verificacion/pruebas.json`. Capturas en `.tmp/b17/`:
 `notas-conflicto.png` y `notas-portugues-asistencia-cerrada.png`.
 No se usa el volumen local ni se acredita una ejecución en GitHub Actions o piloto.
 
+### Revisión del caso de validación en navegador — 14 de octubre de 2026
+
+Tras el fallo intermitente comunicado por el equipo en GitHub Actions se revisó
+el caso de rangos, precisión y conservación de notas. La prueba comprobaba el
+foco inmediatamente después de observar el error, aunque el formulario lo asigna
+en una tarea posterior. Se cambió esa aserción a `expect.poll`, que espera a que
+el campo reciba realmente el foco. Conserva las seis entradas inválidas, el valor
+capturado, la ausencia de PATCH y la protección de una nota guardada al vaciarla.
+
+Nueva verificación local: `pnpm check` aprobado y **429/429** pruebas de BD/navegador
+en la suite completa (**734** pruebas contando las verificaciones anteriores).
+El caso ajustado pasó además **tres ejecuciones aisladas consecutivas**, cada una
+con PostgreSQL temporal independiente; se filtró únicamente ese caso y se omitieron
+los otros diez en esas repeticiones. Informes: `.tmp/verificacion/notas-foco-*.json`.
+No se cambian reglas académicas, código de producto ni tiempos globales de CI.
+El extracto compartido no incluye la aserción fallida del run original; la carrera
+detectada es una causa posible y queda pendiente verificar el cambio en Actions.
+
 Para actualizar una base local antes de iniciar la aplicación:
 
 ```sh
