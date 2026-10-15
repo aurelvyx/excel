@@ -11,6 +11,7 @@ import { EvaluationService } from '../src/modules/evaluacion/evaluation.service.
 import { EvaluationRepository } from '../src/modules/evaluacion/evaluation.repository.js';
 import { PlanesEvaluacion1790208012000 } from '../src/database/migraciones/1790208012000-planes-evaluacion.js';
 import { checkMigrationReversal } from './migration-test.js';
+import { insertHistoricalGrade } from './student-history.fixture.js';
 import { freePort } from './browser-server.js';
 import {
   attendanceFixture,
@@ -930,10 +931,13 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
     const g = await group();
     const legacyData = await legacy(g);
     const enrollment = await fixture.enroll(g, await fixture.student());
-    await source.query(
-      'INSERT INTO calificaciones(matricula_id,indicador_id,grupo_id,nota,registrado_por) VALUES($1,$2,$3,0,$4)',
-      [enrollment.id, legacyData.indicatorId, g.id, adminId],
-    );
+    await insertHistoricalGrade(source, {
+      matriculaId: enrollment.id,
+      indicadorId: legacyData.indicatorId,
+      grupoId: g.id,
+      nota: '0',
+      registradoPor: adminId,
+    });
     await source.query(
       "INSERT INTO resultados_academicos(matricula_id,promedio,nota_oficial,tardanzas_total,faltas_equivalentes,inasistencia_pct,condicion,confirmado_at) VALUES($1,16,16,0,0,0,'APROBADO',now())",
       [enrollment.id],
@@ -952,7 +956,7 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
   it('nota cero cuenta como registrada, pendiente no es cero y excluye matrículas no revisables', async () => {
     const g = await group();
     const active = await fixture.enroll(g, await fixture.student());
-    const closed = await fixture.enroll(g, await fixture.student(), 'CERRADA');
+    const closed = await fixture.enroll(g, await fixture.student());
     await fixture.enroll(g, await fixture.student(), 'PENDIENTE');
     await fixture.enroll(g, await fixture.student(), 'ANULADA');
     const plan = await approved(englishLevel, definition(['100'], ['100']));
@@ -985,6 +989,9 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
       'INSERT INTO calificaciones(matricula_id,indicador_id,grupo_id,nota,registrado_por) VALUES($1,$2,$3,20,$4)',
       [closed.id, indicator, g.id, adminId],
     );
+    await source.query("UPDATE matriculas SET estado='CERRADA' WHERE id=$1", [
+      closed.id,
+    ]);
     expect((await view(g)).preparacionActa).toMatchObject({
       criteriosAprobados: true,
       calificacionesRegistradas: 2,
@@ -1487,7 +1494,7 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
       });
   });
 
-  it('OpenAPI documenta versiones, aprobación explícita, preparación y ninguna escritura de notas o actas', async () => {
+  it('OpenAPI conserva versiones, aprobación y preparación sin anticipar cierre de acta', async () => {
     const spec = (
       await request(app.getHttpServer()).get('/api/openapi.json').expect(200)
     ).body;
@@ -1502,11 +1509,9 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
     const evaluationPaths = Object.keys(spec.paths).filter((path) =>
       path.startsWith(base),
     );
-    expect(
-      evaluationPaths.some((path) =>
-        /notas|calificaciones|acta|cierre/.test(path),
-      ),
-    ).toBe(false);
+    expect(evaluationPaths.some((path) => /acta|cierre/.test(path))).toBe(
+      false,
+    );
     expect(JSON.stringify(spec)).toContain('PONDERADA_JERARQUICA_V1');
     expect(JSON.stringify(spec.paths)).toContain('preparacionActa');
   });
