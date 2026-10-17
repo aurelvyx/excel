@@ -36,7 +36,7 @@ export async function attendanceFixture(
 ) {
   if (
     process.env.NODE_ENV !== 'test' ||
-    !/^excel_(attendance(_calculation|_closure)?|justifications|evaluation|grades|acts)(_web)?_test$/.test(
+    !/^excel_(attendance(_calculation|_closure)?|justifications|evaluation|grades|acts|reports)(_web)?_test$/.test(
       process.env.DB_NAME ?? '',
     )
   )

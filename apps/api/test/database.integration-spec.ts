@@ -40,7 +40,7 @@ describe('B02 sobre PostgreSQL real', () => {
 
   it('migra desde cero, siembra cuatro roles y no repite migraciones', async () => {
     expect(await source.runMigrations()).toHaveLength(source.migrations.length);
-    expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(30);
+    expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(31);
     expect(await source.query('SELECT codigo FROM roles ORDER BY codigo')).toEqual([
       { codigo: 'ADMIN' }, { codigo: 'COORDINADOR' }, { codigo: 'DOCENTE' }, { codigo: 'SECRETARIA' },
     ]);

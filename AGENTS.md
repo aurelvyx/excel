@@ -146,6 +146,16 @@ intento por nivel, puede tener saltos transaccionales y no se reinicia por perio
 Conservar códigos históricos. Detalle y pruebas: `docs/B08-matriculas.md` y
 `docs/decisiones/ADR-005-matricula-transaccional.md`.
 
+### Decisión de reportes B19 — 15 de octubre de 2026
+
+El equipo eligió **«Formatos de demostración por ahora»**. Se autorizan diseños
+propuestos de matriz de notas y resumen basado en Anexo 05 para inglés y portugués,
+siempre identificados como **BORRADOR**. Esta decisión no constituye aprobación
+institucional de plantillas, fórmulas, equivalencias de campos ni destinatarios.
+No habilitar emisión oficial hasta su confirmación. Las muestras privadas de B10
+conservan su estado pendiente. Alcance y pruebas: `docs/B19-reportes-xlsx.md` y
+`docs/decisiones/ADR-014-reportes-demostracion.md`.
+
 ## 11. Documentación técnica de referencia
 
 Consultar siempre la documentación de la versión instalada en el repositorio al ejecutar comandos o elegir una API concreta:

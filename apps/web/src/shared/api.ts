@@ -21,10 +21,12 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
-export async function api<T>(
+type RequestOptions = { method?: string; body?: unknown; signal?: AbortSignal };
+
+async function request(
   path: string,
-  options: { method?: string; body?: unknown; signal?: AbortSignal } = {},
-): Promise<T> {
+  options: RequestOptions = {},
+): Promise<Response> {
   let response: Response;
   const requestCsrf = csrf;
   try {
@@ -79,9 +81,42 @@ export async function api<T>(
         "El servicio no pudo completar la operación. Inténtalo de nuevo.",
     );
   }
+  return response;
+}
+export async function api<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const response = await request(path, options);
   return response.status === 204
     ? (undefined as T)
     : (response.json() as Promise<T>);
+}
+
+/** Descargas con la misma sesión, CSRF y tratamiento de errores que JSON. */
+export async function apiFile(path: string, options: RequestOptions = {}) {
+  const response = await request(path, options);
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename =
+    /^attachment;\s*filename="([A-Za-z0-9][A-Za-z0-9._-]*\.xlsx)"$/i.exec(
+      disposition,
+    )?.[1];
+  const exportId = response.headers.get("X-Exportacion-Id");
+  if (
+    !filename ||
+    !exportId ||
+    !/^[1-9][0-9]*$/.test(exportId) ||
+    !response.headers
+      .get("Content-Type")
+      ?.startsWith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      )
+  )
+    throw new ApiError(
+      0,
+      "No se pudo preparar la descarga. Recarga el historial antes de volver a generar el archivo.",
+    );
+  return { blob: await response.blob(), filename, exportId };
 }
 export async function allRows(
   path: string,

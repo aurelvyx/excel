@@ -97,3 +97,12 @@ de reutilizarlas. No se corrigieron fórmulas del material facilitado.
 
 El mapeo cubre un subconjunto: ficha y resumen propuestos, más ubicaciones de matriz,
 nómina y registro. No demuestra exportación RF47–RF53 ni aceptación institucional.
+
+## Continuación B19 — 15 de octubre de 2026
+
+El equipo autorizó **formatos de demostración por ahora**. B19 incorpora cuatro
+diseños nuevos de matriz de notas y resumen basado en Anexo 05, para inglés y
+portugués, en `apps/api/templates/reportes/`. Siempre generan **BORRADOR**.
+Este permiso no aprueba los originales ni sus fórmulas; sus huellas y estado
+pendiente se conservan. Alcance, mapeo propuesto y verificación:
+[B19 — Reportes XLSX](../B19-reportes-xlsx.md).

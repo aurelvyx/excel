@@ -20,6 +20,7 @@ import { navigate } from "../../shared/navigation";
 import { Dialog } from "../../shared/Dialog";
 import { RecordForm } from "./RecordForm";
 import { Assignments } from "./assignments";
+import { ReportLink } from "../reports/ReportLink";
 import {
   fieldValue,
   labels,
@@ -314,6 +315,7 @@ export function ResourcePage({
                       <a href={`#/evaluacion/grupos/${row.id}/acta`}>
                         Resultados y acta
                       </a>
+                      <ReportLink groupId={row.id} />
                       <a href={`#/asistencia/grupos/${row.id}/justificaciones`}>
                         Justificaciones
                       </a>

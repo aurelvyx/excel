@@ -20,7 +20,7 @@ export async function insertHistoricalGrade(
     process.env.NODE_ENV !== 'test' ||
     typeof database !== 'string' ||
     database !== process.env.DB_NAME ||
-    !/^excel_(students(_web)?|enrollments|evaluation|grades(_web)?|acts(_web)?)_test$/.test(
+    !/^excel_(students(_web)?|enrollments|evaluation|grades(_web)?|acts(_web)?|reports(_web)?)_test$/.test(
       database,
     )
   )
@@ -63,7 +63,7 @@ export async function insertHistoricalAct(
     process.env.NODE_ENV !== 'test' ||
     typeof database !== 'string' ||
     database !== process.env.DB_NAME ||
-    !/^excel_(evaluation|grades|acts)(_web)?_test$/.test(database)
+    !/^excel_(evaluation|grades|acts|reports)(_web)?_test$/.test(database)
   )
     throw new Error(
       'La carga de acta histórica requiere una base aislada de pruebas',
