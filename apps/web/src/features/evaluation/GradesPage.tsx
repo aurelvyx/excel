@@ -21,6 +21,7 @@ import { GroupContext } from "../attendance/GroupContext";
 import { academicTime } from "../attendance/model";
 import { GradeHistoryDialog } from "./GradeHistoryDialog";
 import { GradeSummary } from "./GradeSummary";
+import { ReportLink } from "../reports/ReportLink";
 import {
   captureGradeError,
   displayedGrade,
@@ -360,6 +361,8 @@ function GradesMatrix({
         <a href={`#/evaluacion/grupos/${snapshot.grupo.id}/acta`}>
           Resultados y acta
         </a>
+        {" · "}
+        <ReportLink groupId={snapshot.grupo.id} />
       </p>
       <section
         className="panel panel-content"

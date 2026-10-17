@@ -18,6 +18,8 @@ import { EvaluationPlanPage } from "./features/evaluation/EvaluationPlanPage";
 import { GroupEvaluationPage } from "./features/evaluation/GroupEvaluationPage";
 import { GradesPage } from "./features/evaluation/GradesPage";
 import { ActPage } from "./features/evaluation/ActPage";
+import { ReportsPage } from "./features/reports/ReportsPage";
+import { ReportsGroupsPage } from "./features/reports/ReportsGroupsPage";
 import { requestPageExit } from "./shared/useUnsavedChanges";
 
 export default function App() {
@@ -32,6 +34,9 @@ function Workspace() {
   const { path, query } = useRoute();
   const admin = session.user.roles.includes("ADMIN");
   const vouchersAllowed = admin || session.user.roles.includes("SECRETARIA");
+  const reportsAllowed = session.user.roles.some((role) =>
+    ["ADMIN", "COORDINADOR", "DOCENTE"].includes(role),
+  );
   const reader = session.user.roles.some((role) =>
     ["ADMIN", "SECRETARIA", "COORDINADOR"].includes(role),
   );
@@ -137,6 +142,14 @@ function Workspace() {
           >
             Criterios de evaluación
           </a>
+          {reportsAllowed && (
+            <a
+              href="#/reportes"
+              aria-current={path.startsWith("/reportes") ? "page" : undefined}
+            >
+              Reportes
+            </a>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <span className="status-dot" />
@@ -164,21 +177,23 @@ function Workspace() {
                     ? "Vouchers"
                     : path.startsWith("/matriculas")
                       ? "Matrículas"
-                      : path.startsWith("/evaluacion/")
-                        ? path.endsWith("/acta")
-                          ? "Resultados y acta"
-                          : path.endsWith("/calificaciones")
-                            ? "Calificaciones"
-                            : "Criterios de evaluación"
-                        : path.startsWith("/asistencia/grupos/")
-                          ? path.endsWith("/cierre")
-                            ? "Cierre de asistencia"
-                            : path.endsWith("/justificaciones")
-                              ? "Justificaciones"
-                              : path.includes("/sesiones/")
-                                ? "Registro de asistencia"
-                                : "Sesiones de clase"
-                          : (resource?.title ?? "Página")}
+                      : path.startsWith("/reportes")
+                        ? "Reportes"
+                        : path.startsWith("/evaluacion/")
+                          ? path.endsWith("/acta")
+                            ? "Resultados y acta"
+                            : path.endsWith("/calificaciones")
+                              ? "Calificaciones"
+                              : "Criterios de evaluación"
+                          : path.startsWith("/asistencia/grupos/")
+                            ? path.endsWith("/cierre")
+                              ? "Cierre de asistencia"
+                              : path.endsWith("/justificaciones")
+                                ? "Justificaciones"
+                                : path.includes("/sesiones/")
+                                  ? "Registro de asistencia"
+                                  : "Sesiones de clase"
+                            : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -296,6 +311,15 @@ function Workspace() {
               key={`${path}:${query.get("estudianteId") ?? ""}`}
               id={path.split("/")[2]}
               studentId={query.get("estudianteId") ?? undefined}
+            />
+          ) : reportsAllowed && path === "/reportes" ? (
+            <ReportsGroupsPage query={query} />
+          ) : reportsAllowed &&
+            /^\/reportes\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
+            <ReportsPage
+              key={path}
+              groupId={path.split("/")[3]}
+              query={query}
             />
           ) : /^\/evaluacion\/niveles(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
             <EvaluationLevelsPage key={path} levelId={path.split("/")[3]} />

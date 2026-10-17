@@ -8,6 +8,7 @@ import { PersonasModule } from './modules/personas/personas.module.js';
 import { MatriculasModule } from './modules/matriculas/matriculas.module.js';
 import { AsistenciaModule } from './modules/asistencia/asistencia.module.js';
 import { EvaluationModule } from './modules/evaluacion/evaluation.module.js';
+import { ReportsModule } from './modules/reportes/reports.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { EvaluationModule } from './modules/evaluacion/evaluation.module.js';
     MatriculasModule,
     AsistenciaModule,
     EvaluationModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
 })
