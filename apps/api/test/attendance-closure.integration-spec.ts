@@ -1424,7 +1424,7 @@ describe('B15 cierre y corrección de asistencia HTTP y PostgreSQL', () => {
         source.query(query, [closed.cierre!.id]),
       ).rejects.toMatchObject({ driverError: { code: '23001' } });
     await expect(
-      source.query('TRUNCATE cierres_academicos'),
+      source.query('TRUNCATE cierres_academicos CASCADE'),
     ).rejects.toMatchObject({ driverError: { code: '23001' } });
     await expect(
       checkMigrationReversal(source, new CierresAsistencia1790208011000()),

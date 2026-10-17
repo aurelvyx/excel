@@ -42,7 +42,10 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   explícita; aplicación de una versión al grupo y preparación por notas pendientes.
 - **B17:** matriz de notas abiertas por indicador e intento, guardado masivo con
   versiones y auditoría, promedio exacto y redondeo oficial desde criterios aprobados.
-- Cierre de actas, resultados combinados y reportes se desarrollan en historias posteriores.
+- **B18:** revisión de resultados con prioridad de asistencia, cierre transaccional del
+  acta y sus matrículas; correcciones administrativas de notas y asistencia con motivo,
+  versiones, recálculo y auditoría, conservando la revisión original del cierre.
+- Los reportes XLSX académicos continúan en B19.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -62,6 +65,7 @@ Para gestionar solicitudes, consulta [B14: justificaciones y recuperación](docs
 Para revisar y cerrar el grupo, consulta [B15: cierre de asistencia y corrección](docs/B15-cierre-asistencia.md).
 Para configurar criterios, consulta [B16: evaluaciones y versiones](docs/B16-criterios-evaluacion.md).
 Para iniciar el sprint 4, consulta [B17: calificaciones y promedio](docs/B17-calificaciones-promedio.md).
+Para consolidar resultados, consulta [B18: resultados y actas](docs/B18-resultados-actas.md).
 
 ## Instalación desde cero
 
@@ -116,7 +120,7 @@ estructurales rechazan tablas con datos y los roles no se retiran si están asig
 La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
 Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
 
-El esquema incluye catorce migraciones versionadas hasta B17. Las reversiones de
+El esquema incluye quince migraciones versionadas hasta B18. Las reversiones de
 cierres y criterios rechazan historial existente; no lo eliminan para retirar la migración.
 
 Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
@@ -148,7 +152,7 @@ local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
 Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones,
-asistencia, justificaciones, cierre con corrección, criterios y calificaciones con Chromium. En Linux/CI, instalar
+asistencia, justificaciones, cierre con corrección, criterios, calificaciones y actas con Chromium. En Linux/CI, instalar
 Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
 `pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra

@@ -20,7 +20,7 @@ export async function insertHistoricalGrade(
     process.env.NODE_ENV !== 'test' ||
     typeof database !== 'string' ||
     database !== process.env.DB_NAME ||
-    !/^excel_(students(_web)?|enrollments|evaluation|grades(_web)?)_test$/.test(
+    !/^excel_(students(_web)?|enrollments|evaluation|grades(_web)?|acts(_web)?)_test$/.test(
       database,
     )
   )
@@ -39,8 +39,85 @@ export async function insertHistoricalGrade(
         input.registradoPor,
       ],
     );
+    // Ejecuta el guard diferido antes del ALTER: la fila legacy no tiene acta.
+    await manager.query(
+      'SET CONSTRAINTS calificaciones_acta_recalculo IMMEDIATE',
+    );
     await manager.query(
       'ALTER TABLE calificaciones ENABLE TRIGGER calificaciones_abiertas_validacion',
+    );
+  });
+}
+
+/**
+ * Conserva las fixtures de actas sintéticas anteriores a B18 sin darles aprobación
+ * ni fabricar resultados. No es un comando disponible en la aplicación.
+ */
+export async function insertHistoricalAct(
+  source: DataSource,
+  groupId: string,
+  actorId: string,
+): Promise<void> {
+  const database = source.options.database;
+  if (
+    process.env.NODE_ENV !== 'test' ||
+    typeof database !== 'string' ||
+    database !== process.env.DB_NAME ||
+    !/^excel_(evaluation|grades|acts)(_web)?_test$/.test(database)
+  )
+    throw new Error(
+      'La carga de acta histórica requiere una base aislada de pruebas',
+    );
+  await source.transaction(async (manager) => {
+    for (const name of [
+      'cierres_asistencia_registro',
+      'actas_resultados_completos',
+    ])
+      await manager.query(
+        `ALTER TABLE cierres_academicos DISABLE TRIGGER ${name}`,
+      );
+    await manager.query(
+      "INSERT INTO cierres_academicos(grupo_id,tipo,estado,realizado_por,revision,resumen) VALUES($1,'ACTA','CERRADO',$2,$3,'{}'::jsonb)",
+      [groupId, actorId, 'c'.repeat(64)],
+    );
+    for (const name of [
+      'cierres_asistencia_registro',
+      'actas_resultados_completos',
+    ])
+      await manager.query(
+        `ALTER TABLE cierres_academicos ENABLE TRIGGER ${name}`,
+      );
+  });
+}
+
+/** Mutación controlada de una fixture legacy para verificar el prerrequisito B08. */
+export async function updateHistoricalPrerequisiteResult(
+  source: DataSource,
+  studentId: string,
+  confirmed: boolean,
+): Promise<void> {
+  if (
+    process.env.NODE_ENV !== 'test' ||
+    source.options.database !== 'excel_enrollments_test' ||
+    process.env.DB_NAME !== 'excel_enrollments_test'
+  )
+    throw new Error(
+      'La preparación del prerrequisito requiere su base aislada de pruebas',
+    );
+  await source.transaction(async (manager) => {
+    await manager.query(
+      'ALTER TABLE resultados_academicos DISABLE TRIGGER resultados_acta_validacion',
+    );
+    await manager.query(
+      `UPDATE resultados_academicos SET condicion='APROBADO',nota_oficial=13,confirmado_at=CASE WHEN $2::boolean THEN now() ELSE NULL END
+       WHERE cierre_id IS NULL AND matricula_id IN (SELECT id FROM matriculas WHERE estudiante_id=$1 AND estado='CERRADA')`,
+      [studentId, confirmed],
+    );
+    await manager.query(
+      'SET CONSTRAINTS resultados_acta_consistencia IMMEDIATE',
+    );
+    await manager.query(
+      'ALTER TABLE resultados_academicos ENABLE TRIGGER resultados_acta_validacion',
     );
   });
 }

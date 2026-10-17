@@ -42,7 +42,9 @@ export function GradeHistoryDialog({
                   ? "Registro de nota"
                   : row.accion === "UPDATE_GRADE"
                     ? "Actualización de nota"
-                    : row.accion,
+                    : row.accion === "CORRECT_CLOSED_GRADE"
+                      ? "Corrección de nota con acta cerrada"
+                      : row.accion,
             },
             {
               key: "usuario",

@@ -93,6 +93,10 @@ function GroupEvaluation({
         <a href={`#/evaluacion/grupos/${data.grupo.id}/calificaciones`}>
           Calificaciones
         </a>
+        {" · "}
+        <a href={`#/evaluacion/grupos/${data.grupo.id}/acta`}>
+          Resultados y acta
+        </a>
       </p>
       <Feedback tone="success">{success}</Feedback>
       <Feedback>{error}</Feedback>

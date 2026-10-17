@@ -7,17 +7,19 @@ export function GradeSummary({
   summary,
   label,
   stale,
+  compact = false,
+  staleMessage = "Recarga las calificaciones para consultar el cálculo vigente.",
 }: {
   summary: GradeSummaryData;
   label: string;
   stale: boolean;
+  compact?: boolean;
+  staleMessage?: string;
 }) {
   return (
     <section aria-label={label} className="grade-summary">
       {stale ? (
-        <p className="notice">
-          Recarga las calificaciones para consultar el cálculo vigente.
-        </p>
+        <p className="notice">{staleMessage}</p>
       ) : (
         <>
           <StatusBadge inactive={summary.notaOficial === null}>
@@ -25,17 +27,29 @@ export function GradeSummary({
               ? "Calificación pendiente"
               : "Notas guardadas del intento"}
           </StatusBadge>
-          <Facts
-            items={[
-              ["Promedio", displayedGrade(summary.promedio)],
-              ["Nota oficial calculada", summary.notaOficial ?? "Pendiente"],
-              [
-                "Notas registradas",
-                `${summary.calificacionesRegistradas} de ${summary.calificacionesEsperadas}`,
-              ],
-              ["Notas pendientes", summary.calificacionesPendientes],
-            ]}
-          />
+          {compact ? (
+            <>
+              <p>Promedio: {displayedGrade(summary.promedio)}</p>
+              <p>Nota oficial: {summary.notaOficial ?? "Pendiente"}</p>
+              <p>
+                Notas: {summary.calificacionesRegistradas} de{" "}
+                {summary.calificacionesEsperadas} · Pendientes:{" "}
+                {summary.calificacionesPendientes}
+              </p>
+            </>
+          ) : (
+            <Facts
+              items={[
+                ["Promedio", displayedGrade(summary.promedio)],
+                ["Nota oficial calculada", summary.notaOficial ?? "Pendiente"],
+                [
+                  "Notas registradas",
+                  `${summary.calificacionesRegistradas} de ${summary.calificacionesEsperadas}`,
+                ],
+                ["Notas pendientes", summary.calificacionesPendientes],
+              ]}
+            />
+          )}
           {summary.motivoPendiente && (
             <p className="help">{summary.motivoPendiente}</p>
           )}

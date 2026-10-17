@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import { insertHistoricalAct } from './student-history.fixture.js';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import {
@@ -415,26 +416,9 @@ describe('B17 navegador React → API → PostgreSQL', () => {
       .click();
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
   }
-  /** Fixture de acta histórica; B18 todavía no expone el flujo de cierre. */
+  /** Fixture histórica sintética conservada para la consulta de B17. */
   async function historicalAct(g: AttendanceFixtureGroup) {
-    const runner = source.createQueryRunner();
-    try {
-      await runner.startTransaction();
-      await runner.query(
-        'ALTER TABLE cierres_academicos DISABLE TRIGGER cierres_asistencia_registro',
-      );
-      await runner.query(
-        "INSERT INTO cierres_academicos(grupo_id,tipo,estado,realizado_por,revision,resumen) VALUES($1,'ACTA','CERRADO',$2,$3,'{}')",
-        [g.id, adminId, 'a'.repeat(64)],
-      );
-      await runner.query(
-        'ALTER TABLE cierres_academicos ENABLE TRIGGER cierres_asistencia_registro',
-      );
-      await runner.commitTransaction();
-    } finally {
-      if (runner.isTransactionActive) await runner.rollbackTransaction();
-      await runner.release();
-    }
+    await insertHistoricalAct(source, g.id, adminId);
   }
 
   it('captura por evaluación conserva notas y calcula 12.4→12 y 12.5→13 con pesos jerárquicos aprobados', async () => {

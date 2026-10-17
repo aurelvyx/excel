@@ -5,7 +5,10 @@ import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { seedDemo } from '../src/database/seed-demo.js';
-import { historyFixture } from './student-history.fixture.js';
+import {
+  historyFixture,
+  updateHistoricalPrerequisiteResult,
+} from './student-history.fixture.js';
 
 import { databaseOptions } from '../src/database/configuracion/data-source.js';
 import { bootstrapAdministrator } from '../src/database/bootstrap-admin.js';
@@ -382,15 +385,9 @@ describe('B08 matrícula HTTP y PostgreSQL', () => {
     );
     const input = { estudianteId: owner, grupoId: group.id };
     await call('post', 'matriculas').send(input).expect(409);
-    await source.query(
-      "UPDATE resultados_academicos SET condicion='APROBADO',nota_oficial=13 WHERE matricula_id IN (SELECT id FROM matriculas WHERE estudiante_id=$1 AND estado='CERRADA')",
-      [owner],
-    );
+    await updateHistoricalPrerequisiteResult(source, owner, false);
     await call('post', 'matriculas').send(input).expect(409);
-    await source.query(
-      "UPDATE resultados_academicos SET confirmado_at=now() WHERE matricula_id IN (SELECT id FROM matriculas WHERE estudiante_id=$1 AND estado='CERRADA')",
-      [owner],
-    );
+    await updateHistoricalPrerequisiteResult(source, owner, true);
     const row = await create(owner, group.id);
     await activation(row.id, (await voucher(owner)).id).expect(200);
   });

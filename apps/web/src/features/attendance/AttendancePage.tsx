@@ -247,6 +247,10 @@ function AttendanceMatrix({
         <a href={`#/asistencia/grupos/${snapshot.grupo.id}/cierre`}>
           Cierre de asistencia
         </a>
+        {" · "}
+        <a href={`#/evaluacion/grupos/${snapshot.grupo.id}/acta`}>
+          Resultados y correcciones de acta
+        </a>
       </p>
       <section
         className="panel enrollment-context"

@@ -201,10 +201,7 @@ export class GradesService {
         }
         let id: string;
         if (before) {
-          await manager.query(
-            'UPDATE calificaciones SET nota=$2,version=version+1,actualizado_at=CURRENT_TIMESTAMP WHERE id=$1::bigint',
-            [before.id, row.nota],
-          );
+          await this.repo.updateGrade(manager, before.id, row.nota);
           id = before.id;
         } else {
           const [inserted] = await manager.query(

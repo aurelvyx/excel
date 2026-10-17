@@ -81,7 +81,10 @@ export const gradeHistorySchema = object({
   items: array(
     object({
       id: text,
-      accion: { ...text, enum: ['CREATE_GRADE', 'UPDATE_GRADE'] },
+      accion: {
+        ...text,
+        enum: ['CREATE_GRADE', 'UPDATE_GRADE', 'CORRECT_CLOSED_GRADE'],
+      },
       usuario_id: { ...text, nullable: true },
       nombre_usuario: { ...text, nullable: true },
       ocurrido_at: date,

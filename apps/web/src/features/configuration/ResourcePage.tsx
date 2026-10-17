@@ -311,6 +311,9 @@ export function ResourcePage({
                       <a href={`#/evaluacion/grupos/${row.id}/calificaciones`}>
                         Calificaciones
                       </a>
+                      <a href={`#/evaluacion/grupos/${row.id}/acta`}>
+                        Resultados y acta
+                      </a>
                       <a href={`#/asistencia/grupos/${row.id}/justificaciones`}>
                         Justificaciones
                       </a>

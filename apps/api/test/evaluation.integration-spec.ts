@@ -1494,7 +1494,7 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
       });
   });
 
-  it('OpenAPI conserva versiones, aprobación y preparación sin anticipar cierre de acta', async () => {
+  it('OpenAPI conserva versiones, aprobación y preparación sin anticipar reapertura ni XLSX', async () => {
     const spec = (
       await request(app.getHttpServer()).get('/api/openapi.json').expect(200)
     ).body;
@@ -1509,7 +1509,7 @@ describe('B16 criterios aprobados por nivel, aplicación y PostgreSQL', () => {
     const evaluationPaths = Object.keys(spec.paths).filter((path) =>
       path.startsWith(base),
     );
-    expect(evaluationPaths.some((path) => /acta|cierre/.test(path))).toBe(
+    expect(evaluationPaths.some((path) => /reapertura|xlsx/.test(path))).toBe(
       false,
     );
     expect(JSON.stringify(spec)).toContain('PONDERADA_JERARQUICA_V1');

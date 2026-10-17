@@ -10,7 +10,10 @@ import { AuditService } from '../src/modules/control/audit.service.js';
 import { GradeCalculationService } from '../src/modules/evaluacion/grade-calculation.service.js';
 import { CalificacionesAbiertas1790208013000 } from '../src/database/migraciones/1790208013000-calificaciones-abiertas.js';
 import { checkMigrationReversal } from './migration-test.js';
-import { insertHistoricalGrade } from './student-history.fixture.js';
+import {
+  insertHistoricalAct,
+  insertHistoricalGrade,
+} from './student-history.fixture.js';
 import { freePort } from './browser-server.js';
 import {
   attendanceFixture,
@@ -334,25 +337,7 @@ describe('B17 calificaciones abiertas, promedio y PostgreSQL', () => {
     ).body as History;
   }
   async function actClosure(group: AttendanceFixtureGroup) {
-    // Solo una fixture ACTA en esta BD sintética; B18 aún no ofrece su comando.
-    const runner = source.createQueryRunner();
-    try {
-      await runner.startTransaction();
-      await runner.query(
-        'ALTER TABLE cierres_academicos DISABLE TRIGGER cierres_asistencia_registro',
-      );
-      await runner.query(
-        "INSERT INTO cierres_academicos(grupo_id,tipo,estado,realizado_por,revision,resumen) VALUES($1,'ACTA','CERRADO',$2,$3,'{}'::jsonb)",
-        [group.id, adminId, 'c'.repeat(64)],
-      );
-      await runner.query(
-        'ALTER TABLE cierres_academicos ENABLE TRIGGER cierres_asistencia_registro',
-      );
-      await runner.commitTransaction();
-    } finally {
-      if (runner.isTransactionActive) await runner.rollbackTransaction();
-      await runner.release();
-    }
+    await insertHistoricalAct(source, group.id, adminId);
   }
   async function result(
     enrollment: AttendanceFixtureEnrollment,
@@ -1389,7 +1374,7 @@ describe('B17 calificaciones abiertas, promedio y PostgreSQL', () => {
     expect(await persisted(data.group)).toEqual(before);
   });
 
-  it('OpenAPI documenta matriz, lote, versiones y cálculo sin anticipar cierre de acta', async () => {
+  it('OpenAPI conserva matriz, lote, versiones y cálculo al añadir el acta B18', async () => {
     const spec = (
       await request(app.getHttpServer()).get('/api/openapi.json').expect(200)
     ).body;
@@ -1406,7 +1391,7 @@ describe('B17 calificaciones abiertas, promedio y PostgreSQL', () => {
     expect(
       Object.keys(spec.paths).some(
         (path) =>
-          path.startsWith('/api/v1/evaluacion') && /acta|cierre/.test(path),
+          path.startsWith('/api/v1/evaluacion') && /reapertura|xlsx/.test(path),
       ),
     ).toBe(false);
   });

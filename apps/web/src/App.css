@@ -794,6 +794,18 @@ dialog::backdrop {
 .grade-cell {
   min-width: 230px;
 }
+.academic-identity {
+  display: block;
+  min-width: 12rem;
+}
+.act-result-summary p {
+  margin-bottom: 8px;
+}
+.act-stored-result > summary {
+  color: #1c6954;
+  cursor: pointer;
+  margin: 12px 0;
+}
 .grade-cell label {
   margin-top: 0;
 }
