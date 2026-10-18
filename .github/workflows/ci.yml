@@ -1,4 +1,4 @@
-name: Verificación B01–B19
+name: Verificación B01–B20
 on:
   push:
   pull_request:
@@ -40,6 +40,9 @@ jobs:
             .tmp/b17/*.png
             .tmp/b18/*.png
             .tmp/b19/*.png
+            .tmp/b20/*.png
+            .tmp/b20/entorno-*.json
+            .tmp/b20/BORRADOR-*.xlsx
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 14

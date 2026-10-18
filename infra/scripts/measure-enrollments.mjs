@@ -11,11 +11,32 @@ const mean = (values) =>
     : null;
 const missing = (value) =>
   value === null || value === undefined || value === "";
-const dateIsValid = (value) =>
+export const dateIsValid = (value) =>
   typeof value === "string" &&
   /^\d{4}-\d{2}-\d{2}$/.test(value) &&
   Number.isFinite(Date.parse(value)) &&
   new Date(value).toISOString().slice(0, 10) === value;
+
+/** Estadística descriptiva compartida; los pares deben estar validados por tarea. */
+export function compareMeasurementPairs(pairs, minimumPairs = 10) {
+  if (pairs.length < minimumPairs) return null;
+  const baseline = pairs.reduce((sum, { actual }) => sum + actual.total, 0);
+  const difference = pairs.reduce(
+    (sum, { actual, system }) => sum + actual.total - system.total,
+    0,
+  );
+  return {
+    muestra: pairs.length,
+    casos: pairs.map(({ actual }) => actual.caso).sort(),
+    actualSegundos: mean(pairs.map(({ actual }) => actual.total)),
+    sistemaSegundos: mean(pairs.map(({ system }) => system.total)),
+    diferenciaSegundos: mean(
+      pairs.map(({ actual, system }) => actual.total - system.total),
+    ),
+    reduccionPorcentaje:
+      baseline > 0 ? round((100 * difference) / baseline) : null,
+  };
+}
 
 /** Analiza observaciones declaradas; nunca usa tiempos de pruebas como línea base. */
 export function analyzeMeasurements(document) {
@@ -126,35 +147,7 @@ export function analyzeMeasurements(document) {
       return system ? [{ actual, system }] : [];
     });
   // Comparar únicamente tareas equivalentes y al menos diez pares completos.
-  const comparison =
-    pairs.length >= 10
-      ? {
-          muestra: pairs.length,
-          casos: pairs.map(({ actual }) => actual.caso).sort(),
-          actualSegundos: mean(pairs.map(({ actual }) => actual.total)),
-          sistemaSegundos: mean(pairs.map(({ system }) => system.total)),
-          diferenciaSegundos: mean(
-            pairs.map(({ actual, system }) => actual.total - system.total),
-          ),
-          reduccionPorcentaje: (() => {
-            const baseline = pairs.reduce(
-              (sum, { actual }) => sum + actual.total,
-              0,
-            );
-            return baseline > 0
-              ? round(
-                  (100 *
-                    pairs.reduce(
-                      (sum, { actual, system }) =>
-                        sum + actual.total - system.total,
-                      0,
-                    )) /
-                    baseline,
-                )
-              : null;
-          })(),
-        }
-      : null;
+  const comparison = compareMeasurementPairs(pairs);
   return {
     tipoEvidencia: document.tipoEvidencia ?? null,
     estado: comparison

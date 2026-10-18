@@ -6,11 +6,37 @@ import { dirname, join } from "node:path";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const options = process.argv.slice(2);
-if (options.length > 1 || (options.length === 1 && options[0] !== "--b10")) {
-  throw new Error("Usar pnpm test:db o pnpm test:b10");
+const profiles = {
+  "--b10": {
+    folder: "b10",
+    files: [
+      "test/students.integration-spec.ts",
+      "test/vouchers.integration-spec.ts",
+      "test/enrollments.integration-spec.ts",
+      "test/enrollments-web.integration-spec.ts",
+    ],
+  },
+  "--b20": {
+    folder: "b20",
+    files: ["test/b20-workflow.integration-spec.ts"],
+  },
+};
+if (
+  options.length > 1 ||
+  (options.length === 1 && !Object.hasOwn(profiles, options[0]))
+) {
+  throw new Error("Usar pnpm test:db, pnpm test:b10 o pnpm test:b20");
 }
-const b10 = options[0] === "--b10";
-const report = join(root, ".tmp", b10 ? "b10" : "verificacion", "pruebas.json");
+const profile = profiles[options[0]];
+const browser = process.env.B20_BROWSER ?? "chromium";
+if (profile?.folder !== "b10" && !["chromium", "msedge"].includes(browser)) {
+  throw new Error("B20_BROWSER debe ser chromium o msedge");
+}
+const reportName =
+  profile?.folder === "b20" && browser === "msedge"
+    ? "pruebas-msedge.json"
+    : "pruebas.json";
+const report = join(root, ".tmp", profile?.folder ?? "verificacion", reportName);
 mkdirSync(dirname(report), { recursive: true });
 // Impide confundir un informe anterior con esta ejecución si Docker o Vitest fallan al iniciar.
 rmSync(report, { force: true });
@@ -56,13 +82,7 @@ try {
     throw new Error("Ejecutar mediante pnpm test:db");
   const pnpmPath = process.env.npm_execpath;
   const args = ["--filter", "api", "test:integration"];
-  if (b10)
-    args.push(
-      "test/students.integration-spec.ts",
-      "test/vouchers.integration-spec.ts",
-      "test/enrollments.integration-spec.ts",
-      "test/enrollments-web.integration-spec.ts",
-    );
+  if (profile) args.push(...profile.files);
   args.push(
     "--reporter=default",
     "--reporter=json",

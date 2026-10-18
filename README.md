@@ -48,6 +48,9 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 - **B19:** matriz de notas y resumen de participantes en XLSX de demostración para
   inglés y portugués, con plantillas propuestas versionadas, vista previa, permisos
   y registro inmutable de generación. La aprobación institucional sigue pendiente.
+- **B20:** recorridos integrales de inglés y portugués desde matrícula hasta XLSX,
+  protocolo de piloto guiado e instrumentos de medición reutilizables. El piloto
+  humano, las mediciones observadas y su aceptación siguen pendientes.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -69,6 +72,8 @@ Para configurar criterios, consulta [B16: evaluaciones y versiones](docs/B16-cri
 Para iniciar el sprint 4, consulta [B17: calificaciones y promedio](docs/B17-calificaciones-promedio.md).
 Para consolidar resultados, consulta [B18: resultados y actas](docs/B18-resultados-actas.md).
 Para generar los borradores XLSX, consulta [B19: reportes](docs/B19-reportes-xlsx.md).
+Para preparar el piloto y comprobar el flujo completo, consulta
+[B20: verificación y piloto](docs/B20-verificacion-piloto.md).
 
 ## Instalación desde cero
 
@@ -163,6 +168,17 @@ base temporal. Guarda el informe JSON en `.tmp/b10/pruebas.json`; la suite compl
 usa `.tmp/verificacion/pruebas.json`. Los tiempos del runner son evidencia técnica.
 El procedimiento para observar los tiempos del centro está en la documentación B10.
 
+`pnpm test:b20` recorre la misma matrícula desde su registro hasta asistencia,
+notas, acta y descarga XLSX, con los cuatro roles operativos y datos sintéticos.
+Reutiliza el entorno temporal y guarda `.tmp/b20/pruebas.json`; la suite completa
+también incluye estos recorridos. El protocolo B20 explica la repetición en Edge
+y las comprobaciones pendientes de navegadores y aceptación humana.
+
+`pnpm b20:mediciones docs/evidencias/B20/mediciones.plantilla.json` analiza el
+instrumento del piloto: diez pares de matrícula y consolidación de asistencia,
+notas y XLSX. Los resultados permanecen pendientes mientras falten observaciones.
+Las simulaciones y los tiempos automáticos no acreditan mejora institucional.
+
 `pnpm b10:plantillas [carpeta]` comprueba las versiones de los cuatro archivos
 facilitados por el equipo contra `docs/plantillas/registro.json`. La carpeta por
 defecto es `.tmp/b10`; los archivos originales permanecen sin versionarse.
@@ -179,10 +195,10 @@ no se presentan como una ejecución ya realizada en GitHub Actions.
 apps/api/src/
   database/             Configuración, migraciones y carga sintética
   health/               Estado técnico de la API y PostgreSQL
-  modules/              Auth, usuarios, control, oferta, personas, matrículas, asistencia y evaluación
+  modules/              Auth, usuarios, control, oferta, personas, matrículas, asistencia, evaluación y reportes
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
-  features/             Acceso, configuración, estudiantes, vouchers, matrícula, asistencia y evaluación
+  features/             Acceso, configuración, estudiantes, vouchers, matrícula, asistencia, evaluación y reportes
   shared/               Cliente API, navegación y diálogos
 packages/contracts/     Reservado para contratos compartidos
 infra/
