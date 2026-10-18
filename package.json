@@ -13,6 +13,7 @@
     "test:b10": "node infra/scripts/test-database.mjs --b10",
     "b10:mediciones": "node infra/scripts/measure-enrollments.mjs",
     "b10:plantillas": "node infra/scripts/template-registry.mjs",
+    "b19:plantillas": "node infra/scripts/report-templates.mjs",
     "db:migrate": "pnpm --filter api migration:run",
     "db:revert": "pnpm --filter api migration:revert",
     "db:status": "pnpm --filter api migration:show",

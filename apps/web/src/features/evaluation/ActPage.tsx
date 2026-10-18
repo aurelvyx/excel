@@ -23,6 +23,7 @@ import { ActDetailDialog, type ActCorrection } from "./ActDetailDialog";
 import { ActHistory, StoredResultFacts } from "./ActHistory";
 import { ActTotals } from "./ActTotals";
 import { GradeSummary } from "./GradeSummary";
+import { ReportLink } from "../reports/ReportLink";
 import { displayedGrade } from "./grade-capture";
 import type { ActRow, ActView } from "./acts-model";
 
@@ -149,6 +150,8 @@ function ActReview({
         <a href={`#/asistencia/grupos/${data.grupo.id}/cierre`}>
           Cierre de asistencia
         </a>
+        {" · "}
+        <ReportLink groupId={data.grupo.id} />
       </p>
       <Feedback tone="success">{success}</Feedback>
       <Feedback>{error}</Feedback>
