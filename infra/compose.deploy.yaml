@@ -1,0 +1,125 @@
+name: excel-demo
+
+# Demostración aislada: no reutiliza el volumen ni las credenciales de desarrollo.
+services:
+  postgres:
+    image: postgres:18@sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-excel}
+      POSTGRES_USER: ${POSTGRES_USER:-excel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Ejecute pnpm deploy:setup}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks: [private]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging: &logs
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    image: excel-api:${EXCEL_IMAGE_TAG:-b21}
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      TRUST_PROXY_HOPS: "1"
+      PORT: "3000"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-excel}
+      DB_USER: ${APP_DB_USER:-excel_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD:?Ejecute pnpm deploy:setup}
+      DB_SSL: "false"
+      WEB_ORIGINS: https://localhost:${DEMO_HTTPS_PORT:-8443}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    logging: *logs
+
+  # Operación explícita. No se ejecuta con up; no configura datos académicos.
+  ops:
+    image: excel-api:${EXCEL_IMAGE_TAG:-b21}
+    profiles: [ops]
+    init: true
+    command: ["node", "dist/database/runtime-role.js"]
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-excel}
+      DB_USER: ${POSTGRES_USER:-excel}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Ejecute pnpm deploy:setup}
+      DB_SSL: "false"
+      APP_DB_USER: ${APP_DB_USER:-excel_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Ejecute pnpm deploy:setup}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: *logs
+
+  web:
+    image: excel-web:${EXCEL_IMAGE_TAG:-b21}
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DEMO_HTTPS_PORT:-8443}:443"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [private, edge]
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "--quiet", "--spider", "https://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging: *logs
+
+networks:
+  private:
+    internal: true
+  edge: {}
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

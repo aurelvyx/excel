@@ -20,12 +20,16 @@ const profiles = {
     folder: "b20",
     files: ["test/b20-workflow.integration-spec.ts"],
   },
+  "--b21": {
+    folder: "b21",
+    files: ["test/backups.integration-spec.ts"],
+  },
 };
 if (
   options.length > 1 ||
   (options.length === 1 && !Object.hasOwn(profiles, options[0]))
 ) {
-  throw new Error("Usar pnpm test:db, pnpm test:b10 o pnpm test:b20");
+  throw new Error("Usar pnpm test:db, pnpm test:b10, pnpm test:b20 o pnpm test:b21");
 }
 const profile = profiles[options[0]];
 const browser = process.env.B20_BROWSER ?? "chromium";
@@ -76,6 +80,7 @@ try {
     DB_PASSWORD: env.TEST_DB_PASSWORD,
     DB_SSL: "false",
     ALLOW_DEMO_SEED: "true",
+    TEST_DOCKER_NETWORK: `${project}_default`,
   });
   // npm_execpath lo proporciona pnpm; evita shells y rutas de ejecutables específicas del SO.
   if (!process.env.npm_execpath)
