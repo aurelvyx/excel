@@ -39,8 +39,8 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('migra desde cero, siembra cuatro roles y no repite migraciones', async () => {
-    expect(await source.runMigrations()).toHaveLength(4);
-    expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(18);
+    expect(await source.runMigrations()).toHaveLength(source.migrations.length);
+    expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).toHaveLength(32);
     expect(await source.query('SELECT codigo FROM roles ORDER BY codigo')).toEqual([
       { codigo: 'ADMIN' }, { codigo: 'COORDINADOR' }, { codigo: 'DOCENTE' }, { codigo: 'SECRETARIA' },
     ]);
@@ -48,12 +48,12 @@ describe('B02 sobre PostgreSQL real', () => {
     expect(await source.query('SELECT * FROM usuarios')).toEqual([]);
   });
 
-  it('revierte las cuatro migraciones y las reaplica desde limpio', async () => {
-    for (let i = 0; i < 4; i++) await source.undoLastMigration();
+  it('revierte todas las migraciones y las reaplica desde limpio', async () => {
+    for (let i = 0; i < source.migrations.length; i++) await source.undoLastMigration();
     expect(await source.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`))
       .toEqual([{ tablename: 'migraciones' }]);
     expect(await source.query('SELECT * FROM migraciones')).toEqual([]);
-    expect(await source.runMigrations()).toHaveLength(4);
+    expect(await source.runMigrations()).toHaveLength(source.migrations.length);
   });
 
   it('un conflicto en la carga sintética no deja datos parciales', async () => {
@@ -162,11 +162,12 @@ describe('B02 sobre PostgreSQL real', () => {
   });
 
   it('revertir roles asignados falla y conserva los datos e historial', async () => {
-    await source.undoLastMigration(); // Acceso todavía sin sesiones ni auditoría en esta suite.
+    // Conserva identidad, oferta y roles; incluye automáticamente las nuevas migraciones vacías.
+    for (let i = source.migrations.length; i > 3; i--) await source.undoLastMigration();
     await expect(source.undoLastMigration()).rejects.toMatchObject({ driverError: { code: '23001' } });
     expect(await source.query('SELECT * FROM roles')).toHaveLength(4);
     expect(await source.query('SELECT * FROM migraciones')).toHaveLength(3);
-    expect(await source.runMigrations()).toHaveLength(1);
+    expect(await source.runMigrations()).toHaveLength(source.migrations.length - 3);
   });
 
   it('rechaza revertir tablas que contienen datos', async () => {

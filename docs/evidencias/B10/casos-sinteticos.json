@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "tipoDatos": "SINTETICOS",
+  "requierePreparacion": "Catálogo DEMO y grupos activos dentro del plazo de matrícula en un entorno aislado",
+  "casos": [
+    {
+      "caso": "M01",
+      "idioma": "EN",
+      "grupo": "DEMO-EN-G1",
+      "estudiantePreexistente": false,
+      "buscarPor": "DOCUMENTO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M01",
+        "codigoEstudiante": "SYN-B10-M01",
+        "nombres": "Alumno 01",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M01",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M02",
+      "idioma": "EN",
+      "grupo": "DEMO-EN-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "DOCUMENTO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M02",
+        "codigoEstudiante": "SYN-B10-M02",
+        "nombres": "Alumno 02",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M02",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M03",
+      "idioma": "EN",
+      "grupo": "DEMO-EN-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "NOMBRE",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M03",
+        "codigoEstudiante": "SYN-B10-M03",
+        "nombres": "Alumno 03",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M03",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M04",
+      "idioma": "EN",
+      "grupo": "DEMO-EN-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "CODIGO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M04",
+        "codigoEstudiante": "SYN-B10-M04",
+        "nombres": "Alumno 04",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M04",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M05",
+      "idioma": "EN",
+      "grupo": "DEMO-EN-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "DOCUMENTO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M05",
+        "codigoEstudiante": "SYN-B10-M05",
+        "nombres": "Alumno 05",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M05",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M06",
+      "idioma": "PT",
+      "grupo": "DEMO-PT-G1",
+      "estudiantePreexistente": false,
+      "buscarPor": "DOCUMENTO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M06",
+        "codigoEstudiante": "SYN-B10-M06",
+        "nombres": "Alumno 06",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M06",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M07",
+      "idioma": "PT",
+      "grupo": "DEMO-PT-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "DOCUMENTO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M07",
+        "codigoEstudiante": "SYN-B10-M07",
+        "nombres": "Alumno 07",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M07",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M08",
+      "idioma": "PT",
+      "grupo": "DEMO-PT-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "NOMBRE",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M08",
+        "codigoEstudiante": "SYN-B10-M08",
+        "nombres": "Alumno 08",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M08",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M09",
+      "idioma": "PT",
+      "grupo": "DEMO-PT-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "CODIGO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M09",
+        "codigoEstudiante": "SYN-B10-M09",
+        "nombres": "Alumno 09",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M09",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    },
+    {
+      "caso": "M10",
+      "idioma": "PT",
+      "grupo": "DEMO-PT-G1",
+      "estudiantePreexistente": true,
+      "buscarPor": "DOCUMENTO",
+      "estudiante": {
+        "tipoDocumento": "SINTETICO",
+        "numeroDocumento": "SYN-B10-M10",
+        "codigoEstudiante": "SYN-B10-M10",
+        "nombres": "Alumno 10",
+        "apellidoPaterno": "Prueba B10",
+        "fechaRegistro": "2026-09-30"
+      },
+      "voucher": {
+        "numero": "SYN-B10-V-M10",
+        "fechaPago": "2026-09-30",
+        "importe": "100.25"
+      },
+      "esperado": "Una matrícula ACTIVA, nivel completo, intento 1, voucher VALIDADO y auditoría"
+    }
+  ]
+}

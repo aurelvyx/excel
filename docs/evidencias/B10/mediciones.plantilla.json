@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "tipoEvidencia": null,
+  "observaciones": [
+    {
+      "caso": "M01",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M02",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M03",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M04",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M05",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M06",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M07",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M08",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M09",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    },
+    {
+      "caso": "M10",
+      "procedimiento": "ACTUAL",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "evidencia": null,
+      "tiemposSegundos": {
+        "busqueda": null,
+        "voucher": null,
+        "grupo": null,
+        "confirmacion": null
+      },
+      "correcciones": null,
+      "incidencias": null
+    }
+  ]
+}

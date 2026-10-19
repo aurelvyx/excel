@@ -25,6 +25,11 @@ export class ApiErrorFilter implements ExceptionFilter {
         status = 409;
         message = 'El registro ya existe';
       }
+      if (code === '40001' || code === '40P01') {
+        status = 409;
+        message =
+          'Los datos cambiaron durante la operación. Recarga antes de volver a confirmar';
+      }
       if (code === '23503' || code === '23514' || code === '23001') {
         status = 400;
         message = 'Los datos no cumplen las restricciones';

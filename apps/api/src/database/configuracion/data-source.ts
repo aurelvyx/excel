@@ -5,8 +5,23 @@ import { Identidad1790208000000 } from '../migraciones/1790208000000-identidad.j
 import { OfertaAcademica1790208001000 } from '../migraciones/1790208001000-oferta-academica.js';
 import { RolesIniciales1790208002000 } from '../migraciones/1790208002000-roles-iniciales.js';
 import { AccesoAuditoria1790208003000 } from '../migraciones/1790208003000-acceso-auditoria.js';
+import { Historial1790208004000 } from '../migraciones/1790208004000-historial.js';
+import { Vouchers1790208005000 } from '../migraciones/1790208005000-vouchers.js';
+import { Matriculas1790208006000 } from '../migraciones/1790208006000-matriculas.js';
+import { SolicitudReintento1790208007000 } from '../migraciones/1790208007000-solicitud-reintento.js';
+import { Sesiones1790208008000 } from '../migraciones/1790208008000-sesiones.js';
+import { Asistencia1790208009000 } from '../migraciones/1790208009000-asistencia.js';
+import { Justificaciones1790208010000 } from '../migraciones/1790208010000-justificaciones.js';
+import { CierresAsistencia1790208011000 } from '../migraciones/1790208011000-cierres-asistencia.js';
+import { PlanesEvaluacion1790208012000 } from '../migraciones/1790208012000-planes-evaluacion.js';
+import { CalificacionesAbiertas1790208013000 } from '../migraciones/1790208013000-calificaciones-abiertas.js';
+import { ActasResultados1790208014000 } from '../migraciones/1790208014000-actas-resultados.js';
+import { Exportaciones1790208015000 } from '../migraciones/1790208015000-exportaciones.js';
+import { Respaldos1790208016000 } from '../migraciones/1790208016000-respaldos.js';
 
-export function databaseOptions(env: NodeJS.ProcessEnv = process.env): DataSourceOptions {
+export function databaseOptions(
+  env: NodeJS.ProcessEnv = process.env,
+): DataSourceOptions {
   return {
     type: 'postgres',
     ...databaseEnvironment(env),
@@ -15,7 +30,25 @@ export function databaseOptions(env: NodeJS.ProcessEnv = process.env): DataSourc
     migrationsTransactionMode: 'all',
     migrationsTableName: 'migraciones',
     entities: [],
-    migrations: [Identidad1790208000000, OfertaAcademica1790208001000, RolesIniciales1790208002000, AccesoAuditoria1790208003000],
+    migrations: [
+      Identidad1790208000000,
+      OfertaAcademica1790208001000,
+      RolesIniciales1790208002000,
+      AccesoAuditoria1790208003000,
+      Historial1790208004000,
+      Vouchers1790208005000,
+      Matriculas1790208006000,
+      SolicitudReintento1790208007000,
+      Sesiones1790208008000,
+      Asistencia1790208009000,
+      Justificaciones1790208010000,
+      CierresAsistencia1790208011000,
+      PlanesEvaluacion1790208012000,
+      CalificacionesAbiertas1790208013000,
+      ActasResultados1790208014000,
+      Exportaciones1790208015000,
+      Respaldos1790208016000,
+    ],
     logging: false,
   };
 }

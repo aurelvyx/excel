@@ -1,4 +1,4 @@
-name: Verificación B01, B02 y B03
+name: Verificación B01–B21
 on:
   push:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -21,4 +21,34 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm --filter api exec playwright install --with-deps chromium
       - run: pnpm test:db
+      - run: pnpm deploy:setup
+      - run: pnpm deploy:config
+      - run: pnpm deploy:build
+      - run: pnpm test:deploy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencia-tecnica
+          path: |
+            .tmp/verificacion/pruebas.json
+            .tmp/b09/*.png
+            .tmp/b10/*.png
+            .tmp/b11/*.png
+            .tmp/b12/*.png
+            .tmp/b13/*.png
+            .tmp/b14/*.png
+            .tmp/b15/*.png
+            .tmp/b16/*.png
+            .tmp/b17/*.png
+            .tmp/b18/*.png
+            .tmp/b19/*.png
+            .tmp/b20/*.png
+            .tmp/b20/entorno-*.json
+            .tmp/b20/BORRADOR-*.xlsx
+            .tmp/b21/*.png
+            .tmp/b21/despliegue.json
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14

@@ -11,13 +11,77 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
   claves, índices y restricciones; cuatro roles iniciales y carga sintética opcional.
 - **B03:** acceso y cierre de sesión, gestión administrativa de usuarios y roles,
   cambio de contraseña propia, protección CSRF y auditoría básica inmutable.
-- La interfaz mantiene la plantilla de React; el acceso visual corresponde a B05.
-  Matrícula, asistencia, notas y reportes se desarrollan en historias posteriores.
+- **B04:** API de idiomas, niveles, unidades, periodos, turnos, secciones y grupos;
+  gestión de docentes y asignaciones, permisos por grupo y auditoría transaccional.
+- **B05:** interfaz React de acceso, contraseña, menú por rol y configuración de
+  oferta, docentes y cuentas, conectada a la API y verificada con navegador.
+- **B06:** registro, búsqueda y actualización de estudiantes, auditoría e historial
+  persistido separado por intento, nivel y periodo; interfaz y permisos por rol.
+- **B07:** registro y decisión de vouchers para administración y secretaría, con
+  importes exactos, bloqueo de duplicados y auditoría transaccional.
+- **B08:** API de solicitud y activación transaccional de matrícula, prerrequisitos,
+  vacantes, intentos, código basado en documento y conservación del historial.
+- **B09:** asistente de matrícula con búsqueda/alta de estudiante, voucher, grupo y
+  confirmación; recuperación de solicitudes pendientes y reintentos sin duplicados.
+- **B10:** verificación ampliada de matrícula, informe automático, diez casos
+  sintéticos, instrumento de medición y registro de plantillas con mapas comunes.
+  Los tiempos observados y la aprobación institucional de los formatos siguen pendientes.
+- **B11:** programación de fechas de clase por grupo, horario opcional y confirmación;
+  permisos docentes, rango del periodo, duplicados y auditoría en API, BD e interfaz.
+- **B12:** matriz de asistencia P/F/T/J por sesión, registro masivo y correcciones
+  con versiones, conservación de intentos, permisos y auditoría transaccional.
+- **B13:** cálculo por intento de tardanzas, faltas computables y porcentaje exacto,
+  condición por límite del 30 %, resúmenes compartidos en matriz e historial y
+  distinción de marcas pendientes y justificaciones provisionales.
+- **B14:** registro, resolución y recuperación de justificaciones por grupo, con
+  responsables, fechas, versiones, historial y recálculo transaccional de asistencia.
+- **B15:** cierre específico de asistencia por grupo, revisión y reconocimiento de
+  pendientes, corte temporal persistido y corrección administrativa con motivo,
+  versiones e historial. No modifica notas ni resultados académicos almacenados.
+- **B16:** criterios de evaluación versionados por nivel, borradores y aprobación
+  explícita; aplicación de una versión al grupo y preparación por notas pendientes.
+- **B17:** matriz de notas abiertas por indicador e intento, guardado masivo con
+  versiones y auditoría, promedio exacto y redondeo oficial desde criterios aprobados.
+- **B18:** revisión de resultados con prioridad de asistencia, cierre transaccional del
+  acta y sus matrículas; correcciones administrativas de notas y asistencia con motivo,
+  versiones, recálculo y auditoría, conservando la revisión original del cierre.
+- **B19:** matriz de notas y resumen de participantes en XLSX de demostración para
+  inglés y portugués, con plantillas propuestas versionadas, vista previa, permisos
+  y registro inmutable de generación. La aprobación institucional sigue pendiente.
+- **B20:** recorridos integrales de inglés y portugués desde matrícula hasta XLSX,
+  protocolo de piloto guiado e instrumentos de medición reutilizables. El piloto
+  humano, las mediciones observadas y su aceptación siguen pendientes.
+- **B21:** preparación de despliegue con Coolify y demostración local HTTPS,
+  respaldo PostgreSQL y ensayo de restauración aislada, consulta administrativa
+  de operaciones, manuales e índice de entrega. La publicación en el VPS y la
+  recepción operativa se verifican con el responsable del centro.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
 Para crear el primer administrador y utilizar los endpoints de acceso, consulta
 [B03: acceso y usuarios](docs/B03-acceso-y-usuarios.md).
+Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-oferta-y-docentes.md).
+Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-interfaz-y-configuracion.md).
+Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estudiantes-historial.md).
+Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
+Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matriculas.md).
+Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asistente-matricula.md).
+Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas](docs/B10-verificacion-matricula.md).
+Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-clase.md).
+Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-registro-asistencia.md).
+Para consultar los cálculos, consulta [B13: faltas e inasistencia](docs/B13-calculo-asistencia.md).
+Para gestionar solicitudes, consulta [B14: justificaciones y recuperación](docs/B14-justificaciones.md).
+Para revisar y cerrar el grupo, consulta [B15: cierre de asistencia y corrección](docs/B15-cierre-asistencia.md).
+Para configurar criterios, consulta [B16: evaluaciones y versiones](docs/B16-criterios-evaluacion.md).
+Para iniciar el sprint 4, consulta [B17: calificaciones y promedio](docs/B17-calificaciones-promedio.md).
+Para consolidar resultados, consulta [B18: resultados y actas](docs/B18-resultados-actas.md).
+Para generar los borradores XLSX, consulta [B19: reportes](docs/B19-reportes-xlsx.md).
+Para preparar el piloto y comprobar el flujo completo, consulta
+[B20: verificación y piloto](docs/B20-verificacion-piloto.md).
+Para instalar con Coolify y operar los respaldos, consulta
+[B21: despliegue y recuperación](docs/B21-despliegue-respaldo.md), el
+[manual de operación](docs/manuales/instalacion-operacion.md) y el
+[manual de usuario](docs/manuales/usuario.md).
 
 ## Instalación desde cero
 
@@ -49,7 +113,7 @@ pnpm dev:api
 pnpm dev:web
 ```
 
-- Web: http://127.0.0.1:5173 (plantilla inicial).
+- Web: http://127.0.0.1:5173 (acceso y configuración por rol).
 - Salud API: http://127.0.0.1:3000/api/v1/health.
 - Swagger: http://127.0.0.1:3000/api/docs.
 - OpenAPI JSON: http://127.0.0.1:3000/api/openapi.json.
@@ -72,6 +136,9 @@ estructurales rechazan tablas con datos y los roles no se retiran si están asig
 La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
 Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
 
+El esquema incluye diecisiete migraciones versionadas hasta B21. Las reversiones de
+cierres y criterios rechazan historial existente; no lo eliminan para retirar la migración.
+
 Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
 No crean credenciales de acceso ni catálogos institucionales supuestos.
 Para cargar ejemplos sintéticos en desarrollo, en PowerShell:
@@ -92,6 +159,7 @@ aleatoria no se conserva. No es una cuenta para iniciar sesión. No se fijan pes
 
 ```sh
 pnpm check
+pnpm --filter api exec playwright install chromium
 pnpm test:db
 ```
 
@@ -99,8 +167,43 @@ pnpm test:db
 local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
 revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
 real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
+Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones,
+asistencia, justificaciones, cierre con corrección, criterios, calificaciones, actas y reportes con Chromium. En Linux/CI, instalar
+Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
 
-El workflow `.github/workflows/ci.yml` ejecuta ambas verificaciones en push y pull request.
+`pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra
+base temporal. Guarda el informe JSON en `.tmp/b10/pruebas.json`; la suite completa
+usa `.tmp/verificacion/pruebas.json`. Los tiempos del runner son evidencia técnica.
+El procedimiento para observar los tiempos del centro está en la documentación B10.
+
+`pnpm test:b20` recorre la misma matrícula desde su registro hasta asistencia,
+notas, acta y descarga XLSX, con los cuatro roles operativos y datos sintéticos.
+Reutiliza el entorno temporal y guarda `.tmp/b20/pruebas.json`; la suite completa
+también incluye estos recorridos. El protocolo B20 explica la repetición en Edge
+y las comprobaciones pendientes de navegadores y aceptación humana.
+
+`pnpm test:b21` genera un respaldo real de un intento académico sintético cerrado
+y lo restaura en un contenedor nuevo sin red ni puertos. Comprueba integridad,
+historia académica, permisos y consulta administrativa. Los archivos de respaldo
+se crean fuera del repositorio y se eliminan al terminar la prueba.
+
+Para la demostración de las imágenes de producción: `pnpm deploy:setup`,
+`pnpm deploy:build` y `pnpm test:deploy`. El último comando crea y elimina su
+propio proyecto temporal, comprueba HTTPS con su autoridad local, acceso y
+permisos de la base. El procedimiento de instalación persistente está en B21.
+
+`pnpm b20:mediciones docs/evidencias/B20/mediciones.plantilla.json` analiza el
+instrumento del piloto: diez pares de matrícula y consolidación de asistencia,
+notas y XLSX. Los resultados permanecen pendientes mientras falten observaciones.
+Las simulaciones y los tiempos automáticos no acreditan mejora institucional.
+
+`pnpm b10:plantillas [carpeta]` comprueba las versiones de los cuatro archivos
+facilitados por el equipo contra `docs/plantillas/registro.json`. La carpeta por
+defecto es `.tmp/b10`; los archivos originales permanecen sin versionarse.
+`pnpm b10:mediciones <archivo.json>` resume las observaciones registradas con la
+plantilla de `docs/evidencias/B10/`. No genera cifras cuando faltan mediciones.
+
+El workflow `.github/workflows/ci.yml` ejecuta estas verificaciones en push y pull request.
 Su ejecución remota requiere publicar el repositorio en GitHub; los resultados locales
 no se presentan como una ejecución ya realizada en GitHub Actions.
 
@@ -110,20 +213,23 @@ no se presentan como una ejecución ya realizada en GitHub Actions.
 apps/api/src/
   database/             Configuración, migraciones y carga sintética
   health/               Estado técnico de la API y PostgreSQL
-  modules/              Auth, usuarios y control; otras funciones reservadas
+  modules/              Auth, usuarios, control, oferta, personas, matrículas, asistencia, evaluación y reportes
   common/               Filtro de errores e infraestructura compartida
 apps/web/src/
-  features/             Reservado para las funciones del negocio
-  shared/               Reservado para componentes y cliente API
+  features/             Acceso, configuración, estudiantes, vouchers, matrícula, asistencia, evaluación y reportes
+  shared/               Cliente API, navegación y diálogos
 packages/contracts/     Reservado para contratos compartidos
 infra/
   compose.yaml          PostgreSQL persistente de desarrollo
   compose.test.yaml     PostgreSQL temporal de verificación
+  compose.coolify.yaml  Despliegue Git en Coolify, con dominio solo en web
+  compose.deploy.yaml   Demostración local HTTPS separada de desarrollo
   scripts/              Preparación de entornos y pruebas aisladas
-  proxy/                Reservado para despliegue posterior
-  scripts/respaldo/     Reservado para B21
+  proxy/                Archivos Caddy para web y proxy interno de API
+  scripts/respaldo/     Respaldo, comprobación aislada y plan de retención
 ```
 
 Para detener la base: `pnpm db:down`; conserva el volumen. Para consultar logs:
 `pnpm db:logs`. Para validar Compose: `pnpm db:config`.
-La infraestructura de producción, respaldos y restauración siguen en B21.
+El despliegue real usa Coolify; sus variables privadas, dominio y recepción se
+configuran en el servidor. Los respaldos se custodian fuera del repositorio.

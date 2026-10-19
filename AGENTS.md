@@ -130,11 +130,53 @@ Estas cuestiones requieren respuesta del centro o del equipo; hasta entonces sig
 | --- | --- |
 | Pesos, componentes y fórmula de evaluación por nivel | Modelar configuración; probar con datos declarados como sintéticos. No emitir acta oficial con pesos supuestos. |
 | Versión definitiva de plantillas y códigos de los XLSX | Conservar copia de muestra y mapeo propuesto; solicitar aprobación de hojas, columnas y totales. |
-| Excepción por voucher repetido y formato de código de matrícula | Bloquear la vía ordinaria y registrar la decisión antes de habilitar excepciones o generar códigos institucionales definitivos. |
+| Excepción por voucher repetido | Bloquear la vía ordinaria y registrar la decisión antes de habilitar excepciones. |
 | Destinatario externo de cada anexo | Exportar el formato que apruebe el centro; no crear integración automática ni afirmar un destinatario confirmado. |
 | Infraestructura, dominio, responsable de respaldos y acceso al piloto | Preparar ejecución reproducible de demostración; registrar limitaciones antes de afirmar puesta en producción. |
 
 El backlog distingue lo comprometido para la demostración de variantes pendientes, como restablecimiento de contraseña, ciertas opciones de anulación y consulta, alertas anticipadas, todos los formatos de RF47–RF51 y algunas interfaces de auditoría o restauración. Conservar su trazabilidad y revisar alcance el **23 de octubre y 6 de noviembre de 2026**. Agregar funciones solamente tras estimar su impacto y ajustar el plan con el equipo.
+
+### Decisión de código de matrícula — 29 de septiembre de 2026
+
+El equipo indicó usar como base `MAT-NroDocumento` (DNI u otro documento).
+La implementación B08 añade un correlativo global de matrícula para cumplir RF27
+sin colisiones entre niveles, idiomas, tipos de documento o repeticiones:
+`MAT-NroDocumento-Correlativo`. El correlativo es independiente del número de
+intento por nivel, puede tener saltos transaccionales y no se reinicia por periodo.
+Conservar códigos históricos. Detalle y pruebas: `docs/B08-matriculas.md` y
+`docs/decisiones/ADR-005-matricula-transaccional.md`.
+
+### Decisión de reportes B19 — 15 de octubre de 2026
+
+El equipo eligió **«Formatos de demostración por ahora»**. Se autorizan diseños
+propuestos de matriz de notas y resumen basado en Anexo 05 para inglés y portugués,
+siempre identificados como **BORRADOR**. Esta decisión no constituye aprobación
+institucional de plantillas, fórmulas, equivalencias de campos ni destinatarios.
+No habilitar emisión oficial hasta su confirmación. Las muestras privadas de B10
+conservan su estado pendiente. Alcance y pruebas: `docs/B19-reportes-xlsx.md` y
+`docs/decisiones/ADR-014-reportes-demostracion.md`.
+
+### Preparación del piloto B20 — 17 de octubre de 2026
+
+El equipo confirmó **«Aún no; preparar el piloto»** ante la consulta sobre
+participantes de secretaría, docente y coordinación y diez mediciones previas.
+Preparar instrumentos vacíos y pruebas con datos sintéticos; conservar como
+pendientes el piloto humano, sus tiempos observados y la aceptación institucional.
+No convertir duraciones de pruebas automáticas en resultados del centro.
+Detalle y trazabilidad: `docs/B20-verificacion-piloto.md` y
+`docs/B20-piloto-guiado.md`.
+
+### Decisión de despliegue B21 — 18 de octubre de 2026
+
+El equipo confirmó que dispone de **VPS, dominio y Coolify**. El destino de
+despliegue es una aplicación Git con Docker Compose administrada por Coolify;
+solo la web recibe un dominio y la API y PostgreSQL permanecen privados.
+Preparar también una demostración local HTTPS y un ensayo aislado de recuperación.
+La publicación real, DNS/TLS, responsable, calendario diario, retención y custodia
+externa de respaldos siguen pendientes de configuración y recepción operativa.
+No interpretar la disponibilidad del VPS como evidencia de puesta en producción.
+Detalle: `docs/B21-despliegue-respaldo.md` y
+`docs/decisiones/ADR-015-despliegue-coolify-respaldos.md`.
 
 ## 11. Documentación técnica de referencia
 

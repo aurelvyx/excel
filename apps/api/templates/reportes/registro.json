@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "estado": "PROPUESTA",
+  "plantillas": [
+    {
+      "id": "MATRIZ-EN-v1",
+      "tipo": "MATRIZ_NOTAS",
+      "idioma": "EN",
+      "version": 1,
+      "estado": "PROPUESTA",
+      "sha256": "b6a187b4052f087a80dcb7541c7710c147fd82327f9e2e7f73d49228b9ed8b26",
+      "archivo": "matriz-en-v1.xlsx",
+      "hoja": "Matriz",
+      "filaCabecera": 9,
+      "primeraFila": 10
+    },
+    {
+      "id": "RESUMEN-EN-v1",
+      "tipo": "RESUMEN_PARTICIPANTES",
+      "idioma": "EN",
+      "version": 1,
+      "estado": "PROPUESTA",
+      "sha256": "01d243be2158a1b66c92a27ac68bb7866e5cdf49696c36ceb9485d08fa5a297f",
+      "archivo": "resumen-en-v1.xlsx",
+      "hoja": "ANEXO N° 05",
+      "filaCabecera": 10,
+      "primeraFila": 11
+    },
+    {
+      "id": "MATRIZ-PT-v1",
+      "tipo": "MATRIZ_NOTAS",
+      "idioma": "PT",
+      "version": 1,
+      "estado": "PROPUESTA",
+      "sha256": "677be59195a2427960adb13a68896c8a322c9e945465425c1807d04dea0b7715",
+      "archivo": "matriz-pt-v1.xlsx",
+      "hoja": "Matriz",
+      "filaCabecera": 8,
+      "primeraFila": 9
+    },
+    {
+      "id": "RESUMEN-PT-v1",
+      "tipo": "RESUMEN_PARTICIPANTES",
+      "idioma": "PT",
+      "version": 1,
+      "estado": "PROPUESTA",
+      "sha256": "a38d29c8705d3805b41c1a1eeea5d531b93aba3302bd08d15c27a1536f86f077",
+      "archivo": "resumen-pt-v1.xlsx",
+      "hoja": "ANEXO N° 05",
+      "filaCabecera": 10,
+      "primeraFila": 11
+    }
+  ]
+}

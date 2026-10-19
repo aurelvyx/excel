@@ -1,33 +1,103 @@
-import { spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { mkdirSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 
-const root = fileURLToPath(new URL('../../', import.meta.url));
-const project = `excel-b02-${randomBytes(6).toString('hex')}`;
-const env = { ...process.env, TEST_DB_PASSWORD: randomBytes(24).toString('hex') };
-const compose = ['compose', '-p', project, '-f', 'infra/compose.test.yaml'];
+const root = fileURLToPath(new URL("../../", import.meta.url));
+const options = process.argv.slice(2);
+const profiles = {
+  "--b10": {
+    folder: "b10",
+    files: [
+      "test/students.integration-spec.ts",
+      "test/vouchers.integration-spec.ts",
+      "test/enrollments.integration-spec.ts",
+      "test/enrollments-web.integration-spec.ts",
+    ],
+  },
+  "--b20": {
+    folder: "b20",
+    files: ["test/b20-workflow.integration-spec.ts"],
+  },
+  "--b21": {
+    folder: "b21",
+    files: ["test/backups.integration-spec.ts"],
+  },
+};
+if (
+  options.length > 1 ||
+  (options.length === 1 && !Object.hasOwn(profiles, options[0]))
+) {
+  throw new Error("Usar pnpm test:db, pnpm test:b10, pnpm test:b20 o pnpm test:b21");
+}
+const profile = profiles[options[0]];
+const browser = process.env.B20_BROWSER ?? "chromium";
+if (profile?.folder !== "b10" && !["chromium", "msedge"].includes(browser)) {
+  throw new Error("B20_BROWSER debe ser chromium o msedge");
+}
+const reportName =
+  profile?.folder === "b20" && browser === "msedge"
+    ? "pruebas-msedge.json"
+    : "pruebas.json";
+const report = join(root, ".tmp", profile?.folder ?? "verificacion", reportName);
+mkdirSync(dirname(report), { recursive: true });
+// Impide confundir un informe anterior con esta ejecución si Docker o Vitest fallan al iniciar.
+rmSync(report, { force: true });
+const project = `excel-test-${randomBytes(6).toString("hex")}`;
+const env = {
+  ...process.env,
+  TEST_DB_PASSWORD: randomBytes(24).toString("hex"),
+};
+const compose = ["compose", "-p", project, "-f", "infra/compose.test.yaml"];
 function run(command, args, options = {}) {
-  const result = spawnSync(command, args, { cwd: root, env, encoding: 'utf8', stdio: 'inherit', ...options });
+  const result = spawnSync(command, args, {
+    cwd: root,
+    env,
+    encoding: "utf8",
+    stdio: "inherit",
+    ...options,
+  });
   if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`${command} terminó con código ${result.status}`);
+  if (result.status !== 0)
+    throw new Error(`${command} terminó con código ${result.status}`);
   return result.stdout?.trim();
 }
 try {
-  run('docker', [...compose, 'up', '-d', '--wait', '--wait-timeout', '120']);
-  const address = run('docker', [...compose, 'port', 'postgres', '5432'], { stdio: 'pipe' });
+  run("docker", [...compose, "up", "-d", "--wait", "--wait-timeout", "120"]);
+  const address = run("docker", [...compose, "port", "postgres", "5432"], {
+    stdio: "pipe",
+  });
   const port = address.match(/:(\d+)$/)?.[1];
-  if (!port) throw new Error('No se pudo determinar el puerto de PostgreSQL de prueba');
-  Object.assign(env, { NODE_ENV: 'test', DB_HOST: '127.0.0.1', DB_PORT: port, DB_NAME: 'excel_test',
-    DB_USER: 'excel_test', DB_PASSWORD: env.TEST_DB_PASSWORD, DB_SSL: 'false', ALLOW_DEMO_SEED: 'true' });
+  if (!port)
+    throw new Error("No se pudo determinar el puerto de PostgreSQL de prueba");
+  Object.assign(env, {
+    NODE_ENV: "test",
+    DB_HOST: "127.0.0.1",
+    DB_PORT: port,
+    DB_NAME: "excel_test",
+    DB_USER: "excel_test",
+    DB_PASSWORD: env.TEST_DB_PASSWORD,
+    DB_SSL: "false",
+    ALLOW_DEMO_SEED: "true",
+    TEST_DOCKER_NETWORK: `${project}_default`,
+  });
   // npm_execpath lo proporciona pnpm; evita shells y rutas de ejecutables específicas del SO.
-  if (!process.env.npm_execpath) throw new Error('Ejecutar mediante pnpm test:db');
+  if (!process.env.npm_execpath)
+    throw new Error("Ejecutar mediante pnpm test:db");
   const pnpmPath = process.env.npm_execpath;
-  const args = ['--filter', 'api', 'test:integration'];
+  const args = ["--filter", "api", "test:integration"];
+  if (profile) args.push(...profile.files);
+  args.push(
+    "--reporter=default",
+    "--reporter=json",
+    `--outputFile.json=${report}`,
+  );
   if (/\.(c?js|mjs)$/.test(pnpmPath)) {
     run(process.execPath, [pnpmPath, ...args]);
   } else {
     run(pnpmPath, args);
   }
 } finally {
-  run('docker', [...compose, 'down', '--remove-orphans']);
+  run("docker", [...compose, "down", "--remove-orphans"]);
 }

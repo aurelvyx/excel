@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "estado": "MAPEO_PROPUESTO",
+  "plantillas": [
+    {
+      "id": "OPERATIVO-EN-v1",
+      "familia": "OPERATIVO",
+      "idioma": "EN",
+      "version": 1,
+      "archivo": "FormacionContinua-2025-INGLES.xlsm",
+      "sha256": "c7419b64f7f2cc0cd811569915e74dbe0a82ec45325ddec25888bdf2ebd4d512",
+      "macros": true,
+      "aprobacion": null,
+      "hojas": [
+        "Datos-CETPRO",
+        "BDAlumnos",
+        "RegMatricula",
+        "Matricula",
+        "Nomina",
+        "Matriz",
+        "Acta Evaluación",
+        "Anexo3",
+        "PlanEstud.",
+        "RegA4 1",
+        "RegA4 2",
+        "RegA4 3",
+        "RegA4 4",
+        "Asistencia",
+        "Registro",
+        "AuxFechas"
+      ],
+      "variantes": {
+        "matriz": {
+          "hoja": "Matriz",
+          "filaCabecera": 9,
+          "primeraFila": 10,
+          "columnas": {
+            "ordinal": "A",
+            "documento": "B",
+            "estudiante": "C",
+            "promedioReferencia": "BY"
+          },
+          "politicaPromedio": "PENDIENTE_APROBACION",
+          "indicadores": "PENDIENTE_MAPEO_POR_NIVEL"
+        }
+      }
+    },
+    {
+      "id": "OPERATIVO-PT-v1",
+      "familia": "OPERATIVO",
+      "idioma": "PT",
+      "version": 1,
+      "archivo": "FormacionContinua-2025-PORTUGUÉS.xlsm",
+      "sha256": "365fa1068238cce5c0ca08e6c485a158a44e8ffd7d9f85ec937e03364cf360be",
+      "macros": true,
+      "aprobacion": null,
+      "hojas": [
+        "Datos-CETPRO",
+        "BDAlumnos",
+        "RegMatricula",
+        "Matricula",
+        "Nomina",
+        "Matriz",
+        "Acta Evaluación",
+        "Anexo3",
+        "PlanEstud.",
+        "RegA4 1",
+        "RegA4 2",
+        "RegA4 3",
+        "RegA4 4",
+        "Asistencia",
+        "Registro",
+        "AuxFechas"
+      ],
+      "variantes": {
+        "matriz": {
+          "hoja": "Matriz",
+          "filaCabecera": 8,
+          "primeraFila": 9,
+          "columnas": {
+            "ordinal": "A",
+            "documento": "B",
+            "estudiante": "C",
+            "promedioReferencia": "BY"
+          },
+          "politicaPromedio": "PENDIENTE_APROBACION",
+          "indicadores": "PENDIENTE_MAPEO_POR_NIVEL"
+        }
+      }
+    },
+    {
+      "id": "ANEXOS-EN-v1",
+      "familia": "ANEXOS",
+      "idioma": "EN",
+      "version": 1,
+      "archivo": "OK_FORMAC_CONTINUA_FORMATO (1) FINAL INGLES.xlsx",
+      "sha256": "1851ab3967b32e03f20fe532c6352bdbc95ba4351ee3e22f6cf60883a208edf5",
+      "macros": false,
+      "aprobacion": null,
+      "hojas": [
+        "ANEXO N° 01",
+        "ANEXO Nº 02 INGLES BÁSICO",
+        "ANEXO Nº 3 INGLES BÁSICO",
+        "ANEXO 02 INGLES PRE-INTERMEDIO",
+        "ANEXO 03 INGLES PRE-INTERMEDIO",
+        "ANEXO Nº 02 INGLES INTERMEDIO",
+        "ANEXO 03 INGLES INTERMEDIO",
+        "ANEXO 02 INGLES AVANZADO",
+        "ANEXO 03 INGLES AVANZADO",
+        "ANEXO N° 04",
+        "ANEXO N° 05"
+      ],
+      "variantes": {
+        "ficha": {
+          "hoja": "ANEXO N° 01",
+          "familiaMapa": "FICHA_MATRICULA"
+        },
+        "resumen": {
+          "hoja": "ANEXO N° 05",
+          "familiaMapa": "RESUMEN_PARTICIPANTES"
+        }
+      }
+    },
+    {
+      "id": "ANEXOS-PT-v1",
+      "familia": "ANEXOS",
+      "idioma": "PT",
+      "version": 1,
+      "archivo": "OK_FORMAC_CONTINUA_FORMATO (1) FINAL PORTUGUÉS.xlsx",
+      "sha256": "0f7c8591fb67c1b1d6ecd0d8f4da0cad02bcf09906052e41e4e6c6593a9fe72a",
+      "macros": false,
+      "aprobacion": null,
+      "hojas": [
+        "ANEXO N° 01",
+        "ANEXO Nº 02 PORTUGUES BÁSICO",
+        "ANEXO Nº 3 PORTUGUES BÁSICO",
+        "ANEXO 02 PORT. PRE-INTERMEDIO",
+        "ANEXO 03 PORT. PRE-INTERMEDIO",
+        "ANEXO Nº 02PORTUGUES INTERMEDIO",
+        "ANEXO 03 PORTUGUES INTERMEDIO",
+        "ANEXO 02 PORTUGUES AVANZADO",
+        "ANEXO 03 PORTUGUES AVANZADO",
+        "ANEXO N° 04",
+        "ANEXO N° 05"
+      ],
+      "variantes": {
+        "ficha": {
+          "hoja": "ANEXO N° 01",
+          "familiaMapa": "FICHA_MATRICULA"
+        },
+        "resumen": {
+          "hoja": "ANEXO N° 05",
+          "familiaMapa": "RESUMEN_PARTICIPANTES"
+        }
+      }
+    }
+  ]
+}
