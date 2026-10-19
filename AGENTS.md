@@ -156,6 +156,16 @@ No habilitar emisión oficial hasta su confirmación. Las muestras privadas de B
 conservan su estado pendiente. Alcance y pruebas: `docs/B19-reportes-xlsx.md` y
 `docs/decisiones/ADR-014-reportes-demostracion.md`.
 
+### Preparación del piloto B20 — 17 de octubre de 2026
+
+El equipo confirmó **«Aún no; preparar el piloto»** ante la consulta sobre
+participantes de secretaría, docente y coordinación y diez mediciones previas.
+Preparar instrumentos vacíos y pruebas con datos sintéticos; conservar como
+pendientes el piloto humano, sus tiempos observados y la aceptación institucional.
+No convertir duraciones de pruebas automáticas en resultados del centro.
+Detalle y trazabilidad: `docs/B20-verificacion-piloto.md` y
+`docs/B20-piloto-guiado.md`.
+
 ## 11. Documentación técnica de referencia
 
 Consultar siempre la documentación de la versión instalada en el repositorio al ejecutar comandos o elegir una API concreta:

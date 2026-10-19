@@ -1,0 +1,556 @@
+{
+  "version": 1,
+  "tipoEvidencia": null,
+  "contexto": {
+    "entorno": null,
+    "versionSistema": null,
+    "condiciones": null,
+    "evidencia": null
+  },
+  "participantes": [
+    {
+      "codigo": "P01",
+      "rol": "SECRETARIA"
+    },
+    {
+      "codigo": "P02",
+      "rol": "DOCENTE"
+    },
+    {
+      "codigo": "P03",
+      "rol": "COORDINADOR"
+    }
+  ],
+  "matriculas": {
+    "version": 1,
+    "observaciones": [
+      {
+        "caso": "M01",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M01",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M02",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M02",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M03",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M03",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M04",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M04",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M05",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M05",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M06",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M06",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M07",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M07",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M08",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M08",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M09",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M09",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M10",
+        "procedimiento": "ACTUAL",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      },
+      {
+        "caso": "M10",
+        "procedimiento": "SISTEMA",
+        "fecha": null,
+        "participante": null,
+        "resultado": null,
+        "evidencia": null,
+        "tiemposSegundos": {
+          "busqueda": null,
+          "voucher": null,
+          "grupo": null,
+          "confirmacion": null
+        },
+        "correcciones": null,
+        "incidencias": null
+      }
+    ]
+  },
+  "actividades": [
+    {
+      "caso": "ASISTENCIA-EN",
+      "actividad": "ASISTENCIA",
+      "procedimiento": "ACTUAL",
+      "idioma": "EN",
+      "contexto": "G-EN",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas sesiones y marcas del grupo; cotejar faltas computables, tardanzas y justificaciones sin alterar evidencia.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "ASISTENCIA-EN",
+      "actividad": "ASISTENCIA",
+      "procedimiento": "SISTEMA",
+      "idioma": "EN",
+      "contexto": "G-EN",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas sesiones y marcas del grupo; cotejar faltas computables, tardanzas y justificaciones sin alterar evidencia.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "NOTAS-EN",
+      "actividad": "NOTAS",
+      "procedimiento": "ACTUAL",
+      "idioma": "EN",
+      "contexto": "G-EN",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas capturas y criterios del grupo; distinguir pendiente de cero y cotejar promedio exacto y nota calculada.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "NOTAS-EN",
+      "actividad": "NOTAS",
+      "procedimiento": "SISTEMA",
+      "idioma": "EN",
+      "contexto": "G-EN",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas capturas y criterios del grupo; distinguir pendiente de cero y cotejar promedio exacto y nota calculada.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "XLSX-EN",
+      "actividad": "XLSX",
+      "procedimiento": "ACTUAL",
+      "idioma": "EN",
+      "contexto": "G-EN",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Preparar la matriz y el resumen priorizados para el mismo grupo; cotejar filas, celdas y apertura. En el sistema, archivos BORRADOR de B19.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "XLSX-EN",
+      "actividad": "XLSX",
+      "procedimiento": "SISTEMA",
+      "idioma": "EN",
+      "contexto": "G-EN",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Preparar la matriz y el resumen priorizados para el mismo grupo; cotejar filas, celdas y apertura. En el sistema, archivos BORRADOR de B19.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "ASISTENCIA-PT",
+      "actividad": "ASISTENCIA",
+      "procedimiento": "ACTUAL",
+      "idioma": "PT",
+      "contexto": "G-PT",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas sesiones y marcas del grupo; cotejar faltas computables, tardanzas y justificaciones sin alterar evidencia.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "ASISTENCIA-PT",
+      "actividad": "ASISTENCIA",
+      "procedimiento": "SISTEMA",
+      "idioma": "PT",
+      "contexto": "G-PT",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas sesiones y marcas del grupo; cotejar faltas computables, tardanzas y justificaciones sin alterar evidencia.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "NOTAS-PT",
+      "actividad": "NOTAS",
+      "procedimiento": "ACTUAL",
+      "idioma": "PT",
+      "contexto": "G-PT",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas capturas y criterios del grupo; distinguir pendiente de cero y cotejar promedio exacto y nota calculada.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "NOTAS-PT",
+      "actividad": "NOTAS",
+      "procedimiento": "SISTEMA",
+      "idioma": "PT",
+      "contexto": "G-PT",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Consolidar las mismas capturas y criterios del grupo; distinguir pendiente de cero y cotejar promedio exacto y nota calculada.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "XLSX-PT",
+      "actividad": "XLSX",
+      "procedimiento": "ACTUAL",
+      "idioma": "PT",
+      "contexto": "G-PT",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Preparar la matriz y el resumen priorizados para el mismo grupo; cotejar filas, celdas y apertura. En el sistema, archivos BORRADOR de B19.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    },
+    {
+      "caso": "XLSX-PT",
+      "actividad": "XLSX",
+      "procedimiento": "SISTEMA",
+      "idioma": "PT",
+      "contexto": "G-PT",
+      "fecha": null,
+      "participante": null,
+      "resultado": null,
+      "esperado": "Preparar la matriz y el resumen priorizados para el mismo grupo; cotejar filas, celdas y apertura. En el sistema, archivos BORRADOR de B19.",
+      "obtenido": null,
+      "evidencia": null,
+      "segundos": null,
+      "correcciones": null,
+      "erroresAntesDelCierre": null,
+      "incidencias": null
+    }
+  ],
+  "incidencias": []
+}
