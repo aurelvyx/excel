@@ -230,7 +230,7 @@ test("B21 exige confirmación antes de conectar o restaurar", async () => {
     /confirmar/,
   );
 });
-test("B21 rechaza manipulación del archivo, manifiesto y enlaces", () =>
+test("B21 rechaza manipulación del archivo y campos de manifiesto no permitidos", () =>
   workspace(async (directory) => {
     const f = fixture();
     const result = await backup(
@@ -251,14 +251,26 @@ test("B21 rechaza manipulación del archivo, manifiesto y enlaces", () =>
         ),
       /campos/,
     );
-    const linked = join(directory, archiveName());
+  }));
+
+test("B21 rechaza enlaces con un nombre de respaldo válido", (t) =>
+  workspace(async (directory) => {
+    const file = join(directory, "archivo-original.dump");
+    await writeFile(file, "contenido sintético");
+    const linkedName = archiveName();
+    const linked = join(directory, linkedName);
     try {
       await symlink(file, linked);
     } catch (error) {
-      if (error.code === "EPERM") return;
+      if (process.platform === "win32" && error.code === "EPERM") {
+        t.skip(
+          "El sistema no permite crear enlaces simbólicos con estos permisos",
+        );
+        return;
+      }
       throw error;
     }
-    await assert.rejects(readManifest(directory, linked), /regular/);
+    await assert.rejects(readManifest(directory, linkedName), /regular/);
   }));
 test("B21 restaura solo en contenedor nuevo sin red ni volumen y comprueba el intento", () =>
   workspace(async (directory) => {

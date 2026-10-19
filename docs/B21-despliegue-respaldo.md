@@ -173,6 +173,27 @@ El total sin duplicar subconjuntos es **995 pruebas automatizadas**, más las
 8 comprobaciones del despliegue. No sumar nuevamente `test:b21`, pues sus siete
 casos ya están incluidos en `test:db`.
 
+## Corrección de verificación Linux — 19 de octubre de 2026
+
+La [ejecución de GitHub Actions 60](https://github.com/aurelvyx/excel/actions/runs/39205608252)
+se detuvo en `pnpm check`: lint, tipos, compilación, 370 pruebas unitarias y
+3 HTTP pasaron, pero una de las 44 pruebas de herramientas falló. El test del
+enlace simbólico enviaba una ruta completa a `readManifest`, que exige el nombre
+lógico. Por eso se rechazaba el nombre antes de comprobar que fuera un archivo
+regular. En Windows, `EPERM` al crear el enlace omitía silenciosamente esa parte.
+
+Se corrigió únicamente la prueba: nombre lógico y ruta física se mantienen
+separados y el caso de enlace tiene un test propio. Si Windows no permite
+crearlo, se declara omitido; en Linux un error de permisos continúa siendo fallo.
+No se modificaron las validaciones de seguridad ni el comportamiento del respaldo.
+
+Verificación de la corrección: `pnpm test:tools` en Windows, **44 aprobadas y una
+omisión explícita**; suite de respaldo en un contenedor Linux con Node 24,
+**15 aprobadas sin omisiones**, incluida la del enlace. Son comprobaciones locales
+de esta corrección, no una nueva ejecución remota. Los pasos `test:db` y despliegue
+de la ejecución 60 quedaron sin ejecutar por el fallo previo. Se necesita publicar
+la corrección para que GitHub Actions compruebe el flujo completo.
+
 ## Entrega y pendientes
 
 Se entregan [manual de usuario](manuales/usuario.md),
