@@ -1,0 +1,120 @@
+# Aplicación Git de Coolify, Base Directory /, Compose Location /infra/compose.coolify.yaml.
+# Coolify administra dominio, red del proxy y HTTPS. Sólo web recibe un dominio.
+# No fijar name/container_name: Coolify aísla recursos y volúmenes por aplicación.
+services:
+  postgres:
+    image: postgres:18@sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-excel}
+      POSTGRES_USER: ${POSTGRES_USER:-excel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina una contraseña privada en Coolify}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks: [private]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging: &logs
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      TRUST_PROXY_HOPS: "1"
+      PORT: "3000"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-excel}
+      DB_USER: ${APP_DB_USER:-excel_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD:?Defina una contraseña privada de API distinta de la propietaria}
+      DB_SSL: "false"
+      WEB_ORIGINS: ${WEB_ORIGINS:?Defina el origen HTTPS público exacto sin puerto interno ni barra final}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    logging: *logs
+
+  # Ejecutar sólo con perfil ops para migrar o crear el primer administrador.
+  ops:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    profiles: [ops]
+    init: true
+    command: ["node", "dist/database/runtime-role.js"]
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-excel}
+      DB_USER: ${POSTGRES_USER:-excel}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Defina una contraseña privada en Coolify}
+      DB_SSL: "false"
+      APP_DB_USER: ${APP_DB_USER:-excel_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Defina una contraseña privada de API distinta de la propietaria}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: *logs
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.coolify", "--adapter", "caddyfile"]
+    restart: unless-stopped
+    environment:
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-127.0.0.1/32 ::1/128}
+    expose: ["8080"]
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [private, default]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging: *logs
+
+networks:
+  private:
+    internal: true
+  default: {}
+
+volumes:
+  postgres_data:

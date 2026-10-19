@@ -51,6 +51,10 @@ Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 - **B20:** recorridos integrales de inglés y portugués desde matrícula hasta XLSX,
   protocolo de piloto guiado e instrumentos de medición reutilizables. El piloto
   humano, las mediciones observadas y su aceptación siguen pendientes.
+- **B21:** preparación de despliegue con Coolify y demostración local HTTPS,
+  respaldo PostgreSQL y ensayo de restauración aislada, consulta administrativa
+  de operaciones, manuales e índice de entrega. La publicación en el VPS y la
+  recepción operativa se verifican con el responsable del centro.
 
 Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
 [trazabilidad y verificación](docs/verificacion-B01-B02.md).
@@ -74,6 +78,10 @@ Para consolidar resultados, consulta [B18: resultados y actas](docs/B18-resultad
 Para generar los borradores XLSX, consulta [B19: reportes](docs/B19-reportes-xlsx.md).
 Para preparar el piloto y comprobar el flujo completo, consulta
 [B20: verificación y piloto](docs/B20-verificacion-piloto.md).
+Para instalar con Coolify y operar los respaldos, consulta
+[B21: despliegue y recuperación](docs/B21-despliegue-respaldo.md), el
+[manual de operación](docs/manuales/instalacion-operacion.md) y el
+[manual de usuario](docs/manuales/usuario.md).
 
 ## Instalación desde cero
 
@@ -128,7 +136,7 @@ estructurales rechazan tablas con datos y los roles no se retiran si están asig
 La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
 Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
 
-El esquema incluye dieciséis migraciones versionadas hasta B19. Las reversiones de
+El esquema incluye diecisiete migraciones versionadas hasta B21. Las reversiones de
 cierres y criterios rechazan historial existente; no lo eliminan para retirar la migración.
 
 Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
@@ -174,6 +182,16 @@ Reutiliza el entorno temporal y guarda `.tmp/b20/pruebas.json`; la suite complet
 también incluye estos recorridos. El protocolo B20 explica la repetición en Edge
 y las comprobaciones pendientes de navegadores y aceptación humana.
 
+`pnpm test:b21` genera un respaldo real de un intento académico sintético cerrado
+y lo restaura en un contenedor nuevo sin red ni puertos. Comprueba integridad,
+historia académica, permisos y consulta administrativa. Los archivos de respaldo
+se crean fuera del repositorio y se eliminan al terminar la prueba.
+
+Para la demostración de las imágenes de producción: `pnpm deploy:setup`,
+`pnpm deploy:build` y `pnpm test:deploy`. El último comando crea y elimina su
+propio proyecto temporal, comprueba HTTPS con su autoridad local, acceso y
+permisos de la base. El procedimiento de instalación persistente está en B21.
+
 `pnpm b20:mediciones docs/evidencias/B20/mediciones.plantilla.json` analiza el
 instrumento del piloto: diez pares de matrícula y consolidación de asistencia,
 notas y XLSX. Los resultados permanecen pendientes mientras falten observaciones.
@@ -185,7 +203,7 @@ defecto es `.tmp/b10`; los archivos originales permanecen sin versionarse.
 `pnpm b10:mediciones <archivo.json>` resume las observaciones registradas con la
 plantilla de `docs/evidencias/B10/`. No genera cifras cuando faltan mediciones.
 
-El workflow `.github/workflows/ci.yml` ejecuta ambas verificaciones en push y pull request.
+El workflow `.github/workflows/ci.yml` ejecuta estas verificaciones en push y pull request.
 Su ejecución remota requiere publicar el repositorio en GitHub; los resultados locales
 no se presentan como una ejecución ya realizada en GitHub Actions.
 
@@ -204,11 +222,14 @@ packages/contracts/     Reservado para contratos compartidos
 infra/
   compose.yaml          PostgreSQL persistente de desarrollo
   compose.test.yaml     PostgreSQL temporal de verificación
+  compose.coolify.yaml  Despliegue Git en Coolify, con dominio solo en web
+  compose.deploy.yaml   Demostración local HTTPS separada de desarrollo
   scripts/              Preparación de entornos y pruebas aisladas
-  proxy/                Reservado para despliegue posterior
-  scripts/respaldo/     Reservado para B21
+  proxy/                Archivos Caddy para web y proxy interno de API
+  scripts/respaldo/     Respaldo, comprobación aislada y plan de retención
 ```
 
 Para detener la base: `pnpm db:down`; conserva el volumen. Para consultar logs:
 `pnpm db:logs`. Para validar Compose: `pnpm db:config`.
-La infraestructura de producción, respaldos y restauración siguen en B21.
+El despliegue real usa Coolify; sus variables privadas, dominio y recepción se
+configuran en el servidor. Los respaldos se custodian fuera del repositorio.

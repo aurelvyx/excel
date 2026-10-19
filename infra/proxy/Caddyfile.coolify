@@ -1,0 +1,30 @@
+{
+	admin off
+	persist_config off
+	auto_https off
+	servers {
+		trusted_proxies static {$TRUSTED_PROXY_CIDRS:127.0.0.1/32 ::1/128}
+		trusted_proxies_strict
+	}
+}
+
+# HTTP sólo dentro de la red de Coolify; su proxy recibe HTTPS del navegador.
+:8080 {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+	}
+	@api path /api /api/*
+	handle @api {
+		reverse_proxy api:3000 {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

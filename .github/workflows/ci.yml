@@ -1,4 +1,4 @@
-name: Verificación B01–B20
+name: Verificación B01–B21
 on:
   push:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,6 +23,10 @@ jobs:
       - run: pnpm check
       - run: pnpm --filter api exec playwright install --with-deps chromium
       - run: pnpm test:db
+      - run: pnpm deploy:setup
+      - run: pnpm deploy:config
+      - run: pnpm deploy:build
+      - run: pnpm test:deploy
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -43,6 +47,8 @@ jobs:
             .tmp/b20/*.png
             .tmp/b20/entorno-*.json
             .tmp/b20/BORRADOR-*.xlsx
+            .tmp/b21/*.png
+            .tmp/b21/despliegue.json
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 14

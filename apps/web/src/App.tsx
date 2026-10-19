@@ -20,6 +20,7 @@ import { GradesPage } from "./features/evaluation/GradesPage";
 import { ActPage } from "./features/evaluation/ActPage";
 import { ReportsPage } from "./features/reports/ReportsPage";
 import { ReportsGroupsPage } from "./features/reports/ReportsGroupsPage";
+import { BackupsPage } from "./features/control/BackupsPage";
 import { requestPageExit } from "./shared/useUnsavedChanges";
 
 export default function App() {
@@ -150,6 +151,14 @@ function Workspace() {
               Reportes
             </a>
           )}
+          {admin && (
+            <a
+              href="#/respaldos"
+              aria-current={path === "/respaldos" ? "page" : undefined}
+            >
+              Respaldos
+            </a>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <span className="status-dot" />
@@ -169,31 +178,33 @@ function Workspace() {
             Excel <span>/</span>{" "}
             {path === "/"
               ? "Inicio"
-              : path === "/cuenta"
-                ? "Mi cuenta"
-                : path.startsWith("/estudiantes")
-                  ? "Estudiantes"
-                  : path === "/vouchers"
-                    ? "Vouchers"
-                    : path.startsWith("/matriculas")
-                      ? "Matrículas"
-                      : path.startsWith("/reportes")
-                        ? "Reportes"
-                        : path.startsWith("/evaluacion/")
-                          ? path.endsWith("/acta")
-                            ? "Resultados y acta"
-                            : path.endsWith("/calificaciones")
-                              ? "Calificaciones"
-                              : "Criterios de evaluación"
-                          : path.startsWith("/asistencia/grupos/")
-                            ? path.endsWith("/cierre")
-                              ? "Cierre de asistencia"
-                              : path.endsWith("/justificaciones")
-                                ? "Justificaciones"
-                                : path.includes("/sesiones/")
-                                  ? "Registro de asistencia"
-                                  : "Sesiones de clase"
-                            : (resource?.title ?? "Página")}
+              : path === "/respaldos"
+                ? "Respaldos"
+                : path === "/cuenta"
+                  ? "Mi cuenta"
+                  : path.startsWith("/estudiantes")
+                    ? "Estudiantes"
+                    : path === "/vouchers"
+                      ? "Vouchers"
+                      : path.startsWith("/matriculas")
+                        ? "Matrículas"
+                        : path.startsWith("/reportes")
+                          ? "Reportes"
+                          : path.startsWith("/evaluacion/")
+                            ? path.endsWith("/acta")
+                              ? "Resultados y acta"
+                              : path.endsWith("/calificaciones")
+                                ? "Calificaciones"
+                                : "Criterios de evaluación"
+                            : path.startsWith("/asistencia/grupos/")
+                              ? path.endsWith("/cierre")
+                                ? "Cierre de asistencia"
+                                : path.endsWith("/justificaciones")
+                                  ? "Justificaciones"
+                                  : path.includes("/sesiones/")
+                                    ? "Registro de asistencia"
+                                    : "Sesiones de clase"
+                              : (resource?.title ?? "Página")}
           </span>
           <div className="account">
             <a href="#/cuenta" className="account-name">
@@ -312,6 +323,8 @@ function Workspace() {
               id={path.split("/")[2]}
               studentId={query.get("estudianteId") ?? undefined}
             />
+          ) : admin && path === "/respaldos" ? (
+            <BackupsPage query={query} />
           ) : reportsAllowed && path === "/reportes" ? (
             <ReportsGroupsPage query={query} />
           ) : reportsAllowed &&

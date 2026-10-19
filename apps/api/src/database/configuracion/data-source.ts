@@ -17,6 +17,7 @@ import { PlanesEvaluacion1790208012000 } from '../migraciones/1790208012000-plan
 import { CalificacionesAbiertas1790208013000 } from '../migraciones/1790208013000-calificaciones-abiertas.js';
 import { ActasResultados1790208014000 } from '../migraciones/1790208014000-actas-resultados.js';
 import { Exportaciones1790208015000 } from '../migraciones/1790208015000-exportaciones.js';
+import { Respaldos1790208016000 } from '../migraciones/1790208016000-respaldos.js';
 
 export function databaseOptions(
   env: NodeJS.ProcessEnv = process.env,
@@ -46,6 +47,7 @@ export function databaseOptions(
       CalificacionesAbiertas1790208013000,
       ActasResultados1790208014000,
       Exportaciones1790208015000,
+      Respaldos1790208016000,
     ],
     logging: false,
   };

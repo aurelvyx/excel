@@ -166,6 +166,18 @@ No convertir duraciones de pruebas automáticas en resultados del centro.
 Detalle y trazabilidad: `docs/B20-verificacion-piloto.md` y
 `docs/B20-piloto-guiado.md`.
 
+### Decisión de despliegue B21 — 18 de octubre de 2026
+
+El equipo confirmó que dispone de **VPS, dominio y Coolify**. El destino de
+despliegue es una aplicación Git con Docker Compose administrada por Coolify;
+solo la web recibe un dominio y la API y PostgreSQL permanecen privados.
+Preparar también una demostración local HTTPS y un ensayo aislado de recuperación.
+La publicación real, DNS/TLS, responsable, calendario diario, retención y custodia
+externa de respaldos siguen pendientes de configuración y recepción operativa.
+No interpretar la disponibilidad del VPS como evidencia de puesta en producción.
+Detalle: `docs/B21-despliegue-respaldo.md` y
+`docs/decisiones/ADR-015-despliegue-coolify-respaldos.md`.
+
 ## 11. Documentación técnica de referencia
 
 Consultar siempre la documentación de la versión instalada en el repositorio al ejecutar comandos o elegir una API concreta:
