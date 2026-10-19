@@ -297,7 +297,7 @@ export async function verifyRestore(env = process.env, dependencies = {}) {
     );
     created = true;
     let ready = false;
-    // Cada intento tarda lo necesario para consultar PostgreSQL, sin esperas largas ni conexión al origen.
+    // El servidor temporal de initdb sólo abre socket. TCP identifica el definitivo.
     for (let attempt = 0; attempt < 60; attempt++) {
       try {
         await run(
@@ -305,6 +305,10 @@ export async function verifyRestore(env = process.env, dependencies = {}) {
             "exec",
             container,
             "pg_isready",
+            "-h",
+            "127.0.0.1",
+            "-p",
+            "5432",
             "-U",
             "excel_restore",
             "-d",
@@ -330,6 +334,10 @@ export async function verifyRestore(env = process.env, dependencies = {}) {
         "PGPASSWORD",
         container,
         "pg_restore",
+        "-h",
+        "127.0.0.1",
+        "-p",
+        "5432",
         "--exit-on-error",
         "--single-transaction",
         "--no-owner",
@@ -364,6 +372,10 @@ export async function verifyRestore(env = process.env, dependencies = {}) {
           "PGPASSWORD",
           container,
           "psql",
+          "-h",
+          "127.0.0.1",
+          "-p",
+          "5432",
           "--no-psqlrc",
           "--no-password",
           "-X",

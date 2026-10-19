@@ -194,6 +194,64 @@ de esta corrección, no una nueva ejecución remota. Los pasos `test:db` y despl
 de la ejecución 60 quedaron sin ejecutar por el fallo previo. Se necesita publicar
 la corrección para que GitHub Actions compruebe el flujo completo.
 
+## Corrección de arranque PostgreSQL — 19 de octubre de 2026
+
+La [ejecución de GitHub Actions 62](https://github.com/aurelvyx/excel/actions/runs/39208411212)
+superó `pnpm check`, incluida la prueba de enlaces corregida. Llegó a las pruebas
+de base: **575 aprobadas y 3 fallidas**. El primer fallo ocurrió en `pg_restore`;
+el respaldo había terminado correctamente. Los otros dos casos dependían de esa
+restauración: encontraron una operación fallida adicional y ninguna comprobación
+académica exitosa para mostrar.
+
+Se identificó y reprodujo una carrera de inicialización. La imagen PostgreSQL
+abre primero un servidor temporal por socket para preparar la base, lo detiene
+y arranca después el servidor definitivo. El verificador consultaba el socket y
+podía empezar a restaurar antes de ese reinicio. La
+[fuente oficial de la imagen](https://raw.githubusercontent.com/docker-library/postgres/master/18/bookworm/docker-entrypoint.sh)
+describe esa secuencia; `pg_isready` comprueba disponibilidad del servidor, no
+garantiza por sí solo que la base y usuario indicados ya estén preparados
+([PostgreSQL 18](https://www.postgresql.org/docs/18/app-pg-isready.html)).
+
+El verificador espera ahora `127.0.0.1:5432` y usa esa misma conexión interna para
+restaurar y consultar. Los cuatro Compose comprueban también TCP. El servidor
+temporal no escucha TCP, por lo que deja de producir un aviso prematuro de salud.
+El contenedor de restauración conserva su red `none`, sin puertos ni volúmenes
+persistentes: loopback funciona dentro de ese mismo contenedor.
+
+La reproducción con una inicialización demorada demostró socket disponible sin
+TCP y una consulta interrumpida al detener el servidor temporal; después, una
+consulta TCP al servidor definitivo terminó correctamente. Se añadió una regresión
+que exige reintentar mientras TCP no esté disponible y prohíbe iniciar antes la
+restauración. Evidencia sintética local: `.tmp/b21/arranque-postgresql.json`.
+
+Verificación local de esta corrección, con datos sintéticos:
+
+| Entorno y comprobación | Resultado |
+| --- | --- |
+| Windows, `pnpm test:b21` | 7 aprobadas: dump real, restauración e intento completo, permisos, consulta y pantalla |
+| Windows, `pnpm test:tools` | 45 aprobadas y una omisión explícita por permisos de enlaces simbólicos |
+| Linux, `pnpm check` | Lint, tipos y compilación aprobados; 370 unitarias, 3 HTTP y 46 de herramientas aprobadas, sin omisiones |
+| Linux, `pnpm test:db` | 578 aprobadas en 29 suites, sin omisiones, incluida restauración real y migraciones limpias |
+| Linux, configuración y construcción | Compose local y ambas imágenes aprobados; seis controles estáticos adicionales de Coolify aprobados |
+| Linux, `pnpm test:deploy` | 8 comprobaciones aprobadas: instalación, red privada, HTTPS con CA/hostname verificados, sesión/CSRF, IP depurada, permisos y plantillas |
+
+El total de pruebas distintas en Linux es **997**; no sumar de nuevo los
+subconjuntos ejecutados en Windows. El runner temporal usó Node 24 y pnpm 11.19.0
+con dependencias y Chromium de Linux. Docker Desktop requirió un túnel de loopback
+exclusivo del runner para alcanzar sus puertos publicados: el primer intento sin
+ese adaptador rechazó la conexión antes de ejecutar los casos y se conservó en
+los registros. Se repitió la suite completa sin modificar fuentes ni tests para
+adaptar esa conexión. Para la comprobación de despliegue se utilizó un segundo
+runner en red bridge, evitando la colisión de puertos del modo host de Docker
+Desktop; ese ajuste pertenece exclusivamente al entorno temporal. Informes y
+registros, incluidos los intentos del runner: `.tmp/ci-linux/`. Los proyectos,
+volúmenes y contenedores utilizados para los ensayos se limpiaron por ejecución,
+sin afectar al entorno de desarrollo ni a las imágenes B21 existentes.
+
+Esta comprobación local no es una nueva ejecución de GitHub Actions ni una
+publicación remota en Coolify. Subir la corrección y comprobar el workflow remoto
+siguen pendientes.
+
 ## Entrega y pendientes
 
 Se entregan [manual de usuario](manuales/usuario.md),

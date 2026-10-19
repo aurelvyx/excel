@@ -323,6 +323,63 @@ test("B21 restaura solo en contenedor nuevo sin red ni volumen y comprueba el in
       ),
     );
   }));
+test("B21 espera al servidor TCP definitivo aunque el socket temporal ya acepte conexiones", () =>
+  workspace(async (directory) => {
+    const f = fixture();
+    const originalCommand = f.dependencies.command;
+    let tcpProbes = 0;
+    let tcpReady = false;
+    f.dependencies.command = async (args, options) => {
+      if (args.includes("pg_isready")) {
+        const result = await originalCommand(args, options);
+        // El servidor temporal del entrypoint responde por socket, pero no por TCP.
+        if (
+          args[args.indexOf("-h") + 1] !== "127.0.0.1" ||
+          args[args.indexOf("-p") + 1] !== "5432"
+        )
+          return result;
+        tcpProbes++;
+        if (tcpProbes === 1)
+          throw new Error("El servidor definitivo todavía no acepta TCP");
+        tcpReady = true;
+        return result;
+      }
+      if (args.includes("pg_restore") && !args.includes("--list"))
+        assert.equal(
+          tcpReady,
+          true,
+          "La restauración no puede comenzar con el servidor temporal del socket",
+        );
+      return originalCommand(args, options);
+    };
+    const result = await backup(
+      { ...baseEnv, BACKUP_DIR: directory },
+      f.dependencies,
+    );
+    const verified = await verifyRestore(
+      {
+        ...baseEnv,
+        BACKUP_DIR: directory,
+        BACKUP_FILE: result.archivo,
+        RESTORE_CONFIRM: "VERIFICAR_EN_CONTENEDOR_NUEVO",
+      },
+      f.dependencies,
+    );
+    assert.equal(tcpProbes, 2);
+    assert.equal(verified.intentoCompletoVerificado, true);
+    const connections = f.calls.filter(
+      (args) =>
+        args.includes("pg_isready") ||
+        (args.includes("pg_restore") && !args.includes("--list")) ||
+        args.includes("psql"),
+    );
+    assert.ok(connections.some((args) => args.includes("psql")));
+    for (const args of connections) {
+      assert.equal(args[args.indexOf("-h") + 1], "127.0.0.1");
+      assert.equal(args[args.indexOf("-p") + 1], "5432");
+    }
+    assert.equal(f.events.at(-1)[2], "EXITOSO");
+  }));
 test("B21 manifiesto alterado aunque válido no permite restaurar sin huella registrada", () =>
   workspace(async (directory) => {
     const f = fixture({ mismatch: true });
