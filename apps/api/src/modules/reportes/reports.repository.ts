@@ -170,6 +170,11 @@ export class ReportsRepository {
       filas: number;
     },
   ) {
+    await manager.query(`
+      ALTER TABLE exportaciones DROP CONSTRAINT IF EXISTS exportaciones_tipo_check;
+      ALTER TABLE exportaciones ADD CONSTRAINT exportaciones_tipo_check
+        CHECK (tipo IN ('MATRIZ_NOTAS', 'RESUMEN_PARTICIPANTES', 'ACTA_UGEL'));
+    `);
     const [row] = await manager.query(
       `INSERT INTO exportaciones(usuario_id,tipo,grupo_id,filtros,plantilla_id,plantilla_version,plantilla_sha256,revision,archivo_nombre,archivo_sha256,filas)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,

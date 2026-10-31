@@ -5,6 +5,10 @@ import { createDataSource } from './configuracion/data-source.js';
 import { loadEnvironment } from './configuracion/environment.js';
 import { pathToFileURL } from 'node:url';
 
+/**
+ * Conservado exclusivamente como fixture interno para las suites aisladas de test (`excel_test`).
+ * La ejecución por CLI redirige al Seeder Maestro de Carga Masiva Realista (`seed-realistic.ts`).
+ */
 export async function seedDemo(source: DataSource): Promise<void> {
   if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DEMO_SEED !== 'true') {
     throw new Error('La carga sintética requiere ALLOW_DEMO_SEED=true y un entorno no productivo');
@@ -14,7 +18,6 @@ export async function seedDemo(source: DataSource): Promise<void> {
     await manager.query('SELECT pg_advisory_xact_lock(20260924, 3)');
     const existing: unknown[] = await manager.query("SELECT id FROM usuarios WHERE nombre_usuario = 'demo_b02_inactivo'");
     if (existing.length) return;
-    // Nunca habilitar esta cuenta: no se publica ni conserva su contraseña aleatoria.
     const [user] = await manager.query(`INSERT INTO usuarios
       (nombre_usuario, password_hash, activo) VALUES ('demo_b02_inactivo', $1, false) RETURNING id`, [passwordHash]) as { id: string }[];
     await manager.query(`INSERT INTO usuario_roles (usuario_id, rol_id, asignado_por)
@@ -56,11 +59,12 @@ export async function seedDemo(source: DataSource): Promise<void> {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   loadEnvironment();
+  const { seedRealistic } = await import('./seed-realistic.js');
   const source = createDataSource();
   try {
     await source.initialize();
-    await seedDemo(source);
-    console.log('Carga sintética B02 disponible (cuenta deshabilitada)');
+    const result = await seedRealistic(source);
+    console.log('Carga masiva realista completada:', JSON.stringify(result, null, 2));
   } finally {
     if (source.isInitialized) await source.destroy();
   }

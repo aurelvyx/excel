@@ -20,7 +20,7 @@ import { navigate } from "../../shared/navigation";
 import { Dialog } from "../../shared/Dialog";
 import { RecordForm } from "./RecordForm";
 import { Assignments } from "./assignments";
-import { ReportLink } from "../reports/ReportLink";
+import { GroupActions } from "./GroupActions";
 import {
   fieldValue,
   labels,
@@ -55,6 +55,7 @@ export function ResourcePage({
   const [detail, setDetail] = useState<Row | null>(null);
   const [opening, setOpening] = useState(false);
   const serialized = query.toString();
+  const returnTo = `${path}${serialized ? `?${serialized}` : ""}`;
   const requestKey = `${resource.key}:${serialized}:${version}:${admin}:${teacherOnly}`;
   const loading = completed !== requestKey;
   useEffect(() => {
@@ -131,6 +132,23 @@ export function ResourcePage({
   function cell(row: Row, key: string) {
     if (key === "roles")
       return (row.roles as string[]).map((role) => roleNames[role]).join(", ");
+    if (resource.key === "grupos") {
+      const context = (row.contexto ?? {}) as Record<string, unknown>;
+      if (key === "nivelId")
+        return text(context, "nivel") || text(row, "nivel_id");
+      if (key === "seccionId")
+        return text(context, "seccion") || text(row, "seccion_id");
+      if (key === "matriculados") {
+        const count = Number(row.matriculados) || 0;
+        const capacity = Number(row.capacidad) || 0;
+        return (
+          <span className="group-student-count">
+            <strong>{count}</strong>
+            {capacity > 0 && <small>/ {capacity}</small>}
+          </span>
+        );
+      }
+    }
     const field = resource.fields.find((field) => field.key === key);
     const value = field ? fieldValue(field, row) : text(row, key);
     if (field?.reference) {
@@ -143,16 +161,29 @@ export function ResourcePage({
     }
     return labels[value] ?? (value || "—");
   }
+  const category =
+    resource.key === "grupos"
+      ? "Gestión de clases"
+      : ["periodos", "turnos"].includes(resource.key)
+        ? "Preparación de ciclo"
+        : resource.key === "secciones"
+          ? "Gestión de clases"
+          : ["idiomas", "niveles", "unidades"].includes(resource.key)
+          ? "Oferta académica"
+          : "Administración";
+  const eyebrow = teacherOnly
+    ? "Mi espacio docente"
+    : admin
+      ? category
+      : `${category} · Consulta`;
+  const catalogBase = path.startsWith("/configuracion/")
+    ? "/configuracion"
+    : "/consulta";
+
   return (
     <section>
       <PageHeading
-        eyebrow={
-          admin
-            ? "Configuración"
-            : teacherOnly
-              ? "Mi espacio"
-              : "Consulta académica"
-        }
+        eyebrow={eyebrow}
         title={teacherOnly ? "Mis grupos" : resource.title}
         description={
           teacherOnly
@@ -174,6 +205,59 @@ export function ResourcePage({
           )
         }
       />
+      {admin && resource.key === "grupos" && (
+        <section className="group-setup-guide" aria-labelledby="group-setup-title">
+          <div className="group-setup-intro">
+            <p className="eyebrow">Preparación de una clase</p>
+            <h2 id="group-setup-title">Configura lo necesario y luego crea el grupo</h2>
+            <p>
+              No tienes que repetir la configuración en cada periodo. Abre solo
+              los catálogos que todavía necesites completar.
+            </p>
+          </div>
+          <div className="group-setup-steps">
+            <article className="group-setup-step">
+              <span className="group-setup-number">1</span>
+              <div>
+                <h3>Oferta académica</h3>
+                <p>Idioma → nivel → unidades didácticas.</p>
+                <div className="group-setup-links">
+                  <a href={`#${catalogBase}/idiomas`}>Idiomas</a>
+                  <a href={`#${catalogBase}/niveles`}>Niveles</a>
+                  <a href={`#${catalogBase}/unidades`}>Unidades</a>
+                </div>
+              </div>
+            </article>
+            <article className="group-setup-step">
+              <span className="group-setup-number">2</span>
+              <div>
+                <h3>Periodo y horario</h3>
+                <p>Elige el ciclo académico y sus turnos disponibles.</p>
+                <div className="group-setup-links">
+                  <a href={`#${catalogBase}/periodos`}>Periodos</a>
+                  <a href={`#${catalogBase}/turnos`}>Turnos</a>
+                </div>
+              </div>
+            </article>
+            <article className="group-setup-step">
+              <span className="group-setup-number">3</span>
+              <div>
+                <h3>Sección solo para paralelos</h3>
+                <p>
+                  A/B distingue dos clases del mismo nivel y turno. Si solo hay
+                  una clase, usa la etiqueta de grupo único.
+                </p>
+                <div className="group-setup-links">
+                  <a href={`#${catalogBase}/secciones`}>Administrar etiquetas A/B</a>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p className="group-setup-next">
+            <span aria-hidden="true">↳</span> Cuando esté listo, usa <strong>Crear grupo</strong> arriba para combinar esta información.
+          </p>
+        </section>
+      )}
       {!admin && (
         <p className="readonly">
           Solo lectura ·{" "}
@@ -271,6 +355,7 @@ export function ResourcePage({
           />
         }
       >
+        <div className={resource.key === "grupos" ? "group-catalog-table" : undefined}>
         <DataTable
           caption={resource.title}
           rows={data.items}
@@ -279,6 +364,13 @@ export function ResourcePage({
             ...resource.columns.map((key) => ({
               key,
               header:
+                (resource.key === "grupos"
+                  ? ({
+                      nivelId: "Programa académico",
+                      seccionId: "Sección",
+                      matriculados: "Alumnos",
+                    } as Record<string, string>)[key]
+                  : undefined) ??
                 resource.fields.find((field) => field.key === key)?.label ??
                 (
                   {
@@ -291,7 +383,11 @@ export function ResourcePage({
               cell: (row: Row) =>
                 key === "activo" || key === "estado" ? (
                   <StatusBadge
-                    inactive={row.activo === false || row.estado === "CERRADO"}
+                    inactive={
+                      row.activo === false ||
+                      row.estado === "CERRADO" ||
+                      (resource.key === "grupos" && row.estado !== "ACTIVO")
+                    }
                   >
                     {cell(row, key)}
                   </StatusBadge>
@@ -306,25 +402,28 @@ export function ResourcePage({
               cell: (row) => (
                 <>
                   {resource.key === "grupos" && (
-                    <>
-                      <a href={`#/asistencia/grupos/${row.id}`}>Sesiones</a>
-                      <a href={`#/evaluacion/grupos/${row.id}`}>Evaluaciones</a>
-                      <a href={`#/evaluacion/grupos/${row.id}/calificaciones`}>
-                        Calificaciones
-                      </a>
-                      <a href={`#/evaluacion/grupos/${row.id}/acta`}>
-                        Resultados y acta
-                      </a>
-                      <ReportLink groupId={row.id} />
-                      <a href={`#/asistencia/grupos/${row.id}/justificaciones`}>
-                        Justificaciones
-                      </a>
-                      <a href={`#/asistencia/grupos/${row.id}/cierre`}>
-                        Cierre de asistencia
-                      </a>
-                    </>
+                    <GroupActions id={row.id} returnTo={returnTo} />
                   )}
-                  {admin ? (
+                  {admin && resource.key === "grupos" ? (
+                    <details className="group-admin-actions">
+                      <summary>Administrar</summary>
+                      <div>
+                        <Button
+                          variant="link"
+                          disabled={opening}
+                          onClick={() => void open(row)}
+                        >
+                          Editar grupo
+                        </Button>
+                        <Button
+                          variant="link"
+                          onClick={() => setAssigned(row)}
+                        >
+                          Asignar docentes
+                        </Button>
+                      </div>
+                    </details>
+                  ) : admin ? (
                     <>
                       <Button
                         variant="link"
@@ -338,11 +437,6 @@ export function ResourcePage({
                           Roles
                         </Button>
                       )}
-                      {resource.key === "grupos" && (
-                        <Button variant="link" onClick={() => setAssigned(row)}>
-                          Asignar docentes
-                        </Button>
-                      )}
                     </>
                   ) : (
                     <Button variant="link" onClick={() => setDetail(row)}>
@@ -354,6 +448,7 @@ export function ResourcePage({
             },
           ]}
         />
+        </div>
       </ListPanel>
       {editing !== undefined && (
         <RecordForm
@@ -362,10 +457,30 @@ export function ResourcePage({
           lookups={lookups}
           onClose={() => setEditing(undefined)}
           onSave={async (body) => {
-            await api(resource.path + (editing ? `/${editing.id}` : ""), {
-              method: editing ? "PATCH" : "POST",
-              body,
-            });
+            const docenteId = body.docenteId as string | undefined;
+            const payload = { ...body };
+            delete payload.docenteId;
+            delete payload.idiomaId;
+            const res = await api<Row>(
+              resource.path + (editing ? `/${editing.id}` : ""),
+              {
+                method: editing ? "PATCH" : "POST",
+                body: payload,
+              },
+            );
+            if (resource.key === "grupos" && !editing && docenteId && res?.id) {
+              const today = new Date().toISOString().slice(0, 10);
+              await api(`oferta/grupos/${res.id}/docentes/${docenteId}`, {
+                method: "PUT",
+                body: {
+                  esTitular: true,
+                  fechaAsignacion: today,
+                  activo: true,
+                  motivo:
+                    "Asignación inicial de docente titular al crear el grupo",
+                },
+              });
+            }
             saved();
           }}
         />

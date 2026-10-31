@@ -59,7 +59,7 @@ export class GradesService {
         : !configuration || plan?.estado !== 'APROBADO'
           ? 'Aplica una versión de criterios aprobados al grupo antes de registrar notas'
           : !canWrite
-            ? 'El registro de notas corresponde exclusivamente al docente asignado'
+            ? 'El registro de notas corresponde al docente asignado o al administrador'
             : null;
     return { configuration, plan, acta, reason };
   }
@@ -69,6 +69,7 @@ export class GradesService {
     roles: readonly Role[],
     groupId: string,
   ) {
+    if (roles.includes('ADMIN')) return true;
     return (
       roles.includes('DOCENTE') &&
       (await assignedToGroup(manager, actor, groupId))
@@ -134,7 +135,7 @@ export class GradesService {
   ) {
     validId(groupId);
     return this.source.transaction(async (manager) => {
-      const roles = await authorize(manager, actor, ['DOCENTE']);
+      const roles = await authorize(manager, actor, ['ADMIN', 'DOCENTE']);
       if (!(await this.canWrite(manager, actor, roles, groupId)))
         throw new ForbiddenException('Grupo no asignado');
       const group = await loadAcademicGroup(manager, groupId, true);

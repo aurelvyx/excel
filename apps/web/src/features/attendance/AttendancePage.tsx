@@ -1,26 +1,23 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ApiError, api, errorText } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { useUnsavedChanges } from "../../shared/useUnsavedChanges";
+import { Dialog } from "../../shared/Dialog";
 import { Button } from "../../shared/ui/Button";
 import { DataTable } from "../../shared/ui/DataTable";
 import { Facts } from "../../shared/ui/Facts";
 import { Feedback, Loading } from "../../shared/ui/Feedback";
-import { InputField, SelectField } from "../../shared/ui/Field";
 import { ListPanel } from "../../shared/ui/ListPanel";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
-import { StatusBadge } from "../../shared/ui/StatusBadge";
-import {
-  EnrollmentAttempt,
-  StudentIdentity,
-} from "../../shared/ui/AcademicCells";
+import { EnrollmentAttempt } from "../../shared/ui/AcademicCells";
 import { CaptureToolbar } from "../../shared/ui/CaptureToolbar";
 import { GroupContext } from "./GroupContext";
-import { AttendanceSummary } from "./AttendanceSummary";
 import { AttendanceCorrectionDialog } from "./AttendanceCorrectionDialog";
 import { AttendanceHistoryDialog } from "./AttendanceHistoryDialog";
+import { safeAttendanceReturnTo } from "./navigation";
+import "../academic/academic.css";
 import {
   justificationStates,
   type JustificationState,
@@ -46,6 +43,37 @@ export function AttendancePage({
   query: URLSearchParams;
 }) {
   const after = query.get("after") ?? "";
+  const fromMatrix = query.get("origen") === "matriz";
+  const fromJustifications = query.get("origen") === "justificaciones";
+  const requestedMonth = query.get("mes") ?? "";
+  const matrixMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth)
+    ? requestedMonth
+    : "";
+  const originReturnTo = safeAttendanceReturnTo(query.get("retorno"), groupId);
+  const returnParams = new URLSearchParams();
+  if (fromMatrix) {
+    returnParams.set("origen", "matriz");
+    if (matrixMonth) returnParams.set("mes", matrixMonth);
+  }
+  if (originReturnTo) returnParams.set("retorno", originReturnTo);
+  const returnPathBase = fromMatrix
+    ? `/asistencia/grupos/${groupId}/matriz`
+    : `/asistencia/grupos/${groupId}`;
+  const returnPath =
+    (fromJustifications && originReturnTo) ||
+    `${returnPathBase}${returnParams.size ? `?${returnParams}` : ""}`;
+  const returnLabel = fromMatrix
+    ? "Volver a matriz"
+    : fromJustifications
+      ? "Volver a justificaciones"
+      : "Volver a sesiones";
+  const routeContext = new URLSearchParams();
+  if (fromMatrix) {
+    routeContext.set("origen", "matriz");
+    if (matrixMonth) routeContext.set("mes", matrixMonth);
+  }
+  if (fromJustifications) routeContext.set("origen", "justificaciones");
+  if (originReturnTo) routeContext.set("retorno", originReturnTo);
   const path = `/asistencia/grupos/${groupId}/sesiones/${sessionId}`;
   const endpoint = `asistencia/grupos/${groupId}/sesiones/${sessionId}/asistencias`;
   const search = new URLSearchParams({ limit: "20" });
@@ -62,12 +90,15 @@ export function AttendancePage({
         endpoint={endpoint}
         queryPath={`${endpoint}?${search}`}
         after={after}
+        returnPath={returnPath}
+        returnLabel={returnLabel}
+        routeContext={routeContext.toString()}
         reload={reload}
       />
     );
   return (
     <section>
-      <a href={`#/asistencia/grupos/${groupId}`}>← Volver a sesiones</a>
+      <a href={`#${returnPath}`}>← {returnLabel}</a>
       <AttendanceHeading />
       {loading ? (
         <Loading>Cargando asistencia…</Loading>
@@ -101,6 +132,9 @@ function AttendanceMatrix({
   endpoint,
   queryPath,
   after,
+  returnPath,
+  returnLabel,
+  routeContext,
   reload,
 }: {
   initial: AttendancePageData;
@@ -108,6 +142,9 @@ function AttendanceMatrix({
   endpoint: string;
   queryPath: string;
   after: string;
+  returnPath: string;
+  returnLabel: string;
+  routeContext: string;
   reload: () => void;
 }) {
   const [snapshot, setSnapshot] = useState(initial);
@@ -123,9 +160,28 @@ function AttendanceMatrix({
   const [summaryError, failSummary] = useState("");
   const [correcting, setCorrecting] = useState<AttendanceRow | null>(null);
   const [history, showHistory] = useState<AttendanceRow | null>(null);
+  const [studentDetail, showStudentDetail] = useState<AttendanceRow | null>(
+    null,
+  );
   const saving = useRef(false);
   const changedRows = Object.keys(drafts).length;
   const dirty = changedRows > 0;
+  const counts = useMemo(() => {
+    let p = 0;
+    let t = 0;
+    let f = 0;
+    let j = 0;
+    let pendingCount = 0;
+    for (const r of rows) {
+      const currentCode = (drafts[r.matricula_id] ?? recorded(r)).codigo;
+      if (currentCode === "P") p++;
+      else if (currentCode === "T") t++;
+      else if (currentCode === "F") f++;
+      else if (currentCode === "J") j++;
+      else pendingCount++;
+    }
+    return { p, t, f, j, pending: pendingCount };
+  }, [rows, drafts]);
   const guard = useUnsavedChanges(dirty, busy);
   const canEdit = snapshot.puedeEditar;
   function change(row: AttendanceRow, patch: Partial<Draft>) {
@@ -238,8 +294,8 @@ function AttendanceMatrix({
   }
   return (
     <section>
-      <a href={`#/asistencia/grupos/${snapshot.grupo.id}`}>
-        ← Volver a sesiones
+      <a href={`#${returnPath}`}>
+        ← {returnLabel}
       </a>
       <AttendanceHeading />
       <GroupContext group={snapshot.grupo} />
@@ -295,6 +351,54 @@ function AttendanceMatrix({
         . Las programadas y canceladas no computan. Los cambios sin guardar no
         modifican este resumen.
       </p>
+      {/* Barra en vivo de marcas de asistencia */}
+      <div className="attendance-live-bar">
+        <div className="attendance-counters">
+          <span className="att-counter-pill p" title="Estudiantes Presentes">
+            🟢 Presentes: {counts.p}
+          </span>
+          <span className="att-counter-pill t" title="Estudiantes con Tardanza">
+            🟡 Tardanzas: {counts.t}
+          </span>
+          <span className="att-counter-pill f" title="Estudiantes con Falta">
+            🔴 Faltas: {counts.f}
+          </span>
+          <span className="att-counter-pill j" title="Estudiantes con Justificación">
+            🔵 Justificados: {counts.j}
+          </span>
+          {counts.pending > 0 && (
+            <span className="att-counter-pill pending" title="Pendientes de marcar">
+              ⚪ Sin marcar: {counts.pending}
+            </span>
+          )}
+        </div>
+        {canEdit && (
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <Button
+              disabled={
+                busy ||
+                conflict ||
+                !rows.some((row) => row.editable && !row.justificacionId)
+              }
+              onClick={markPresent}
+            >
+              ✓ Marcar todos presentes (P)
+            </Button>
+            {dirty && (
+              <Button
+                variant="primary"
+                disabled={conflict}
+                busy={busy}
+                busyLabel="Guardando…"
+                onClick={() => void save()}
+              >
+                💾 Guardar asistencia ({changedRows})
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
       <ListPanel
         loading={false}
         loadingLabel="Cargando asistencia…"
@@ -308,20 +412,7 @@ function AttendanceMatrix({
             busy={busy}
             reloadLabel="Recargar asistencia"
             onReload={() => guard.request(reload)}
-          >
-            {canEdit && (
-              <Button
-                disabled={
-                  busy ||
-                  conflict ||
-                  !rows.some((row) => row.editable && !row.justificacionId)
-                }
-                onClick={markPresent}
-              >
-                Marcar presentes
-              </Button>
-            )}
-          </CaptureToolbar>
+          />
         }
         pagination={
           <Pagination
@@ -330,7 +421,11 @@ function AttendanceMatrix({
             nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
-                () => navigate(cursor ? `${path}?after=${cursor}` : path),
+                () => {
+                  const params = new URLSearchParams(routeContext);
+                  if (cursor) params.set("after", cursor);
+                  navigate(`${path}${params.size ? `?${params}` : ""}`);
+                },
                 true,
               )
             }
@@ -345,17 +440,28 @@ function AttendanceMatrix({
             {
               key: "estudiante",
               header: "Estudiante",
-              cell: (row) => (
-                <StudentIdentity
-                  name={row.estudiante}
-                  documentType={row.tipo_documento}
-                  documentNumber={row.numero_documento}
-                />
-              ),
+              cell: (row) => {
+                const names = row.estudiante;
+                const parts = names.split(" ");
+                const initials = (parts[0]?.[0] || "") + (parts[1]?.[0] || "");
+                return (
+                  <div className="att-student-cell">
+                    <div className="att-student-avatar">
+                      {initials.toUpperCase() || "E"}
+                    </div>
+                    <div>
+                      <span className="att-student-name">{names}</span>
+                      <span className="att-student-doc">
+                        {row.tipo_documento} {row.numero_documento}
+                      </span>
+                    </div>
+                  </div>
+                );
+              },
             },
             {
               key: "matricula",
-              header: "Matrícula / intento",
+              header: "Matrícula",
               cell: (row) => (
                 <EnrollmentAttempt
                   code={row.codigo_matricula}
@@ -366,43 +472,68 @@ function AttendanceMatrix({
             },
             {
               key: "marca",
-              header: "Asistencia",
+              header: "Marca de asistencia",
               className: "attendance-mark",
-              cell: (row) =>
-                canEdit && row.editable ? (
-                  <SelectField
-                    label={`Asistencia de ${row.estudiante}`}
-                    id={`attendance-${row.matricula_id}`}
-                    value={(drafts[row.matricula_id] ?? recorded(row)).codigo}
-                    disabled={busy || conflict || !!row.justificacionId}
-                    hint={
-                      row.justificacionId
-                        ? "Esta marca J tiene una solicitud registrada y se conserva como evidencia."
-                        : undefined
-                    }
-                    error={issues[row.matricula_id]}
-                    onChange={(event) =>
-                      change(row, {
-                        codigo: event.target.value as AttendanceCode | "",
-                      })
-                    }
-                  >
-                    <option value="" disabled={!!row.asistencia}>
-                      Pendiente
-                    </option>
-                    {Object.entries(attendanceCodes).map(([code, label]) => (
-                      <option key={code} value={code}>
-                        {code} · {label}
-                      </option>
-                    ))}
-                  </SelectField>
-                ) : (
-                  <StatusBadge inactive={!row.asistencia}>
-                    {row.asistencia
-                      ? `${row.asistencia.codigo} · ${attendanceCodes[row.asistencia.codigo]}`
-                      : "Pendiente"}
-                  </StatusBadge>
-                ),
+              cell: (row) => {
+                const currentCode = (drafts[row.matricula_id] ?? recorded(row)).codigo;
+                const isLocked = !canEdit || !row.editable || busy || conflict || !!row.justificacionId;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <div className="attendance-toggle-group">
+                      <button
+                        type="button"
+                        className={`att-btn p ${currentCode === "P" ? "active" : ""}`}
+                        title="Marcar Presente (P)"
+                        aria-label={`Presente para ${row.estudiante}`}
+                        disabled={isLocked}
+                        onClick={() => change(row, { codigo: "P" })}
+                      >
+                        P
+                      </button>
+                      <button
+                        type="button"
+                        className={`att-btn t ${currentCode === "T" ? "active" : ""}`}
+                        title="Marcar Tardanza (T)"
+                        aria-label={`Tardanza para ${row.estudiante}`}
+                        disabled={isLocked}
+                        onClick={() => change(row, { codigo: "T" })}
+                      >
+                        T
+                      </button>
+                      <button
+                        type="button"
+                        className={`att-btn f ${currentCode === "F" ? "active" : ""}`}
+                        title="Marcar Falta (F)"
+                        aria-label={`Falta para ${row.estudiante}`}
+                        disabled={isLocked}
+                        onClick={() => change(row, { codigo: "F" })}
+                      >
+                        F
+                      </button>
+                      <button
+                        type="button"
+                        className={`att-btn j ${currentCode === "J" ? "active" : ""}`}
+                        title="Marcar Justificado (J)"
+                        aria-label={`Justificado para ${row.estudiante}`}
+                        disabled={isLocked}
+                        onClick={() => change(row, { codigo: "J" })}
+                      >
+                        J
+                      </button>
+                    </div>
+                    {issues[row.matricula_id] && (
+                      <span style={{ fontSize: "0.688rem", color: "#dc2626", fontWeight: 600 }}>
+                        {issues[row.matricula_id]}
+                      </span>
+                    )}
+                    {row.justificacionId && (
+                      <span style={{ fontSize: "0.688rem", color: "#0284c7", fontWeight: 600 }}>
+                        Justificación oficial
+                      </span>
+                    )}
+                  </div>
+                );
+              },
             },
             {
               key: "observacion",
@@ -410,65 +541,118 @@ function AttendanceMatrix({
               className: "attendance-observation",
               cell: (row) =>
                 canEdit && row.editable ? (
-                  <InputField
-                    label={`Observación de ${row.estudiante}`}
-                    id={`attendance-note-${row.matricula_id}`}
-                    value={
-                      (drafts[row.matricula_id] ?? recorded(row)).observacion
-                    }
+                  <input
+                    type="text"
+                    placeholder="Obs / nota..."
+                    value={(drafts[row.matricula_id] ?? recorded(row)).observacion}
                     maxLength={250}
                     disabled={busy || conflict}
-                    hint="Opcional · máximo 250 caracteres"
                     onChange={(event) =>
                       change(row, { observacion: event.target.value })
                     }
+                    style={{
+                      width: "100%",
+                      minWidth: "130px",
+                      maxWidth: "200px",
+                      padding: "0.35rem 0.6rem",
+                      fontSize: "0.813rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid #cbd5e1",
+                    }}
                   />
                 ) : (
-                  row.asistencia?.observacion || "—"
+                  <span style={{ color: "#64748b", fontSize: "0.813rem" }}>
+                    {row.asistencia?.observacion || "—"}
+                  </span>
                 ),
             },
             {
               key: "resumen",
-              header: "Resumen del intento",
+              header: "Límite de inasistencias",
               className: "attendance-calculation",
-              cell: (row) => (
-                <AttendanceSummary
-                  summary={row.resumenAsistencia}
-                  label={`Resumen de asistencia de ${row.estudiante}`}
-                  compact
-                  stale={!summaryCurrent}
-                />
-              ),
+              cell: (row) => {
+                const summary = row.resumenAsistencia;
+                const limitExceeded =
+                  summary?.excedeLimite === true ||
+                  summary?.condicion === "RETIRADO_INASISTENCIA";
+                const inasistenciaPct = summary?.inasistenciaPct;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "9999px",
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        width: "fit-content",
+                        background: limitExceeded ? "#fef2f2" : "#ecfdf5",
+                        color: limitExceeded ? "#991b1b" : "#065f46",
+                        border: `1px solid ${limitExceeded ? "#fecaca" : "#a7f3d0"}`,
+                      }}
+                    >
+                      {limitExceeded ? "DPI (> 20%)" : "Normal"}
+                    </span>
+                    {inasistenciaPct != null && (
+                      <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                        Inasistencia: {inasistenciaPct}%
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#007a3d",
+                        textDecoration: "underline",
+                        fontSize: "0.72rem",
+                        padding: 0,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        width: "fit-content",
+                      }}
+                      onClick={() => showStudentDetail(row)}
+                    >
+                      Ver desglose
+                    </button>
+                  </div>
+                );
+              },
             },
             {
               key: "registro",
-              header: "Registro",
+              header: "Estado",
               className: "attendance-status",
               cell: (row) => (
-                <>
-                  {drafts[row.matricula_id]
-                    ? "Sin guardar"
-                    : row.asistencia
-                      ? "Registrado"
-                      : "Pendiente"}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                  <span
+                    style={{
+                      fontSize: "0.813rem",
+                      fontWeight: 600,
+                      color: drafts[row.matricula_id]
+                        ? "#d97706"
+                        : row.asistencia
+                          ? "#059669"
+                          : "#64748b",
+                    }}
+                  >
+                    {drafts[row.matricula_id]
+                      ? "Por guardar"
+                      : row.asistencia
+                        ? "✓ Guardado"
+                        : "Pendiente"}
+                  </span>
                   {row.asistencia?.codigo === "J" && (
-                    <>
-                      <small className="attendance-document">
-                        {
-                          justificationStates[
-                            (row.justificacionEstado as JustificationState) ??
-                              "SIN_SOLICITUD"
-                          ]
-                        }
-                      </small>
-                      <a
-                        href={`#/asistencia/grupos/${snapshot.grupo.id}/justificaciones?q=${encodeURIComponent(row.numero_documento)}`}
-                      >
-                        Gestionar justificación
-                      </a>
-                    </>
+                    <small style={{ fontSize: "0.688rem", color: "#0284c7" }}>
+                      {
+                        justificationStates[
+                          (row.justificacionEstado as JustificationState) ??
+                            "SIN_SOLICITUD"
+                        ]
+                      }
+                    </small>
                   )}
-                </>
+                </div>
               ),
             },
             {
@@ -476,24 +660,28 @@ function AttendanceMatrix({
               header: "Acciones",
               className: "row-actions",
               cell: (row) => (
-                <>
+                <div className="roster-action-group">
                   {snapshot.puedeCorregir && row.corregible && (
-                    <Button
-                      variant="link"
+                    <button
+                      type="button"
+                      className="roster-btn"
                       disabled={busy || conflict || !summaryCurrent}
                       onClick={() => setCorrecting(row)}
+                      title="Corregir asistencia"
                     >
-                      Corregir asistencia
-                    </Button>
+                      <span>Corregir</span>
+                    </button>
                   )}
-                  <Button
-                    variant="link"
+                  <button
+                    type="button"
+                    className="roster-btn"
                     disabled={busy}
                     onClick={() => showHistory(row)}
+                    title="Ver historial de asistencia"
                   >
-                    Ver historial de asistencia
-                  </Button>
-                </>
+                    <span>Historial</span>
+                  </button>
+                </div>
               ),
             },
           ]}
@@ -547,6 +735,42 @@ function AttendanceMatrix({
           endpoint={endpoint}
           onClose={() => showHistory(null)}
         />
+      )}
+      {studentDetail && (
+        <Dialog
+          title={`Ficha del estudiante · ${studentDetail.estudiante}`}
+          onClose={() => showStudentDetail(null)}
+        >
+          <Facts
+            items={[
+              [
+                "Documento",
+                `${studentDetail.tipo_documento} ${studentDetail.numero_documento}`,
+              ],
+              ["Código de matrícula", studentDetail.codigo_matricula],
+              ["Intento académico", String(studentDetail.numero_intento)],
+              ["Estado de matrícula", studentDetail.estado_matricula],
+              [
+                "Asistencia de esta sesión",
+                studentDetail.asistencia?.codigo
+                  ? `${studentDetail.asistencia.codigo} · ${attendanceCodes[studentDetail.asistencia.codigo]}`
+                  : "Pendiente",
+              ],
+              [
+                "Asistencia acumulada",
+                studentDetail.resumenAsistencia.inasistenciaPct === null
+                  ? "Sin sesiones computables"
+                  : `${studentDetail.resumenAsistencia.inasistenciaPct}% de inasistencia`,
+              ],
+            ]}
+          />
+          <p className="help">
+            La ficha muestra los datos académicos disponibles para este grupo.
+          </p>
+          <footer className="actions">
+            <Button onClick={() => showStudentDetail(null)}>Cerrar</Button>
+          </footer>
+        </Dialog>
       )}
     </section>
   );

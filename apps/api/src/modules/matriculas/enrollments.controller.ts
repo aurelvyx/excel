@@ -5,6 +5,7 @@ import {
   Inject,
   Param,
   Patch,
+  Query,
   Post,
   Req,
 } from '@nestjs/common';
@@ -20,8 +21,16 @@ import {
 import { Access, type AuthRequest } from '../auth/access.js';
 import { COOKIE_NAME } from '../auth/security.js';
 import { inputDto } from '../../common/validation.js';
-import { EnrollmentDto, ActivationDto } from './enrollments.dto.js';
-import { EnrollmentsService, enrollmentRoles } from './enrollments.service.js';
+import {
+  EnrollmentDto,
+  ActivationDto,
+  ChangeGroupDto,
+} from './enrollments.dto.js';
+import {
+  EnrollmentsService,
+  enrollmentRoles,
+  enrollmentReaders,
+} from './enrollments.service.js';
 import { enrollmentSchema } from './enrollments.schema.js';
 @Controller('matriculas')
 @ApiTags('Matrículas — B08')
@@ -48,6 +57,39 @@ export class EnrollmentsController {
     @Body(inputDto(EnrollmentDto)) dto: EnrollmentDto,
   ) {
     return this.service.create(req.identity, dto, req.ip);
+  }
+  @Get('grupos')
+  @Access(...enrollmentReaders)
+  @ApiOperation({
+    summary: 'Grupos de un periodo con matriculados y pendientes',
+  })
+  listGroups(
+    @Req() req: AuthRequest,
+    @Query() query: Record<string, unknown>,
+  ) {
+    return this.service.listGroups(req.identity, query);
+  }
+  @Get()
+  @Access(...enrollmentReaders)
+  @ApiOperation({
+    summary: 'Nómina de matrículas de un grupo (exige grupoId)',
+  })
+  roster(@Req() req: AuthRequest, @Query() query: Record<string, unknown>) {
+    return this.service.roster(req.identity, query);
+  }
+  @Patch(':id/grupo')
+  @ApiBody({ type: ChangeGroupDto })
+  @ApiOkResponse({ schema: enrollmentSchema })
+  @ApiOperation({
+    summary:
+      'Cambiar a otro grupo del mismo periodo y nivel, sin registros académicos; con motivo y auditoría',
+  })
+  changeGroup(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(inputDto(ChangeGroupDto)) dto: ChangeGroupDto,
+  ) {
+    return this.service.changeGroup(req.identity, id, dto, req.ip);
   }
   @Get(':id')
   @ApiOkResponse({ schema: enrollmentSchema })

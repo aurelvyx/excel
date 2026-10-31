@@ -1,35 +1,26 @@
-# Web del Centro de Idiomas Excel
+# Cliente Web — Centro de Idiomas Excel
 
-React 19, TypeScript y Vite. Ejecutar `pnpm dev:web` desde la raíz, junto con
-`pnpm dev:api` y PostgreSQL configurado. Abrir http://127.0.0.1:5173.
+Aplicación frontend construida con **React 19**, **TypeScript** y **Vite**.
 
-La interfaz B05 incorpora inicio/cierre de sesión, cambio de contraseña, menú por
-rol, catálogos académicos, docentes, asignaciones y usuarios/roles. Usa la API real
-mediante `/api`; no guarda credenciales en almacenamiento del navegador.
+## Desarrollo
 
-La navegación con fragmentos conserva los filtros al recargar y permite enlaces
-directos. El administrador edita configuración; secretaría/coordinación consultan
-oferta y el docente solo sus grupos. Los permisos se comprueban nuevamente en NestJS.
+Ejecutar desde la raíz del monorepositorio junto con la API (`pnpm dev:api`):
 
-Ver [guía B05](../../docs/B05-interfaz-y-configuracion.md) para preparar el acceso,
-utilizar cada pantalla, ejecutar pruebas y conocer los límites de esta entrega.
+```sh
+pnpm dev:web
+```
 
-Organización: `src/features/auth`, `src/features/configuration` y `src/shared`
-(cliente API, navegación y diálogo). El navegador se verifica mediante
-`apps/api/test/web.integration-spec.ts`, iniciado por `pnpm test:db` con PostgreSQL
-temporal. Instalar antes Chromium con `pnpm --filter api exec playwright install chromium`.
+Abrir en el navegador: http://127.0.0.1:5173
 
-B06 incorpora `src/features/students`: registro y edición para administración y
-secretaría, consulta para coordinación e historial por intento. Ver
-[guía B06](../../docs/B06-estudiantes-historial.md). Las pruebas de navegador están
-en `apps/api/test/students-web.integration-spec.ts` y se incluyen en `pnpm test:db`.
+## Estructura de `src/`
 
-Botones, campos, tablas, paginación y mensajes se comparten en `src/shared/ui`.
-Ver [guía de componentes y refactorización](../../docs/refactor-componentes-compartidos.md)
-antes de agregar nuevas pantallas.
-
-B07 incorpora src/features/vouchers y el selector reutilizable de estudiantes para administración y secretaría. Ver [guía B07](../../docs/B07-vouchers.md).
-
-B09 incorpora `src/features/enrollments`: asistente conectado a la API B08 y
-recuperación de solicitudes pendientes desde el historial. Reutiliza altas y
-decisiones de estudiantes/vouchers. Ver [guía B09](../../docs/B09-asistente-matricula.md).
+- `app/` — Enrutador principal (`routes.tsx`), barra lateral (`Sidebar.tsx`), permisos por rol (`access.ts`) y panel de inicio (`Home.tsx`).
+- `features/academic/` — Gestión Académica, Salón 360°, Portal Docente (`TeacherClassesPage.tsx`) y Matriz Curricular (`CurriculumMatrixPage.tsx`).
+- `features/enrollments/` — Gestión de matrículas por salón, nómina y asistente de matrícula en 4 pasos.
+- `features/vouchers/` — Bandeja clasificada de comprobantes de pago, registro y validación/rechazo.
+- `features/attendance/` — Calendario mensual de sesiones, creación de sesiones por día, matriz de asistencia y justificaciones.
+- `features/evaluation/` — Configuración de planes de evaluación, registro matricial de notas y cierre de Actas Oficiales.
+- `features/reports/` — Previsualización y exportación `.xlsx` (Acta Oficial UGEL, Matriz de Notas y Resumen de Participantes).
+- `features/students/` — Padrón de estudiantes e historial académico.
+- `features/configuration/` — Catálogos institucionales, plana docente y usuarios/roles.
+- `shared/` — Cliente HTTP (`api`), navegación y componentes de interfaz reutilizables.

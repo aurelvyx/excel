@@ -31,6 +31,7 @@ export function JustificationsPage({
 }) {
   const path = `/asistencia/grupos/${groupId}/justificaciones`;
   const endpoint = `asistencia/grupos/${groupId}/justificaciones`;
+  const returnFromSession = `${path}${query.size ? `?${query}` : ""}`;
   const search = new URLSearchParams({ limit: "20" });
   for (const key of ["after", "estado", "q"]) {
     const value = query.get(key);
@@ -48,6 +49,7 @@ export function JustificationsPage({
         endpoint={endpoint}
         query={query}
         queryPath={queryPath}
+        returnFromSession={returnFromSession}
       />
     );
   return (
@@ -81,12 +83,14 @@ function JustificationsList({
   endpoint,
   query,
   queryPath,
+  returnFromSession,
 }: {
   initial: JustificationsPageData;
   path: string;
   endpoint: string;
   query: URLSearchParams;
   queryPath: string;
+  returnFromSession: string;
 }) {
   const [snapshot, setSnapshot] = useState(initial);
   const [selected, select] = useState<{
@@ -282,7 +286,7 @@ function JustificationsList({
               cell: (row) => (
                 <>
                   <a
-                    href={`#/asistencia/grupos/${snapshot.grupo.id}/sesiones/${row.sesion_id}`}
+                    href={`#/asistencia/grupos/${snapshot.grupo.id}/sesiones/${row.sesion_id}?${new URLSearchParams({ origen: "justificaciones", retorno: returnFromSession })}`}
                   >
                     {sessionDate(row.fecha_sesion)}
                   </a>

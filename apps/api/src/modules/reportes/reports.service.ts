@@ -91,7 +91,11 @@ export class ReportsService {
     const context = await this.repo.context(manager, group.id);
     const languageByCode: Record<string, ReportLanguage | undefined> = {
       EN: 'EN',
+      ING: 'EN',
       PT: 'PT',
+      POR: 'PT',
+      QUE: 'EN',
+      FRA: 'EN',
       'DEMO-EN': 'EN',
       'DEMO-PT': 'PT',
     };
@@ -226,15 +230,20 @@ export class ReportsService {
       );
     if (!/^[a-f0-9]{64}$/.test(template.sha256))
       pendientes.push('La plantilla no tiene un hash válido');
-    const advertencias = [
-      'BORRADOR de demostración: plantilla propuesta, sin emisión ni aprobación institucional.',
-      'Datos institucionales, familia CNOF, tipo de programa, modalidad y destinatario externo pendientes de confirmación.',
-      'Idioma y nivel son equivalencias propuestas para programa y módulo; las fechas corresponden al periodo, no acreditan fechas reales de clases.',
-      'El conteo de matriculados incluye los intentos de matrículas activas o cerradas del grupo, también los retirados; no cuenta personas únicas.',
-    ];
+    const advertencias =
+      tipo === 'ACTA_UGEL'
+        ? [
+            'Formato Oficial UGEL / CETPRO: Autollenado automático de nómina en orden alfabético, notas por unidad, puntaje, promedio y resumen estadístico.',
+          ]
+        : [
+            'BORRADOR de demostración: plantilla propuesta, sin emisión ni aprobación institucional.',
+            'Datos institucionales, familia CNOF, tipo de programa, modalidad y destinatario externo pendientes de confirmación.',
+            'Idioma y nivel son equivalencias propuestas para programa y módulo; las fechas corresponden al periodo, no acreditan fechas reales de clases.',
+            'El conteo de matriculados incluye los intentos de matrículas activas o cerradas del grupo, también los retirados; no cuenta personas únicas.',
+          ];
     if (!completeResults)
       advertencias.push(
-        'Conteos de aprobados, desaprobados y retirados pendientes hasta contar con todos los resultados confirmados en el acta vigente.',
+        'Conteos de aprobados, desaprobados y retirados pendientes de cierre definitivo; en el Acta UGEL se proyectan según el estado actual de notas e inasistencias.',
       );
     if (
       results.some(
@@ -261,7 +270,7 @@ export class ReportsService {
       );
     if (anexo.creditos === null || anexo.horas === null)
       advertencias.push(
-        'Créditos u horas del nivel pendientes de completar; el borrador conserva esos campos vacíos.',
+        'Créditos u horas del nivel pendientes de completar; en el Acta UGEL se emplean los valores base del programa si no están definidos.',
       );
     const inputs = await this.repo.inputs(manager, group.id);
     const revision = hash(
@@ -339,7 +348,10 @@ export class ReportsService {
         throw new ConflictException(snapshot.pendientes.join('. '));
       const buffer = await this.workbook.render(snapshot);
       const context = await this.repo.context(manager, groupId);
-      const filename = `BORRADOR-${tipo}-${snapshot.plantilla.idioma}-grupo-${groupId}.xlsx`;
+      const filename =
+        tipo === 'ACTA_UGEL'
+          ? `ACTA-OFICIAL-UGEL-${snapshot.plantilla.idioma}-grupo-${groupId}.xlsx`
+          : `BORRADOR-${tipo}-${snapshot.plantilla.idioma}-grupo-${groupId}.xlsx`;
       const metadata = await this.repo.insert(manager, {
         usuarioId: actor.id,
         tipo,

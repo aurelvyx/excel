@@ -3,7 +3,11 @@ import type { AttendanceSummary } from '../asistencia/attendance-calculation.pol
 import type { GradeSummary } from '../evaluacion/grade-calculation.service.js';
 import type { StoredResult } from '../evaluacion/act.repository.js';
 
-export const reportTypes = ['MATRIZ_NOTAS', 'RESUMEN_PARTICIPANTES'] as const;
+export const reportTypes = [
+  'MATRIZ_NOTAS',
+  'RESUMEN_PARTICIPANTES',
+  'ACTA_UGEL',
+] as const;
 export type ReportType = (typeof reportTypes)[number];
 export type ReportLanguage = 'EN' | 'PT';
 export type ReportTemplateInfo = {

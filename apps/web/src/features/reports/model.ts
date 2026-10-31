@@ -2,8 +2,9 @@ import type { SessionGroup, AttendanceSummaryData } from "../attendance/model";
 import type { GradeSummaryData } from "../evaluation/grades-model";
 import type { StoredResult } from "../evaluation/acts-model";
 
-export type ReportType = "MATRIZ_NOTAS" | "RESUMEN_PARTICIPANTES";
+export type ReportType = "MATRIZ_NOTAS" | "RESUMEN_PARTICIPANTES" | "ACTA_UGEL";
 export const reportNames: Record<ReportType, string> = {
+  ACTA_UGEL: "Acta Oficial de Evaluación UGEL (MINEDU / CETPRO)",
   MATRIZ_NOTAS: "Matriz de notas",
   RESUMEN_PARTICIPANTES: "Resumen de participantes",
 };

@@ -24,8 +24,6 @@ export function attendanceReadOnlyReason(value: {
   if (value.groupState !== 'ACTIVO' || value.periodState !== 'ABIERTO')
     return 'El grupo y el periodo deben estar abiertos para registrar asistencia';
   if (value.sessionState === 'CANCELADA') return 'La sesión está cancelada';
-  if (value.sessionDate > value.today)
-    return 'La fecha de esta sesión aún no ha llegado';
   return null;
 }
 export class AttendanceConflict extends Error {}

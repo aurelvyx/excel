@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { ConflictException, Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 import type {
+  ReportIndicator,
   ReportLanguage,
   ReportSnapshot,
   ReportTemplateInfo,
@@ -98,11 +99,136 @@ export class ReportWorkbookService {
     book.lastModifiedBy = 'Sistema de gestión académica';
     book.created = new Date();
     book.modified = new Date();
-    sheet.getCell('A2').value =
-      'BORRADOR. Formato de demostración pendiente de aprobación institucional.';
-    if (snapshot.tipo === 'MATRIZ_NOTAS') this.matrix(sheet, entry, snapshot);
-    else this.summary(sheet, snapshot);
+    if (snapshot.tipo === 'MATRIZ_NOTAS') {
+      sheet.getCell('A2').value =
+        'BORRADOR. Formato de demostración pendiente de aprobación institucional.';
+      this.matrix(sheet, entry, snapshot);
+    } else if (snapshot.tipo === 'RESUMEN_PARTICIPANTES') {
+      sheet.getCell('A2').value =
+        'BORRADOR. Formato de demostración pendiente de aprobación institucional.';
+      this.summary(sheet, snapshot);
+    } else {
+      this.actaUgel(sheet, entry, snapshot);
+    }
     return Buffer.from(await book.xlsx.writeBuffer());
+  }
+  private actaUgel(
+    sheet: ExcelJS.Worksheet,
+    entry: TemplateEntry,
+    snapshot: ReportSnapshot,
+  ) {
+    const { anexo, grupo, indicadores, items, resumen } = snapshot;
+    const context = (grupo.contexto as Record<string, string> | null) ?? {};
+    const periodo = context.periodo ?? anexo.fechaInicio.slice(0, 4);
+    const yearMatch = /\d{4}/.exec(periodo);
+    const year = yearMatch ? yearMatch[0] : anexo.fechaInicio.slice(0, 4);
+    const programaNombre = `${anexo.idioma} ${anexo.nivel}`.toUpperCase();
+
+    // Encabezado oficial UGEL / CETPRO
+    sheet.getCell('P1').value = `- ${year}`;
+    sheet.getCell('W4').value = programaNombre;
+    sheet.getCell('W5').value = programaNombre;
+    sheet.getCell('W6').value = 'Presencial';
+    sheet.getCell('T11').value = formatDateDmy(anexo.fechaInicio);
+    sheet.getCell('Y11').value = formatDateDmy(anexo.fechaFin);
+    sheet.getCell('AC11').value = periodo;
+
+    // Agrupación de notas por unidad / evaluación en las 5 columnas oficiales (J, K, L, O, Q)
+    const unitColumns = [10, 11, 12, 15, 17] as const;
+    const evalGroups = groupIndicatorsForUgel(indicadores);
+
+    // Orden alfabético por apellidos y nombres
+    const sortedItems = [...items].sort((a, b) =>
+      a.estudiante.localeCompare(b.estudiante, 'es', { sensitivity: 'base' }),
+    );
+
+    let aprobadosCount = 0;
+    let desaprobadosCount = 0;
+    let retiradosCount = 0;
+
+    const totalTemplateRows = Math.max(36, sortedItems.length);
+    for (let index = 0; index < totalTemplateRows; index++) {
+      const rowNum = entry.primeraFila + index;
+      const row = sheet.getRow(rowNum);
+      const item = sortedItems[index];
+
+      row.getCell(1).value = index + 1;
+      if (!item) {
+        row.getCell(2).value = null;
+        row.getCell(3).value = null;
+        for (const col of unitColumns) row.getCell(col).value = null;
+        row.getCell(18).value = null;
+        row.getCell(19).value = null;
+        row.getCell(20).value = null;
+        row.getCell(21).value = null;
+        row.getCell(22).value = null;
+        row.getCell(23).value = null;
+        continue;
+      }
+
+      row.getCell(2).value = item.documento;
+      row.getCell(3).value = item.estudiante.toUpperCase();
+
+      let sumUnitGrades = 0;
+      let countUnitGrades = 0;
+
+      unitColumns.forEach((col, unitIdx) => {
+        const group = evalGroups[unitIdx];
+        if (!group || !group.length) {
+          row.getCell(col).value = null;
+          return;
+        }
+        const grade = computeUnitGrade(item.notas, group);
+        row.getCell(col).value = grade;
+        if (grade !== null) {
+          sumUnitGrades += grade;
+          countUnitGrades += 1;
+        }
+      });
+
+      const notaOficial =
+        item.resultado?.nota_oficial ??
+        item.resumenNotas.notaOficial ??
+        (countUnitGrades > 0
+          ? Math.round(sumUnitGrades / countUnitGrades)
+          : null);
+
+      row.getCell(18).value = countUnitGrades > 0 ? sumUnitGrades : null;
+      row.getCell(19).value = notaOficial;
+
+      const effectiveCond =
+        item.resultado?.condicion ??
+        (item.resumenAsistencia.excedeLimite
+          ? 'RETIRADO_INASISTENCIA'
+          : notaOficial !== null
+            ? notaOficial >= 11
+              ? 'APROBADO'
+              : 'DESAPROBADO'
+            : null);
+
+      row.getCell(20).value = effectiveCond === 'APROBADO' ? 'X' : null;
+      row.getCell(21).value = effectiveCond === 'DESAPROBADO' ? 'X' : null;
+      row.getCell(22).value =
+        effectiveCond === 'RETIRADO_INASISTENCIA' ? 'X' : null;
+      row.getCell(23).value =
+        effectiveCond === 'RETIRADO_INASISTENCIA'
+          ? 'Inhabilitado por inasistencia (DPI)'
+          : null;
+
+      if (effectiveCond === 'APROBADO') aprobadosCount += 1;
+      else if (effectiveCond === 'DESAPROBADO') desaprobadosCount += 1;
+      else if (effectiveCond === 'RETIRADO_INASISTENCIA') retiradosCount += 1;
+    }
+
+    // Resumen Estadístico y Metadatos del Grupo
+    sheet.getCell('Y12').value = items.length;
+    sheet.getCell('Y13').value = resumen.aprobados ?? aprobadosCount;
+    sheet.getCell('Y14').value = resumen.desaprobados ?? desaprobadosCount;
+    sheet.getCell('Y15').value = resumen.retirados ?? retiradosCount;
+    sheet.getCell('AC12').value = numeric(anexo.creditos) ?? 6;
+    sheet.getCell('AC13').value = anexo.horas ?? 176;
+    sheet.getCell('AC14').value = context.turno ?? 'Noche';
+    sheet.getCell('AC15').value = context.seccion ?? 'A';
   }
   private matrix(
     sheet: ExcelJS.Worksheet,
@@ -334,4 +460,43 @@ function wrappedLines(value: string, width: number): number {
 function groupLabel(group: ReportSnapshot['grupo']): string {
   const context = group.contexto as Record<string, string> | null;
   return `Grupo: ${group.codigo}. Periodo: ${context?.periodo ?? group.periodo_id}. Turno: ${context?.turno ?? 'Pendiente'}. Sección: ${context?.seccion ?? 'Pendiente'}. Estado: ${group.estado}.`;
+}
+function formatDateDmy(iso: string): string {
+  const parts = iso.slice(0, 10).split('-');
+  if (parts.length !== 3) return iso;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+function groupIndicatorsForUgel(
+  indicadores: ReportIndicator[],
+): ReportIndicator[][] {
+  if (!indicadores.length) return [];
+  const byEval = new Map<string, ReportIndicator[]>();
+  for (const ind of indicadores) {
+    const list = byEval.get(ind.evaluacion) ?? [];
+    list.push(ind);
+    byEval.set(ind.evaluacion, list);
+  }
+  // Si hay múltiples evaluaciones (ej. Unidad 1..4 + EFSRT), cada evaluación es una columna
+  if (byEval.size >= 2) {
+    return Array.from(byEval.values()).slice(0, 5);
+  }
+  // Si solo hay una evaluación con varios indicadores, cada indicador es una columna
+  return indicadores.slice(0, 5).map((ind) => [ind]);
+}
+function computeUnitGrade(
+  notas: Record<string, string | null>,
+  group: ReportIndicator[],
+): number | null {
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (const ind of group) {
+    const raw = notas[ind.id];
+    if (raw === null || raw === undefined) continue;
+    const val = Number(raw);
+    const weight = Number(ind.pesoIndicador) || 1;
+    weightedSum += val * weight;
+    totalWeight += weight;
+  }
+  if (totalWeight === 0) return null;
+  return Math.round(weightedSum / totalWeight);
 }

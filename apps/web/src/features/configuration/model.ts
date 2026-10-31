@@ -151,7 +151,7 @@ const resourcesList: Resource[] = [
       order,
       active,
     ],
-    columns: ["codigo", "nombre", "nivelId", "creditos", "activo"],
+    columns: ["nombre", "nivelId", "creditos", "activo"],
     filters: [ref("nivelId", "Nivel", "niveles", "nivel_id"), active],
   },
   {
@@ -216,10 +216,10 @@ const resourcesList: Resource[] = [
   },
   {
     key: "secciones",
-    title: "Secciones",
-    singular: "sección",
+    title: "Etiquetas de sección",
+    singular: "etiqueta de sección",
     path: "oferta/secciones",
-    description: "Identifica las secciones de la oferta académica.",
+    description: "Etiquetas reutilizables —por ejemplo, A, B o Única— para distinguir grupos paralelos.",
     fields: [code(15), { ...name, max: 60 }, active],
     columns: ["codigo", "nombre", "activo"],
     filters: [active],
@@ -229,12 +229,15 @@ const resourcesList: Resource[] = [
     title: "Grupos",
     singular: "grupo",
     path: "oferta/grupos",
-    description: "Organiza la oferta y asigna sus docentes.",
+    description: "Cada grupo es una clase concreta: combina el periodo, idioma, nivel y turno; después organiza sección, capacidad y docente.",
     fields: [
-      ref("periodoId", "Periodo", "periodos", "periodo_id"),
-      ref("nivelId", "Nivel", "niveles", "nivel_id"),
-      ref("turnoId", "Turno", "turnos", "turno_id"),
-      ref("seccionId", "Sección", "secciones", "seccion_id"),
+      ref("periodoId", "Periodo académico", "periodos", "periodo_id"),
+      ref("nivelId", "Nivel académico", "niveles", "nivel_id"),
+      ref("turnoId", "Turno y horario", "turnos", "turno_id"),
+      {
+        ...ref("seccionId", "Sección (A/B)", "secciones", "seccion_id"),
+        hint: "Usa A o B si hay clases paralelas del mismo nivel y turno. Si solo abres una clase, elige la etiqueta disponible para grupo único.",
+      },
       code(30),
       {
         key: "capacidad",
@@ -247,14 +250,7 @@ const resourcesList: Resource[] = [
       },
       status(["PLANIFICADO", "ACTIVO", "CERRADO"]),
     ],
-    columns: [
-      "codigo",
-      "periodoId",
-      "nivelId",
-      "turnoId",
-      "seccionId",
-      "estado",
-    ],
+    columns: ["codigo", "nivelId", "seccionId", "matriculados", "estado"],
     filters: [
       ref("periodoId", "Periodo", "periodos", "periodo_id"),
       ref("nivelId", "Nivel", "niveles", "nivel_id"),
@@ -359,6 +355,17 @@ export function optionLabel(
 ): string {
   if (resource === "docentes" || resource === "personas-docentes")
     return `${text(row, "codigo_docente")} · ${text(row, "nombres")} ${text(row, "apellido_paterno")}`;
+  if (resource === "turnos") {
+    const start = text(row, "hora_inicio") ? text(row, "hora_inicio").slice(0, 5) : "";
+    const end = text(row, "hora_fin") ? text(row, "hora_fin").slice(0, 5) : "";
+    const schedule = start && end ? ` (${start} - ${end})` : "";
+    return `${text(row, "nombre")}${schedule}${row.activo === false ? " (inactivo)" : ""}`;
+  }
+  if (resource === "secciones") {
+    const name = text(row, "nombre");
+    const label = name.toUpperCase().startsWith("SECCI") ? name : `Sección ${name || text(row, "codigo")}`;
+    return `${label}${row.activo === false ? " (inactivo)" : ""}`;
+  }
   const base = [text(row, "codigo"), text(row, "nombre")]
     .filter(Boolean)
     .join(" · ");

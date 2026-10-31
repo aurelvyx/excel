@@ -1,26 +1,23 @@
-# API del Centro de Idiomas Excel
+# API Backend — Centro de Idiomas Excel
 
-NestJS 12 y TypeScript. Ejecutar desde la raíz del workspace con pnpm.
-Consulta el [README principal](../../README.md) para entornos, PostgreSQL,
-migraciones, datos sintéticos, pruebas y comandos de inicio.
+Servidor backend construido con **NestJS 12**, **TypeScript**, **TypeORM** y **PostgreSQL**.
 
-B01 expone `/api/v1/health` y `/api/docs`. B02 integra PostgreSQL mediante
-TypeORM con migraciones explícitas. B03 incorpora login, logout, sesiones,
-gestión de usuarios y roles, CSRF y auditoría. B04 incorpora los catálogos académicos,
-docentes y asignaciones con alcance por grupo y auditoría transaccional.
-Consulta [B03: acceso y usuarios](../../docs/B03-acceso-y-usuarios.md).
-Consulta [B04: oferta y docentes](../../docs/B04-oferta-y-docentes.md) para rutas,
-permisos, ejemplos y límites de esta entrega.
+Consulta el [README principal](../../README.md) para las instrucciones completas de instalación, variables de entorno, migraciones y ejecución del seeder de carga masiva realista (`pnpm db:seed:realistic`).
 
-B06 añade `/api/v1/estudiantes`: alta, búsqueda, edición auditada e historial
-persistido por intento/nivel/periodo. Aplicar la quinta migración antes de iniciar.
-Ver [B06: estudiantes e historial](../../docs/B06-estudiantes-historial.md).
+## Endpoints de referencia en desarrollo
 
-B07 incorpora registro y decisión de vouchers en /api/v1/vouchers, con auditoría y protección transaccional. Aplicar la sexta migración. Ver [guía B07](../../docs/B07-vouchers.md).
+- **Salud técnica:** `GET http://127.0.0.1:3000/api/v1/health`
+- **Documentación Swagger:** `http://127.0.0.1:3000/api/docs`
+- **Especificación OpenAPI JSON:** `http://127.0.0.1:3000/api/openapi.json`
 
-B08 incorpora `/api/v1/matriculas`: solicitud pendiente, consulta individual y
-confirmación de activación con voucher validado, prerrequisito y vacante.
-Aplicar la séptima migración. Ver [guía B08](../../docs/B08-matriculas.md).
+## Módulos (`src/modules/`)
 
-B09 admite `claveSolicitud` opcional para reintentar un alta sin generar otro
-intento ni auditoría. Aplicar la octava migración. Ver [guía B09](../../docs/B09-asistente-matricula.md).
+- `auth/` — Inicio/cierre de sesión, cookies HTTP-only, validación CSRF y guardias de autorización por rol.
+- `usuarios/` — Administración de cuentas y asignación de roles.
+- `control/` — Servicio centralizado de auditoría transaccional inmutable (`auditoria_eventos`).
+- `oferta-academica/` — Idiomas, niveles, unidades didácticas, periodos académicos, turnos, secciones, grupos y asignación docente.
+- `personas/` — Padrón de estudiantes, búsqueda e historial académico por intento.
+- `matriculas/` — Gestión de vouchers (registro, validación, rechazo, duplicados autorizados) y matrículas (solicitud, activación, anulación).
+- `asistencia/` — Sesiones de clase, matriz de asistencia (`P`, `T`, `F`, `J`), cálculo de condición por inasistencia (DPI 30 %), justificaciones y cierre de asistencia.
+- `evaluacion/` — Planes de evaluación versionados por nivel, aplicación a grupos, registro matricial de calificaciones, cálculo de resultados y cierre de Actas Oficiales.
+- `reportes/` — Generación y evidencia inmutable de reportes `.xlsx` (`ACTA_UGEL`, `MATRIZ_NOTAS`, `RESUMEN_PARTICIPANTES`).

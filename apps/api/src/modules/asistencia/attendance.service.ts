@@ -63,6 +63,7 @@ export class AttendanceService {
     roles: readonly Role[],
     groupId: string,
   ): Promise<boolean> {
+    if (roles.includes('ADMIN')) return true;
     return (
       roles.includes('DOCENTE') &&
       (await assignedToGroup(manager, actor, groupId))
@@ -165,7 +166,7 @@ export class AttendanceService {
     validId(groupId);
     validId(sessionId);
     return this.source.transaction(async (manager) => {
-      const roles = await authorize(manager, actor, ['DOCENTE']);
+      const roles = await authorize(manager, actor, ['ADMIN', 'DOCENTE']);
       if (!(await this.canWrite(manager, actor, roles, groupId)))
         throw new ForbiddenException('Grupo no asignado');
       const group = await loadAcademicGroup(manager, groupId);

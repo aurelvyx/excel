@@ -1,67 +1,32 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
+import { ArrowLeft, Plus, ExternalLink } from "lucide-react";
 import { ApiError, api, errorText } from "../../shared/api";
 import { FormDialog } from "../../shared/FormDialog";
 import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
-import { Button } from "../../shared/ui/Button";
-import { DataTable } from "../../shared/ui/DataTable";
+import { Feedback } from "../../shared/ui/Feedback";
 import { Facts } from "../../shared/ui/Facts";
-import { Feedback, Loading } from "../../shared/ui/Feedback";
-import { PageHeading } from "../../shared/ui/PageHeading";
-import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { DefinitionView } from "./EvaluationDefinition";
 import { PlanFields } from "./PlanFields";
 import {
   formulaLabel,
   validatePlanCapture,
   type EvaluationDefinition,
-  type EvaluationLevel,
   type PlanList,
   type PlanView,
 } from "./model";
+import "../academic/academic.css";
 
 export function EvaluationLevelsPage({ levelId }: { levelId?: string }) {
-  return levelId ? <LevelPlans key={levelId} levelId={levelId} /> : <Levels />;
+  useEffect(() => {
+    if (!levelId) {
+      navigate("/matriz-curricular");
+    }
+  }, [levelId]);
+
+  return levelId ? <LevelPlans key={levelId} levelId={levelId} /> : null;
 }
-function Levels() {
-  const { data, loading, error, reload } = useApiQuery<{
-    items: EvaluationLevel[];
-  }>("evaluacion/niveles");
-  return (
-    <section>
-      <PageHeading
-        eyebrow="Evaluación"
-        title="Criterios de evaluación"
-        description="Consulta y organiza las versiones de criterios por idioma y nivel."
-      />
-      {loading ? (
-        <Loading>Cargando niveles…</Loading>
-      ) : error ? (
-        <Feedback onRetry={reload}>{error}</Feedback>
-      ) : (
-        <div className="panel">
-          <DataTable
-            caption="Niveles para evaluación"
-            rows={data?.items ?? []}
-            rowKey={(row) => row.id}
-            emptyMessage="No hay niveles accesibles para tu cuenta."
-            columns={[
-              { key: "idioma", header: "Idioma", cell: (row) => row.idioma },
-              { key: "nivel", header: "Nivel", cell: (row) => row.nombre },
-              {
-                key: "acciones",
-                header: "Acciones",
-                cell: (row) => (
-                  <a href={`#/evaluacion/niveles/${row.id}`}>Ver versiones</a>
-                ),
-              },
-            ]}
-          />
-        </div>
-      )}
-    </section>
-  );
-}
+
 function LevelPlans({ levelId }: { levelId: string }) {
   const { data, loading, error, reload } = useApiQuery<PlanList>(
     `evaluacion/niveles/${levelId}/planes`,
@@ -69,89 +34,119 @@ function LevelPlans({ levelId }: { levelId: string }) {
   const [creating, create] = useState(false);
   const [stale, block] = useState(false);
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
+
   useEffect(() => {
-    // El formulario y su guard se desmontan antes de navegar al registro guardado.
-    if (!creating && createdPlanId)
+    if (!creating && createdPlanId) {
       navigate(`/evaluacion/planes/${createdPlanId}`);
+    }
   }, [creating, createdPlanId]);
+
   return (
-    <section>
-      <a className="back-link" href="#/evaluacion/niveles">
-        ← Volver a niveles
-      </a>
-      <PageHeading
-        eyebrow="Evaluación"
-        title="Versiones de criterios"
-        description={
-          data
-            ? `${data.nivel.idioma} · ${data.nivel.nombre}`
-            : "Criterios académicos por nivel."
-        }
-        action={
-          data?.puedeCrear && (
-            <Button
-              variant="primary"
+    <div className="academic-container">
+      {/* Back button */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+        <a
+          href="#/matriz-curricular"
+          className="academic-btn-action btn-action-secondary"
+          style={{ padding: "0.4rem 0.8rem" }}
+        >
+          <ArrowLeft size={14} /> Volver a Matriz Curricular
+        </a>
+      </div>
+
+      {/* Header Banner */}
+      <div className="academic-card" style={{ padding: "1.5rem", marginBottom: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
+              <span className="academic-badge badge-green">
+                {data ? `${data.nivel.idioma} — ${data.nivel.nombre}` : "Nivel Académico"}
+              </span>
+            </div>
+            <h1 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1e293b", margin: 0 }}>
+              Versiones de Criterios y Fórmulas
+            </h1>
+            <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.3rem 0 0 0" }}>
+              Historial de versiones y ponderaciones curriculares. Los salones de clase conservan la versión aprobada que se les aplicó.
+            </p>
+          </div>
+
+          {data?.puedeCrear && (
+            <button
+              type="button"
+              className="academic-btn-action btn-action-primary"
               disabled={loading || !!error || stale}
               onClick={() => create(true)}
+              style={{ padding: "0.5rem 1rem" }}
             >
-              Nueva versión
-            </Button>
-          )
-        }
-      />
+              <Plus size={14} /> Nueva Versión
+            </button>
+          )}
+        </div>
+      </div>
+
       {loading ? (
-        <Loading>Cargando versiones…</Loading>
+        <div style={{ padding: "3rem", textAlign: "center", color: "#64748b" }}>
+          Cargando versiones de criterios…
+        </div>
       ) : error ? (
         <Feedback onRetry={reload}>{error}</Feedback>
       ) : (
         data && (
           <>
-            <p className="notice">
-              Una versión borrador no constituye aprobación institucional. Los
-              criterios aprobados se conservan y los grupos mantienen la versión
-              que se les aplica.
-            </p>
-            <div className="panel">
-              <DataTable
-                caption="Versiones de criterios del nivel"
-                rows={data.items}
-                rowKey={(row) => row.id}
-                emptyMessage="Todavía no hay versiones para este nivel."
-                columns={[
-                  {
-                    key: "version",
-                    header: "Versión",
-                    cell: (row) => row.version,
-                  },
-                  {
-                    key: "nombre",
-                    header: "Nombre",
-                    cell: (row) => row.nombre,
-                  },
-                  {
-                    key: "estado",
-                    header: "Estado",
-                    cell: (row) => (
-                      <StatusBadge inactive={row.estado === "BORRADOR"}>
-                        {row.estado === "APROBADO" ? "Aprobada" : "Borrador"}
-                      </StatusBadge>
-                    ),
-                  },
-                  {
-                    key: "acciones",
-                    header: "Acciones",
-                    cell: (row) => (
-                      <a href={`#/evaluacion/planes/${row.id}`}>
-                        Ver versión {row.version}
-                      </a>
-                    ),
-                  },
-                ]}
-              />
+            <div className="academic-card" style={{ padding: 0, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8125rem" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #e2e8f0", color: "#475569", textAlign: "left" }}>
+                    <th style={{ padding: "0.75rem 1rem", width: "100px" }}>Versión</th>
+                    <th style={{ padding: "0.75rem 1rem" }}>Nombre del Plan / Criterio</th>
+                    <th style={{ padding: "0.75rem 1rem", width: "140px", textAlign: "center" }}>Estado</th>
+                    <th style={{ padding: "0.75rem 1rem", width: "180px", textAlign: "right" }}>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+                        Todavía no hay versiones de criterios registradas para este nivel.
+                      </td>
+                    </tr>
+                  ) : (
+                    data.items.map((row) => {
+                      const isAprobado = row.estado === "APROBADO";
+                      return (
+                        <tr key={row.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "0.75rem 1rem" }}>
+                            <span className="academic-badge badge-green">Versión {row.version}</span>
+                          </td>
+                          <td style={{ padding: "0.75rem 1rem", fontWeight: 600, color: "#1e293b" }}>
+                            {row.nombre}
+                          </td>
+                          <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
+                            <span className={`academic-badge ${isAprobado ? "badge-blue" : "badge-gray"}`}>
+                              {isAprobado ? "APROBADA" : "BORRADOR"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "0.75rem 1rem", textAlign: "right" }}>
+                            <a
+                              href={`#/evaluacion/planes/${row.id}`}
+                              className="academic-btn-action btn-action-primary"
+                              style={{ display: "inline-flex", padding: "0.35rem 0.75rem", fontSize: "0.75rem" }}
+                            >
+                              <ExternalLink size={12} /> Ver Plan Completo
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </>
         )
       )}
+
       {creating && data && (
         <CreatePlan
           data={data}
@@ -168,7 +163,7 @@ function LevelPlans({ levelId }: { levelId: string }) {
           }}
         />
       )}
-    </section>
+    </div>
   );
 }
 function CreatePlan({

@@ -1,26 +1,16 @@
 import { Button } from "./shared/ui/Button";
 import { useEffect, useRef, useState } from "react";
-import { Auth, Brand, PasswordForm } from "./features/auth/Auth";
+import { Auth, Brand } from "./features/auth/Auth";
 import { useAuth } from "./features/auth/session";
-import { ResourcePage } from "./features/configuration/ResourcePage";
-import { resources, roleNames } from "./features/configuration/model";
+import { roleNames } from "./features/configuration/model";
 import { useRoute } from "./shared/navigation";
 import { errorText } from "./shared/api";
-import { StudentsPage } from "./features/students/StudentsPage";
-import { VouchersPage } from "./features/vouchers/VouchersPage";
-import { EnrollmentsPage } from "./features/enrollments/EnrollmentsPage";
-import { SessionsPage } from "./features/attendance/SessionsPage";
-import { AttendancePage } from "./features/attendance/AttendancePage";
-import { JustificationsPage } from "./features/attendance/JustificationsPage";
-import { AttendanceClosurePage } from "./features/attendance/AttendanceClosurePage";
-import { EvaluationLevelsPage } from "./features/evaluation/EvaluationLevelsPage";
-import { EvaluationPlanPage } from "./features/evaluation/EvaluationPlanPage";
-import { GroupEvaluationPage } from "./features/evaluation/GroupEvaluationPage";
-import { GradesPage } from "./features/evaluation/GradesPage";
-import { ActPage } from "./features/evaluation/ActPage";
-import { ReportsPage } from "./features/reports/ReportsPage";
-import { ReportsGroupsPage } from "./features/reports/ReportsGroupsPage";
 import { requestPageExit } from "./shared/useUnsavedChanges";
+import { accessFor } from "./app/access";
+import { resolveRoute } from "./app/routes";
+import { Sidebar } from "./app/Sidebar";
+import { Home } from "./app/Home";
+import { NextWorkspace } from "./app/NextWorkspace";
 
 export default function App() {
   return (
@@ -29,35 +19,22 @@ export default function App() {
     </Auth>
   );
 }
+
 function Workspace() {
   const { session, logout } = useAuth();
   const { path, query } = useRoute();
-  const admin = session.user.roles.includes("ADMIN");
-  const vouchersAllowed = admin || session.user.roles.includes("SECRETARIA");
-  const reportsAllowed = session.user.roles.some((role) =>
-    ["ADMIN", "COORDINADOR", "DOCENTE"].includes(role),
+  const [nextUi, setNextUi] = useState(
+    () => window.sessionStorage.getItem("excel-next-ui") !== "0" && query.get("ui") !== "antiguo",
   );
-  const reader = session.user.roles.some((role) =>
-    ["ADMIN", "SECRETARIA", "COORDINADOR"].includes(role),
-  );
+  const roles = session.user.roles;
+  const access = accessFor(roles);
   const [menuAt, toggle] = useState<string | null>(null);
   const menu = menuAt === path;
   const [error, fail] = useState("");
   const [busy, pending] = useState(false);
   const main = useRef<HTMLElement>(null);
-  const base = admin ? "/configuracion" : "/consulta";
-  const available = Object.values(resources).filter(
-    (resource) =>
-      admin ||
-      (reader && !["docentes", "usuarios"].includes(resource.key)) ||
-      (!reader && resource.key === "grupos"),
-  );
-  const selected = path.split("/")[2];
-  const resource = resources[selected];
-  const allowed =
-    resource &&
-    available.includes(resource) &&
-    (path.startsWith(`${base}/`) || path === "/mis-grupos/grupos");
+  const route =
+    path === "/" ? null : resolveRoute({ path, query, access, roles });
   useEffect(() => {
     main.current?.focus();
   }, [path]);
@@ -72,8 +49,33 @@ function Workspace() {
       pending(false);
     }
   }
-  const url = (key: string) =>
-    reader ? `${base}/${key}` : "/mis-grupos/grupos";
+  function switchToNext() {
+    requestPageExit(() => {
+      window.sessionStorage.setItem("excel-next-ui", "1");
+      setNextUi(true);
+    });
+  }
+  function switchToCurrent() {
+    requestPageExit(() => {
+      window.sessionStorage.setItem("excel-next-ui", "0");
+      setNextUi(false);
+    });
+  }
+  if (nextUi) {
+    return (
+      <NextWorkspace
+        access={access}
+        path={path}
+        title={route?.title ?? "Inicio"}
+        userName={session.user.nombre_usuario}
+        roles={roles}
+        onExit={() => requestPageExit(() => void exit())}
+        onUseCurrent={switchToCurrent}
+      >
+        {route?.element ?? <NotAvailable />}
+      </NextWorkspace>
+    );
+  }
   return (
     <div className="workspace">
       <a
@@ -86,76 +88,12 @@ function Workspace() {
       >
         Saltar al contenido
       </a>
-      <aside className={`sidebar ${menu ? "expanded" : ""}`}>
-        <Brand />
-        <nav aria-label="Navegación principal" onClick={() => toggle(null)}>
-          <a href="#/" aria-current={path === "/" ? "page" : undefined}>
-            <span aria-hidden="true">⌂</span> Inicio
-          </a>
-          <p className="nav-label">
-            {admin
-              ? "Configuración"
-              : reader
-                ? "Consulta académica"
-                : "Docencia"}
-          </p>
-          {reader && (
-            <a
-              href="#/estudiantes"
-              aria-current={
-                path.startsWith("/estudiantes") ? "page" : undefined
-              }
-            >
-              Estudiantes
-            </a>
-          )}
-          {vouchersAllowed && (
-            <a
-              href="#/matriculas"
-              aria-current={path.startsWith("/matriculas") ? "page" : undefined}
-            >
-              Matrículas
-            </a>
-          )}
-          {vouchersAllowed && (
-            <a
-              href="#/vouchers"
-              aria-current={path === "/vouchers" ? "page" : undefined}
-            >
-              Vouchers
-            </a>
-          )}
-          {available.map((item) => (
-            <a
-              key={item.key}
-              href={`#${url(item.key)}`}
-              aria-current={
-                allowed && selected === item.key ? "page" : undefined
-              }
-            >
-              {!reader ? "Mis grupos" : item.title}
-            </a>
-          ))}
-          <a
-            href="#/evaluacion/niveles"
-            aria-current={path.startsWith("/evaluacion/") ? "page" : undefined}
-          >
-            Criterios de evaluación
-          </a>
-          {reportsAllowed && (
-            <a
-              href="#/reportes"
-              aria-current={path.startsWith("/reportes") ? "page" : undefined}
-            >
-              Reportes
-            </a>
-          )}
-        </nav>
-        <div className="sidebar-bottom">
-          <span className="status-dot" />
-          Gestión académica<small>Centro de Idiomas Excel</small>
-        </div>
-      </aside>
+      <Sidebar
+        access={access}
+        path={path}
+        expanded={menu}
+        onNavigate={() => toggle(null)}
+      />
       <div className="workspace-body">
         <header className="topbar">
           <Button
@@ -165,42 +103,19 @@ function Workspace() {
           >
             Menú
           </Button>
+          <div className="mobile-brand">
+            <Brand />
+          </div>
           <span className="breadcrumb">
-            Excel <span>/</span>{" "}
-            {path === "/"
-              ? "Inicio"
-              : path === "/cuenta"
-                ? "Mi cuenta"
-                : path.startsWith("/estudiantes")
-                  ? "Estudiantes"
-                  : path === "/vouchers"
-                    ? "Vouchers"
-                    : path.startsWith("/matriculas")
-                      ? "Matrículas"
-                      : path.startsWith("/reportes")
-                        ? "Reportes"
-                        : path.startsWith("/evaluacion/")
-                          ? path.endsWith("/acta")
-                            ? "Resultados y acta"
-                            : path.endsWith("/calificaciones")
-                              ? "Calificaciones"
-                              : "Criterios de evaluación"
-                          : path.startsWith("/asistencia/grupos/")
-                            ? path.endsWith("/cierre")
-                              ? "Cierre de asistencia"
-                              : path.endsWith("/justificaciones")
-                                ? "Justificaciones"
-                                : path.includes("/sesiones/")
-                                  ? "Registro de asistencia"
-                                  : "Sesiones de clase"
-                            : (resource?.title ?? "Página")}
+            Excel <span>/</span> {path === "/" ? "Inicio" : route!.title}
           </span>
+          <Button className="next-ui-switch" onClick={switchToNext}>
+            Probar nueva interfaz
+          </Button>
           <div className="account">
             <a href="#/cuenta" className="account-name">
               {session.user.nombre_usuario}
-              <small>
-                {session.user.roles.map((role) => roleNames[role]).join(" · ")}
-              </small>
+              <small>{roles.map((role) => roleNames[role]).join(" · ")}</small>
             </a>
             <Button
               disabled={busy}
@@ -222,153 +137,9 @@ function Workspace() {
             </p>
           )}
           {path === "/" ? (
-            <>
-              <header className="page-heading">
-                <div>
-                  <p className="eyebrow">Centro de Idiomas Excel</p>
-                  <h1>Hola, {session.user.nombre_usuario}</h1>
-                  <p className="muted">
-                    {admin
-                      ? "Prepara la oferta y organiza los accesos del centro."
-                      : reader
-                        ? "Consulta la oferta académica disponible para tu trabajo."
-                        : "Encuentra tus grupos y consulta su información."}
-                  </p>
-                </div>
-                <span className="date-label">
-                  {new Intl.DateTimeFormat("es-PE", {
-                    dateStyle: "long",
-                  }).format(new Date())}
-                </span>
-              </header>
-              <section className="welcome-panel">
-                <div>
-                  <span className="eyebrow">
-                    {admin
-                      ? "Organización del centro"
-                      : reader
-                        ? "Información académica"
-                        : "Tu espacio docente"}
-                  </span>
-                  <h2>
-                    {admin
-                      ? "Todo comienza con una buena organización."
-                      : reader
-                        ? "La oferta del centro, a tu alcance."
-                        : "Cada grupo, un nuevo aprendizaje."}
-                  </h2>
-                  <p>
-                    {admin
-                      ? "Configura los periodos, organiza los grupos y asigna a sus docentes."
-                      : reader
-                        ? "Revisa periodos, niveles y grupos desde las consultas autorizadas."
-                        : "Consulta únicamente los grupos asignados a tu cuenta."}
-                  </p>
-                  <a className="primary button" href={`#${url("grupos")}`}>
-                    {reader ? "Consultar grupos" : "Ver mis grupos"}{" "}
-                    <span aria-hidden="true">→</span>
-                  </a>
-                </div>
-                <div className="welcome-art" aria-hidden="true">
-                  <span>EX</span>
-                  <span>CEL</span>
-                </div>
-              </section>
-              <h2 className="section-title">Accesos de tu cuenta</h2>
-              <div className="quick-grid">
-                {(admin
-                  ? ["periodos", "docentes", "usuarios"]
-                  : reader
-                    ? ["idiomas", "niveles", "periodos"]
-                    : ["grupos"]
-                ).map((key, index) => (
-                  <a className="quick-card" href={`#${url(key)}`} key={key}>
-                    <span className="card-number">0{index + 1}</span>
-                    <h3>{!reader ? "Mis grupos" : resources[key].title}</h3>
-                    <p>
-                      {!reader
-                        ? "Revisa los grupos que tienes asignados."
-                        : resources[key].description}
-                    </p>
-                    <span className="card-arrow" aria-hidden="true">
-                      ↗
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </>
-          ) : path === "/cuenta" ? (
-            <div className="panel account-panel">
-              <PasswordForm />
-            </div>
-          ) : reader && /^\/estudiantes(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
-            <StudentsPage key={path} id={path.split("/")[2]} query={query} />
-          ) : vouchersAllowed && path === "/vouchers" ? (
-            <VouchersPage query={query} />
-          ) : vouchersAllowed &&
-            /^\/matriculas(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
-            <EnrollmentsPage
-              key={`${path}:${query.get("estudianteId") ?? ""}`}
-              id={path.split("/")[2]}
-              studentId={query.get("estudianteId") ?? undefined}
-            />
-          ) : reportsAllowed && path === "/reportes" ? (
-            <ReportsGroupsPage query={query} />
-          ) : reportsAllowed &&
-            /^\/reportes\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
-            <ReportsPage
-              key={path}
-              groupId={path.split("/")[3]}
-              query={query}
-            />
-          ) : /^\/evaluacion\/niveles(?:\/[1-9][0-9]{0,17})?$/.test(path) ? (
-            <EvaluationLevelsPage key={path} levelId={path.split("/")[3]} />
-          ) : /^\/evaluacion\/planes\/[1-9][0-9]{0,17}$/.test(path) ? (
-            <EvaluationPlanPage key={path} planId={path.split("/")[3]} />
-          ) : /^\/evaluacion\/grupos\/[1-9][0-9]{0,17}\/calificaciones$/.test(
-              path,
-            ) ? (
-            <GradesPage key={path} groupId={path.split("/")[3]} query={query} />
-          ) : /^\/evaluacion\/grupos\/[1-9][0-9]{0,17}\/acta$/.test(path) ? (
-            <ActPage key={path} groupId={path.split("/")[3]} query={query} />
-          ) : /^\/evaluacion\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
-            <GroupEvaluationPage key={path} groupId={path.split("/")[3]} />
-          ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/cierre$/.test(path) ? (
-            <AttendanceClosurePage key={path} groupId={path.split("/")[3]} />
-          ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/justificaciones$/.test(
-              path,
-            ) ? (
-            <JustificationsPage
-              key={path}
-              groupId={path.split("/")[3]}
-              query={query}
-            />
-          ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}\/sesiones\/[1-9][0-9]{0,17}$/.test(
-              path,
-            ) ? (
-            <AttendancePage
-              key={path}
-              groupId={path.split("/")[3]}
-              sessionId={path.split("/")[5]}
-              query={query}
-            />
-          ) : /^\/asistencia\/grupos\/[1-9][0-9]{0,17}$/.test(path) ? (
-            <SessionsPage key={path} id={path.split("/")[3]} query={query} />
-          ) : allowed ? (
-            <ResourcePage
-              key={`${path}:${session.user.roles.join(",")}`}
-              resource={resource}
-              path={path}
-              query={query}
-            />
+            <Home access={access} userName={session.user.nombre_usuario} />
           ) : (
-            <section className="empty">
-              <h1>Página no disponible</h1>
-              <p>Esta dirección no existe o no está habilitada para tu rol.</p>
-              <a className="button primary" href="#/">
-                Volver al inicio
-              </a>
-            </section>
+            (route!.element ?? <NotAvailable />)
           )}
         </main>
         <footer className="app-footer">
@@ -376,5 +147,17 @@ function Workspace() {
         </footer>
       </div>
     </div>
+  );
+}
+
+function NotAvailable() {
+  return (
+    <section className="empty">
+      <h1>Página no disponible</h1>
+      <p>Esta dirección no existe o no está habilitada para tu rol.</p>
+      <a className="button primary" href="#/">
+        Volver al inicio
+      </a>
+    </section>
   );
 }

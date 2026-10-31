@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Equals, IsUUID } from 'class-validator';
-import { IdField, OptionalField } from '../../common/validation.js';
+import {
+  IdField,
+  OptionalField,
+  TextField,
+} from '../../common/validation.js';
 export class EnrollmentDto {
   @IdField() estudianteId!: string;
   @IdField() grupoId!: string;
@@ -23,4 +27,8 @@ export class ActivationDto {
   })
   @Equals(true)
   confirmado!: true;
+}
+export class ChangeGroupDto {
+  @IdField() grupoId!: string;
+  @TextField(500) motivo!: string;
 }

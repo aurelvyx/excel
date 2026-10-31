@@ -7,7 +7,7 @@ export class Exportaciones1790208015000 implements MigrationInterface {
       CREATE TABLE exportaciones (
         id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         usuario_id BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-        tipo VARCHAR(30) NOT NULL CHECK(tipo IN ('MATRIZ_NOTAS','RESUMEN_PARTICIPANTES')),
+        tipo VARCHAR(30) NOT NULL CHECK(tipo IN ('MATRIZ_NOTAS','RESUMEN_PARTICIPANTES','ACTA_UGEL')),
         grupo_id BIGINT NOT NULL REFERENCES grupos(id) ON DELETE RESTRICT,
         filtros JSONB NOT NULL CHECK(jsonb_typeof(filtros)='object'),
         plantilla_id VARCHAR(80) NOT NULL CHECK(btrim(plantilla_id)<>''),

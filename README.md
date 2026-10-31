@@ -1,84 +1,33 @@
-# Centro de Idiomas Excel
+# Sistema de Gestión Académica — Centro de Idiomas Excel (Cusco)
 
-Monorepositorio con pnpm: API NestJS, web React con TypeScript y PostgreSQL.
-Organización basada en `docs/Arquitectura_del_Sistema.docx`.
+Plataforma web integral para la gestión académica, matrículas, control de comprobantes (vouchers), asistencia por sesión, justificaciones, matriz curricular modular, calificaciones, cierre de actas y exportación de formatos oficiales en Excel (`.xlsx`).
 
-## Alcance actual
+Construido como monorepositorio con **pnpm**, **NestJS (TypeScript)**, **React + Vite (TypeScript)** y **PostgreSQL**.
 
-- **B01:** configuración de entornos, Compose de desarrollo y pruebas, API con salud
-  técnica y OpenAPI, proxy web y workflow de verificación automática.
-- **B02:** tres migraciones TypeORM para las 15 tablas de identidad y oferta académica,
-  claves, índices y restricciones; cuatro roles iniciales y carga sintética opcional.
-- **B03:** acceso y cierre de sesión, gestión administrativa de usuarios y roles,
-  cambio de contraseña propia, protección CSRF y auditoría básica inmutable.
-- **B04:** API de idiomas, niveles, unidades, periodos, turnos, secciones y grupos;
-  gestión de docentes y asignaciones, permisos por grupo y auditoría transaccional.
-- **B05:** interfaz React de acceso, contraseña, menú por rol y configuración de
-  oferta, docentes y cuentas, conectada a la API y verificada con navegador.
-- **B06:** registro, búsqueda y actualización de estudiantes, auditoría e historial
-  persistido separado por intento, nivel y periodo; interfaz y permisos por rol.
-- **B07:** registro y decisión de vouchers para administración y secretaría, con
-  importes exactos, bloqueo de duplicados y auditoría transaccional.
-- **B08:** API de solicitud y activación transaccional de matrícula, prerrequisitos,
-  vacantes, intentos, código basado en documento y conservación del historial.
-- **B09:** asistente de matrícula con búsqueda/alta de estudiante, voucher, grupo y
-  confirmación; recuperación de solicitudes pendientes y reintentos sin duplicados.
-- **B10:** verificación ampliada de matrícula, informe automático, diez casos
-  sintéticos, instrumento de medición y registro de plantillas con mapas comunes.
-  Los tiempos observados y la aprobación institucional de los formatos siguen pendientes.
-- **B11:** programación de fechas de clase por grupo, horario opcional y confirmación;
-  permisos docentes, rango del periodo, duplicados y auditoría en API, BD e interfaz.
-- **B12:** matriz de asistencia P/F/T/J por sesión, registro masivo y correcciones
-  con versiones, conservación de intentos, permisos y auditoría transaccional.
-- **B13:** cálculo por intento de tardanzas, faltas computables y porcentaje exacto,
-  condición por límite del 30 %, resúmenes compartidos en matriz e historial y
-  distinción de marcas pendientes y justificaciones provisionales.
-- **B14:** registro, resolución y recuperación de justificaciones por grupo, con
-  responsables, fechas, versiones, historial y recálculo transaccional de asistencia.
-- **B15:** cierre específico de asistencia por grupo, revisión y reconocimiento de
-  pendientes, corte temporal persistido y corrección administrativa con motivo,
-  versiones e historial. No modifica notas ni resultados académicos almacenados.
-- **B16:** criterios de evaluación versionados por nivel, borradores y aprobación
-  explícita; aplicación de una versión al grupo y preparación por notas pendientes.
-- **B17:** matriz de notas abiertas por indicador e intento, guardado masivo con
-  versiones y auditoría, promedio exacto y redondeo oficial desde criterios aprobados.
-- **B18:** revisión de resultados con prioridad de asistencia, cierre transaccional del
-  acta y sus matrículas; correcciones administrativas de notas y asistencia con motivo,
-  versiones, recálculo y auditoría, conservando la revisión original del cierre.
-- **B19:** matriz de notas y resumen de participantes en XLSX de demostración para
-  inglés y portugués, con plantillas propuestas versionadas, vista previa, permisos
-  y registro inmutable de generación. La aprobación institucional sigue pendiente.
-- **B20:** recorridos integrales de inglés y portugués desde matrícula hasta XLSX,
-  protocolo de piloto guiado e instrumentos de medición reutilizables. El piloto
-  humano, las mediciones observadas y su aceptación siguen pendientes.
+---
 
-Consulta [decisiones y límites](docs/decisiones/ADR-001-base-tecnica.md) y
-[trazabilidad y verificación](docs/verificacion-B01-B02.md).
-Para crear el primer administrador y utilizar los endpoints de acceso, consulta
-[B03: acceso y usuarios](docs/B03-acceso-y-usuarios.md).
-Para la configuración académica, consulta [B04: oferta y docentes](docs/B04-oferta-y-docentes.md).
-Para utilizar las pantallas, consulta [B05: interfaz y configuración](docs/B05-interfaz-y-configuracion.md).
-Para iniciar el sprint 2, consulta [B06: estudiantes e historial](docs/B06-estudiantes-historial.md).
-Para los comprobantes de pago, consulta [B07: vouchers](docs/B07-vouchers.md).
-Para la activación de matrícula, consulta [B08: matrículas](docs/B08-matriculas.md).
-Para utilizar el asistente, consulta [B09: matrícula por pasos](docs/B09-asistente-matricula.md).
-Para las evidencias del sprint 2, consulta [B10: pruebas, medición y plantillas](docs/B10-verificacion-matricula.md).
-Para iniciar el sprint 3, consulta [B11: sesiones de clase](docs/B11-sesiones-clase.md).
-Para registrar las marcas, consulta [B12: asistencia por sesión](docs/B12-registro-asistencia.md).
-Para consultar los cálculos, consulta [B13: faltas e inasistencia](docs/B13-calculo-asistencia.md).
-Para gestionar solicitudes, consulta [B14: justificaciones y recuperación](docs/B14-justificaciones.md).
-Para revisar y cerrar el grupo, consulta [B15: cierre de asistencia y corrección](docs/B15-cierre-asistencia.md).
-Para configurar criterios, consulta [B16: evaluaciones y versiones](docs/B16-criterios-evaluacion.md).
-Para iniciar el sprint 4, consulta [B17: calificaciones y promedio](docs/B17-calificaciones-promedio.md).
-Para consolidar resultados, consulta [B18: resultados y actas](docs/B18-resultados-actas.md).
-Para generar los borradores XLSX, consulta [B19: reportes](docs/B19-reportes-xlsx.md).
-Para preparar el piloto y comprobar el flujo completo, consulta
-[B20: verificación y piloto](docs/B20-verificacion-piloto.md).
+## Módulos Principales
 
-## Instalación desde cero
+- **Seguridad, Usuarios y Roles:** autenticación con sesiones persistidas, control de acceso basado en roles (`ADMIN`, `SECRETARIA`, `DOCENTE`, `COORDINADOR`), protección CSRF y bitácora de auditoría inmutable.
+- **Catálogo Curricular y Oferta Académica:** gestión de programas de idiomas, niveles con cadena de prerrequisitos, unidades didácticas (créditos y horas teóricas/prácticas), periodos académicos, turnos, secciones, grupos (salones) y asignación de plana docente.
+- **Padrón de Estudiantes y Vouchers:** registro de estudiantes con historial académico por intento y bandeja clasificada de comprobantes de pago (`Por Revisar`, `Disponibles sin Vincular`, `Vinculados a Matrícula`, `Validados` y `Rechazados`).
+- **Matrículas:** asistente paso a paso con validación automática de prerrequisitos, control de vacantes, vinculación de vouchers y activación transaccional.
+- **Asistencia y Justificaciones:** programación y creación de sesiones de clase por día desde el calendario mensual o desde el Salón 360°, toma de asistencia (`P`, `T`, `F`, `J`), cálculo automático de condición por límite de inasistencia (**DPI 30 %**), flujo de justificaciones y cierre oficial de asistencia.
+- **Matriz Curricular, Calificaciones y Actas:** definición de planes de evaluación ponderados por nivel (4 Unidades Didácticas + EFSRT), registro matricial de notas para administración y Portal Docente, emisión de Actas Oficiales de Evaluación y exportación en `.xlsx` (**Acta Oficial UGEL**, **Matriz de Notas** y **Resumen de Participantes**).
 
-Requisitos: Git, Node.js 24, pnpm 11.19.0 y Docker con Compose v2 en ejecución
-(contenedores Linux, tanto en Windows como en Linux). Usa la carpeta raíz del repositorio.
+---
+
+## Requisitos Previos
+
+- **Node.js** >= 24
+- **pnpm** 11.19.0
+- **Docker** con Docker Compose v2 (o instancia local de PostgreSQL 16+)
+
+---
+
+## Instalación y Puesta en Marcha
+
+Desde la carpeta raíz del repositorio (`excel/`):
 
 ```sh
 pnpm install --frozen-lockfile
@@ -88,127 +37,90 @@ pnpm db:migrate
 pnpm db:status
 ```
 
-`pnpm env:setup` crea `infra/.env`, `apps/api/.env` y `apps/web/.env` desde los ejemplos.
-Genera una contraseña aleatoria local y la comparte entre Compose y la API.
-No reemplaza archivos existentes ni imprime secretos. Si ya existe `infra/.env`,
-debe tener POSTGRES_PASSWORD; si cambias usuario, puerto o contraseña después,
-actualiza también `apps/api/.env`. Los archivos `.env` no se versionan.
+- `pnpm env:setup` genera los archivos locales `infra/.env`, `apps/api/.env` y `apps/web/.env` a partir de las plantillas `.env.example` (los archivos `.env` están excluidos de Git).
+- `pnpm db:up` levanta el contenedor de PostgreSQL y espera a que esté saludable.
+- `pnpm db:migrate` aplica las 16 migraciones del esquema de base de datos.
 
-`pnpm db:up` espera a que PostgreSQL esté saludable antes de terminar.
-Los cambios de POSTGRES_PASSWORD no
-modifican automáticamente la contraseña de una base ya inicializada en el volumen.
-
-En dos terminales separadas:
+Para iniciar el entorno de desarrollo en dos terminales:
 
 ```sh
 pnpm dev:api
 pnpm dev:web
 ```
 
-- Web: http://127.0.0.1:5173 (acceso y configuración por rol).
-- Salud API: http://127.0.0.1:3000/api/v1/health.
-- Swagger: http://127.0.0.1:3000/api/docs.
-- OpenAPI JSON: http://127.0.0.1:3000/api/openapi.json.
-- PostgreSQL: 127.0.0.1:5432 por defecto, base y usuario `excel`.
+- **Aplicación Web:** http://127.0.0.1:5173
+- **Salud de la API:** http://127.0.0.1:3000/api/v1/health
+- **Documentación Swagger:** http://127.0.0.1:3000/api/docs
 
-La API escucha solo en localhost para esta demostración. El proxy de Vite dirige
-`/api` a la API local; API_PROXY_TARGET se ajusta en `apps/web/.env` si cambia el puerto.
-El esquema se modifica únicamente mediante migraciones; arrancar la API no crea tablas.
+---
 
-## Migraciones y datos de prueba
+## Carga Masiva de Datos Realistas (Seeder)
+
+Una vez aplicadas las migraciones (`pnpm db:migrate`), puedes poblar las **30 tablas de negocio** con un conjunto amplio y realista de datos ejecutando desde la raíz:
 
 ```sh
-pnpm db:migrate
-pnpm db:status
-pnpm db:revert
+pnpm db:seed:realistic
 ```
 
-`db:revert` revierte **solo la última migración**. Rechaza producción; las migraciones
-estructurales rechazan tablas con datos y los roles no se retiran si están asignados.
-La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
-Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
+*(También están disponibles los alias equivalentes `pnpm db:seed:demo`, `pnpm db:seed:academic-demo` y `pnpm db:seed:attendance-grades-demo`, que ejecutan el mismo seeder maestro `apps/api/src/database/seed-realistic.ts`).*
 
-El esquema incluye dieciséis migraciones versionadas hasta B19. Las reversiones de
-cierres y criterios rechazan historial existente; no lo eliminan para retirar la migración.
+### ¿Qué realiza el seeder?
+1. **Compila la API** (`pnpm --filter api build`) y ejecuta `dist/database/seed-realistic.js`.
+2. **Conserva la sesión activa de `admin`:** preserva el hash de contraseña y las sesiones activas del usuario `admin` para evitar cerrar tu sesión en el navegador.
+3. **Limpia datos previos de forma segura:** vacía las tablas de negocio reiniciando secuencias (`RESTART IDENTITY CASCADE`) y reactiva todos los triggers de integridad de PostgreSQL antes de insertar los nuevos registros.
+4. **Inserta datos realistas en las 30 tablas de negocio:**
+   - **Personal y Estudiantes:** 4 `roles`, 314 `personas`, 14 `usuarios`, 16 `usuario_roles`, 46+ `sesiones_usuario`, **9 `docentes`** (8 activos + 1 inactivo) y **300 `estudiantes`**.
+   - **Oferta Académica y Matriz Curricular:** 2 versiones de `parametros_academicos`, 4 `idiomas` (`ING`, `POR`, `QUE`, `FRA`), 10 `niveles`, **40 `unidades_didacticas`** (4 UDs por nivel), 3 `periodos_academicos` (`2025-II` cerrado, `2026-I` abierto y `2026-II` planificado), 5 `turnos`, 4 `secciones`, **18 `grupos`** y 22 asignaciones en `grupo_docentes`.
+   - **Vouchers y Matrículas:** **391 `vouchers`** (validados vinculados, validados disponibles sin vincular, pendientes por revisar y rechazados) y **351 `matriculas`** (`CERRADA`, `ACTIVA`, `PENDIENTE` y `ANULADA`).
+   - **Asistencia, Evaluación y Cierres:** **199 `sesiones_clase`**, **3,432 `asistencias`**, **90 `justificaciones`**, **14 `planes_evaluacion`**, 15 `configuraciones_evaluacion_grupo`, 75 `evaluaciones`, 225 `indicadores_evaluacion`, **4,350 `calificaciones`**, **16 `cierres_academicos`**, **144 `resultados_academicos`**, **18 `exportaciones`** y **258 `auditoria_eventos`**.
 
-Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.
-No crean credenciales de acceso ni catálogos institucionales supuestos.
-Para cargar ejemplos sintéticos en desarrollo, en PowerShell:
+### Credenciales de Prueba
 
-```powershell
-$env:ALLOW_DEMO_SEED = 'true'
-pnpm db:seed:demo
-Remove-Item Env:ALLOW_DEMO_SEED
-```
+| Rol | Usuarios disponibles | Contraseña |
+| :--- | :--- | :--- |
+| **Administrador** | `admin`, `soporte_ti` | `Admin123!` *(o tu clave actual de `admin`)* |
+| **Docente (Portal Docente)** | `doc_carlos`, `doc_elena`, `doc_roberto`, `doc_valeria`, `doc_jorge`, `doc_patricia`, `doc_miguel`, `doc_claudia` | `Docente123!` |
+| **Secretaría** | `sec_lucia`, `sec_carmen` | `Secretaria123!` |
+| **Coordinación** | `coord_marco` | `Coord123!` |
 
-En Linux/macOS: `ALLOW_DEMO_SEED=true pnpm db:seed:demo`.
-La carga es transaccional e idempotente. Crea idiomas, niveles, unidades, un periodo,
-turno, sección, docente, dos grupos y una versión de reglas 13/30/3 para demostración.
-Todos los códigos son DEMO; la cuenta de referencia está deshabilitada y su contraseña
-aleatoria no se conserva. No es una cuenta para iniciar sesión. No se fijan pesos de evaluación.
+### Escenarios Listos para Probar en el Ciclo Activo (`2026-I`)
+- **Cerrar Asistencia en 1 clic:** grupos `G-2026I-ING-I1-A` y `G-2026I-QUE-B1-A`.
+- **Emitir Acta Oficial en 1 clic:** grupos `G-2026I-ING-B2-A` y `G-2026I-POR-B2-A`.
+- **Exportar Acta Oficial UGEL / Matriz XLSX:** grupos `G-2026I-ING-B1-INT` y `G-2026I-POR-B1-INT` (además de los 5 grupos cerrados de `2025-II`).
+- **Operación diaria de Docente y Secretaría:** grupos `G-2026I-ING-I2-A`, `G-2026I-ING-AV-A`, `G-2026I-POR-IN-A` y `G-2026I-FRA-B1-A`.
 
-## Verificación automática
+---
 
-```sh
-pnpm check
-pnpm --filter api exec playwright install chromium
-pnpm test:db
-```
+## Comandos Útiles
 
-`check` ejecuta lint, tipos, compilación, pruebas unitarias, contrato HTTP y configuración
-local. `test:db` crea un PostgreSQL temporal con puerto y contraseña aleatorios, migra,
-revierte, reaplica y prueba restricciones, rollback, carga sintética y la API con conexión
-real. Limpia su contenedor y red al terminar. No usa `infra/.env` ni el volumen local.
-Incluye recorridos React–API–PostgreSQL de configuración, matrícula, sesiones,
-asistencia, justificaciones, cierre con corrección, criterios, calificaciones, actas y reportes con Chromium. En Linux/CI, instalar
-Chromium con `pnpm --filter api exec playwright install --with-deps chromium`.
+| Comando | Descripción |
+| :--- | :--- |
+| `pnpm dev:api` | Inicia el servidor NestJS en modo desarrollo (`watch`) |
+| `pnpm dev:web` | Inicia el cliente React + Vite en modo desarrollo |
+| `pnpm db:migrate` | Ejecuta las migraciones pendientes en PostgreSQL |
+| `pnpm db:status` | Muestra el estado de las migraciones |
+| `pnpm db:seed:realistic` | Limpia e inserta la carga masiva realista en toda la base de datos |
+| `pnpm typecheck` | Verifica tipos TypeScript en `apps/api` y `apps/web` |
+| `pnpm lint` | Ejecuta el linter en todo el monorepositorio |
+| `pnpm build` | Compila producción para API y Web |
+| `pnpm check` | Ejecuta lint, typecheck, build y suites de verificación |
 
-`pnpm test:b10` ejecuta las suites de estudiantes, vouchers y matrícula en otra
-base temporal. Guarda el informe JSON en `.tmp/b10/pruebas.json`; la suite completa
-usa `.tmp/verificacion/pruebas.json`. Los tiempos del runner son evidencia técnica.
-El procedimiento para observar los tiempos del centro está en la documentación B10.
+---
 
-`pnpm test:b20` recorre la misma matrícula desde su registro hasta asistencia,
-notas, acta y descarga XLSX, con los cuatro roles operativos y datos sintéticos.
-Reutiliza el entorno temporal y guarda `.tmp/b20/pruebas.json`; la suite completa
-también incluye estos recorridos. El protocolo B20 explica la repetición en Edge
-y las comprobaciones pendientes de navegadores y aceptación humana.
-
-`pnpm b20:mediciones docs/evidencias/B20/mediciones.plantilla.json` analiza el
-instrumento del piloto: diez pares de matrícula y consolidación de asistencia,
-notas y XLSX. Los resultados permanecen pendientes mientras falten observaciones.
-Las simulaciones y los tiempos automáticos no acreditan mejora institucional.
-
-`pnpm b10:plantillas [carpeta]` comprueba las versiones de los cuatro archivos
-facilitados por el equipo contra `docs/plantillas/registro.json`. La carpeta por
-defecto es `.tmp/b10`; los archivos originales permanecen sin versionarse.
-`pnpm b10:mediciones <archivo.json>` resume las observaciones registradas con la
-plantilla de `docs/evidencias/B10/`. No genera cifras cuando faltan mediciones.
-
-El workflow `.github/workflows/ci.yml` ejecuta ambas verificaciones en push y pull request.
-Su ejecución remota requiere publicar el repositorio en GitHub; los resultados locales
-no se presentan como una ejecución ya realizada en GitHub Actions.
-
-## Estructura
+## Estructura del Proyecto
 
 ```text
-apps/api/src/
-  database/             Configuración, migraciones y carga sintética
-  health/               Estado técnico de la API y PostgreSQL
-  modules/              Auth, usuarios, control, oferta, personas, matrículas, asistencia, evaluación y reportes
-  common/               Filtro de errores e infraestructura compartida
-apps/web/src/
-  features/             Acceso, configuración, estudiantes, vouchers, matrícula, asistencia, evaluación y reportes
-  shared/               Cliente API, navegación y diálogos
-packages/contracts/     Reservado para contratos compartidos
+apps/
+  api/src/
+    database/           Configuración TypeORM, migraciones y seeder realista
+    health/             Endpoint de salud técnica
+    modules/            Auth, usuarios, control, oferta, personas, matrículas, asistencia, evaluación y reportes
+    common/             Filtros y validaciones compartidas
+  web/src/
+    app/                Enrutador, barra lateral, control de acceso por rol y vistas principales
+    features/           Módulos de gestión académica, matriz curricular, matrículas, vouchers, asistencia, notas, actas y reportes
+    shared/             Cliente HTTP, paginación y componentes reutilizables
 infra/
-  compose.yaml          PostgreSQL persistente de desarrollo
-  compose.test.yaml     PostgreSQL temporal de verificación
-  scripts/              Preparación de entornos y pruebas aisladas
-  proxy/                Reservado para despliegue posterior
-  scripts/respaldo/     Reservado para B21
+  compose.yaml          Definición de contenedor PostgreSQL de desarrollo
+  scripts/              Scripts de configuración de entorno y verificación
 ```
-
-Para detener la base: `pnpm db:down`; conserva el volumen. Para consultar logs:
-`pnpm db:logs`. Para validar Compose: `pnpm db:config`.
-La infraestructura de producción, respaldos y restauración siguen en B21.

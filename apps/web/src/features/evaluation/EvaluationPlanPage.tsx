@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
+import { ArrowLeft, BookMarked } from "lucide-react";
 import { ApiError, api, errorText } from "../../shared/api";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { useUnsavedChanges } from "../../shared/useUnsavedChanges";
@@ -12,6 +13,7 @@ import { DefinitionView } from "./EvaluationDefinition";
 import { EvaluationActionDialog } from "./EvaluationActionDialog";
 import { PlanFields } from "./PlanFields";
 import { formulaLabel, validatePlanCapture, type PlanView } from "./model";
+import "../academic/academic.css";
 
 export function EvaluationPlanPage({ planId }: { planId: string }) {
   const endpoint = `evaluacion/planes/${planId}`;
@@ -115,23 +117,58 @@ function PlanDetail({
     APPROVE_EVALUATION_PLAN: "Aprobación de criterios",
   };
   return (
-    <section>
-      <a className="back-link" href={`#/evaluacion/niveles/${data.nivel.id}`}>
-        ← Volver a versiones
-      </a>
-      <PageHeading
-        eyebrow={`${data.nivel.idioma} · ${data.nivel.nombre}`}
-        title={`Versión ${data.plan.version} de criterios`}
-        description={data.plan.nombre}
-        action={
-          <Button
+    <div className="academic-container">
+      {/* Top Navigation Bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+        <a
+          href={`#/evaluacion/niveles/${data.nivel.id}`}
+          className="academic-btn-action btn-action-secondary"
+          style={{ padding: "0.4rem 0.8rem" }}
+        >
+          <ArrowLeft size={14} /> Volver a Versiones
+        </a>
+        <a
+          href="#/matriz-curricular"
+          className="academic-btn-action btn-action-secondary"
+          style={{ padding: "0.4rem 0.8rem" }}
+        >
+          <BookMarked size={14} /> Ir a Matriz Curricular
+        </a>
+      </div>
+
+      {/* Main Header Banner */}
+      <div className="academic-card" style={{ padding: "1.5rem", marginBottom: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
+              <span className="academic-badge badge-green">Versión {data.plan.version}</span>
+              <span className={`academic-badge ${data.plan.estado === "APROBADO" ? "badge-blue" : "badge-gray"}`}>
+                {data.plan.estado === "APROBADO" ? "APROBADA" : "BORRADOR"}
+              </span>
+              <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                {data.nivel.idioma} · {data.nivel.nombre}
+              </span>
+            </div>
+
+            <h1 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1e293b", margin: 0 }}>
+              {data.plan.nombre}
+            </h1>
+            <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.3rem 0 0 0" }}>
+              Fórmula: <strong>{formulaLabel}</strong> · Creado por {data.plan.creado_nombre} ({academicTime(data.plan.creado_at)})
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="academic-btn-action btn-action-secondary"
             disabled={busy}
             onClick={() => guard.request(() => void refresh())}
           >
             Recargar versión
-          </Button>
-        }
-      />
+          </button>
+        </div>
+      </div>
+
       <Feedback tone="success">{success}</Feedback>
       <Feedback>{error}</Feedback>
       {stale && (
@@ -302,6 +339,6 @@ function PlanDetail({
         />
       )}
       {guard.confirmation}
-    </section>
+    </div>
   );
 }

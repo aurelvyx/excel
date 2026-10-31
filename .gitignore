@@ -1,11 +1,65 @@
+# Dependencias y almacén de paquetes
 node_modules/
 .pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Compilación, bundles y caché de TypeScript / Vite / NestJS
 dist/
+build/
+out/
 coverage/
 *.tsbuildinfo
+.vite/
+.turbo/
+
+# Variables de entorno y secretos locales (se conservan únicamente las plantillas .env.example)
 .env
 .env.*
 !.env.example
-*.log
-.DS_Store
+*.pem
+*.key
+*.crt
+
+# Directorios temporales, reportes de pruebas, capturas y volcados de BD
 .tmp/
+tmp/
+temp/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+*.log
+*.sql.gz
+*.dump
+*.bak
+
+# Instrucciones internas de agentes IA, documentos de trabajo (.docx) y notas internas de sprints
+AGENTS.md
+CLAUDE.md
+.agent/
+.agents/
+.gemini/
+.cursor/
+docs/*.docx
+docs/B*.md
+docs/verificacion-*.md
+docs/refactor-*.md
+docs/seed-*.md
+docs/decisiones/
+
+# Configuraciones locales de IDE y sistema operativo
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+Desktop.ini
+~$*.docx
+~$*.xlsx

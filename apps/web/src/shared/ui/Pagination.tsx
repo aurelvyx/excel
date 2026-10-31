@@ -5,6 +5,7 @@ export function Pagination({
   nextCursor,
   onChange,
   count,
+  disabled = false,
   firstLabel = "Primera página",
   nextLabel = "Siguiente",
 }: {
@@ -12,6 +13,7 @@ export function Pagination({
   nextCursor: string | null;
   onChange: (cursor: string) => void;
   count?: number;
+  disabled?: boolean;
   firstLabel?: string;
   nextLabel?: string;
 }) {
@@ -20,11 +22,11 @@ export function Pagination({
     <footer className="pagination">
       {count !== undefined && <span>{count} registros en esta página</span>}
       <div>
-        <Button disabled={!after} onClick={() => onChange("")}>
+        <Button disabled={disabled || !after} onClick={() => onChange("")}>
           {firstLabel}
         </Button>
         <Button
-          disabled={!nextCursor}
+          disabled={disabled || !nextCursor}
           onClick={() => {
             if (nextCursor) onChange(nextCursor);
           }}

@@ -1,15 +1,15 @@
 import { useState } from "react";
+import { ArrowLeft, CheckCircle2, AlertCircle, RefreshCw, SlidersHorizontal, GraduationCap, FileCheck } from "lucide-react";
 import { api, errorText } from "../../shared/api";
 import { useApiQuery } from "../../shared/useApiQuery";
-import { Button } from "../../shared/ui/Button";
 import { Facts } from "../../shared/ui/Facts";
 import { Feedback, Loading } from "../../shared/ui/Feedback";
-import { PageHeading } from "../../shared/ui/PageHeading";
 import { GroupContext } from "../attendance/GroupContext";
 import { academicTime } from "../attendance/model";
 import { EvaluationActionDialog } from "./EvaluationActionDialog";
 import { DefinitionView } from "./EvaluationDefinition";
 import { formulaLabel, type GroupEvaluationView } from "./model";
+import "../academic/academic.css";
 
 export function GroupEvaluationPage({ groupId }: { groupId: string }) {
   const endpoint = `evaluacion/grupos/${groupId}/configuracion`;
@@ -20,23 +20,23 @@ export function GroupEvaluationPage({ groupId }: { groupId: string }) {
       <GroupEvaluation key={endpoint} initial={data} endpoint={endpoint} />
     );
   return (
-    <section>
-      <a className="back-link" href={`#/asistencia/grupos/${groupId}`}>
-        ← Volver a sesiones
-      </a>
-      <PageHeading
-        eyebrow="Evaluación"
-        title="Evaluaciones del grupo"
-        description="Consulta los criterios y los pendientes de calificación del grupo."
-      />
-      {loading ? (
-        <Loading>Cargando evaluaciones…</Loading>
-      ) : (
-        <Feedback onRetry={reload}>{error}</Feedback>
-      )}
-    </section>
+    <div className="academic-container">
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <a className="academic-btn-action btn-action-secondary" href={`#/salones/${groupId}?tab=calificaciones`}>
+          <ArrowLeft size={14} /> Volver al Salón
+        </a>
+      </div>
+      <div className="academic-card" style={{ padding: "2rem" }}>
+        {loading ? (
+          <Loading>Cargando configuración de evaluaciones…</Loading>
+        ) : (
+          <Feedback onRetry={reload}>{error}</Feedback>
+        )}
+      </div>
+    </div>
   );
 }
+
 function GroupEvaluation({
   initial,
   endpoint,
@@ -50,6 +50,7 @@ function GroupEvaluation({
   const [stale, block] = useState(false);
   const [error, fail] = useState("");
   const [success, notify] = useState("");
+
   async function refresh() {
     pending(true);
     fail("");
@@ -64,53 +65,94 @@ function GroupEvaluation({
       pending(false);
     }
   }
+
   const readiness = data.preparacionActa;
+
   return (
-    <section>
-      <a className="back-link" href={`#/asistencia/grupos/${data.grupo.id}`}>
-        ← Volver a sesiones
-      </a>
-      <PageHeading
-        eyebrow="Evaluación"
-        title="Evaluaciones del grupo"
-        description="Aplica una versión aprobada y consulta los criterios que conserva este grupo."
-        action={
-          data.puedeAplicar && (
-            <Button
-              variant="primary"
-              disabled={
-                busy || stale || data.planesDisponibles.length === 0 || applying
-              }
+    <div className="academic-container">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+          <a className="academic-btn-action btn-action-secondary" href={`#/evaluacion/grupos/${data.grupo.id}/calificaciones`}>
+            <ArrowLeft size={14} /> Planilla de Calificaciones
+          </a>
+          <a className="academic-btn-action btn-action-secondary" href={`#/salones/${data.grupo.id}`}>
+            Salón 360°
+          </a>
+          <a className="academic-btn-action btn-action-secondary" href={`#/evaluacion/grupos/${data.grupo.id}/acta`}>
+            <FileCheck size={14} /> Resultados y Acta
+          </a>
+        </div>
+
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <button
+            type="button"
+            disabled={busy || applying}
+            onClick={() => void refresh()}
+            className="academic-btn-action btn-action-secondary"
+          >
+            <RefreshCw size={14} className={busy ? "spin" : ""} /> Recargar
+          </button>
+
+          {data.puedeAplicar && (
+            <button
+              type="button"
+              disabled={busy || stale || data.planesDisponibles.length === 0 || applying}
               onClick={() => apply(true)}
+              className="academic-btn-action btn-action-primary"
             >
-              Aplicar versión aprobada
-            </Button>
-          )
-        }
-      />
+              <SlidersHorizontal size={14} /> Aplicar Versión Aprobada
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="academic-card" style={{ padding: "1.5rem", borderLeft: "4px solid #007a3d" }}>
+        <span className="academic-badge badge-green" style={{ marginBottom: "0.4rem", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+          <GraduationCap size={13} /> Configuración de Evaluación del Salón
+        </span>
+        <h1 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1e293b", margin: 0 }}>
+          Criterios e Indicadores Aplicados · Salón {data.grupo.codigo}
+        </h1>
+        <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.35rem 0 0" }}>
+          Define y consulta la estructura de unidades didácticas, evaluaciones y pesos porcentuales con los que se calculan las notas de este grupo.
+        </p>
+      </div>
+
       <GroupContext group={data.grupo} />
-      <p>
-        <a href={`#/evaluacion/grupos/${data.grupo.id}/calificaciones`}>
-          Calificaciones
-        </a>
-        {" · "}
-        <a href={`#/evaluacion/grupos/${data.grupo.id}/acta`}>
-          Resultados y acta
-        </a>
-      </p>
-      <Feedback tone="success">{success}</Feedback>
-      <Feedback>{error}</Feedback>
+
+      {success && (
+        <div style={{ padding: "0.75rem 1rem", backgroundColor: "#dcfce7", color: "#15803d", borderRadius: "0.5rem", border: "1px solid #bbf7d0", fontSize: "0.8125rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <CheckCircle2 size={16} />
+          <span>{success}</span>
+        </div>
+      )}
+      {error && (
+        <div style={{ padding: "0.75rem 1rem", backgroundColor: "#fee2e2", color: "#991b1b", borderRadius: "0.5rem", border: "1px solid #fecaca", fontSize: "0.8125rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
       {!data.puedeAplicar && (
-        <p className="readonly">
-          Solo lectura ·{" "}
+        <div style={{ padding: "0.75rem 1rem", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "0.5rem", fontSize: "0.8125rem", color: "#475569" }}>
+          <strong>Solo lectura:</strong>{" "}
           {data.motivoSoloLectura ??
             "La configuración del grupo se conserva sin modificaciones."}
-        </p>
+        </div>
       )}
-      <section className="panel panel-content">
+
+      <section className="academic-card" style={{ padding: "1.5rem" }}>
         {data.configuracion && data.plan ? (
           <>
-            <h2>Criterios aplicados</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1rem" }}>
+              <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#1e293b" }}>Criterios aplicados al grupo</h2>
+              <a
+                href={`#/evaluacion/planes/${data.plan.id}`}
+                className="academic-btn-action btn-action-secondary"
+              >
+                Consultar versión matriz ({data.plan.version})
+              </a>
+            </div>
             <Facts
               items={[
                 ["Versión", `${data.plan.version} · ${data.plan.nombre}`],
@@ -123,61 +165,60 @@ function GroupEvaluation({
                 ["Fórmula", formulaLabel],
               ]}
             />
-            <a href={`#/evaluacion/planes/${data.plan.id}`}>
-              Consultar versión aplicada
-            </a>
-            <DefinitionView
-              units={data.unidades}
-              value={{
-                evaluaciones: data.evaluaciones.map((entry) => ({
-                  nombre: entry.nombre,
-                  unidadId: entry.unidad_id,
-                  pesoPct: entry.peso_pct,
-                  orden: entry.orden,
-                  indicadores: entry.indicadores.map((item) => ({
-                    codigo: item.codigo,
-                    descripcion: item.descripcion,
-                    pesoPct: item.peso_pct,
-                    orden: item.orden,
+            <div style={{ marginTop: "1rem" }}>
+              <DefinitionView
+                units={data.unidades}
+                value={{
+                  evaluaciones: data.evaluaciones.map((entry) => ({
+                    nombre: entry.nombre,
+                    unidadId: entry.unidad_id,
+                    pesoPct: entry.peso_pct,
+                    orden: entry.orden,
+                    indicadores: entry.indicadores.map((item) => ({
+                      codigo: item.codigo,
+                      descripcion: item.descripcion,
+                      pesoPct: item.peso_pct,
+                      orden: item.orden,
+                    })),
                   })),
-                })),
-              }}
-            />
+                }}
+              />
+            </div>
           </>
         ) : (
           <>
-            <h2>Sin criterios aplicados</h2>
-            <p>
-              Selecciona una versión aprobada del nivel para conservarla en este
-              grupo.
+            <h2 style={{ marginTop: 0, fontSize: "1.1rem", color: "#1e293b" }}>Sin criterios aplicados</h2>
+            <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
+              Selecciona una versión aprobada del nivel para conservarla en este grupo y habilitar la planilla de notas.
             </p>
             {data.planesDisponibles.length === 0 && (
               <p className="notice">
                 No hay versiones aprobadas disponibles para este nivel.
               </p>
             )}
-            <a href={`#/evaluacion/niveles/${data.nivel.id}`}>
+            <a
+              href={`#/evaluacion/niveles/${data.nivel.id}`}
+              className="academic-btn-action btn-action-secondary"
+              style={{ width: "fit-content" }}
+            >
               Consultar versiones del nivel
             </a>
           </>
         )}
-        <div className="actions">
-          <Button disabled={busy || applying} onClick={() => void refresh()}>
-            Recargar configuración
-          </Button>
-        </div>
       </section>
+
       {stale ? (
         <p className="notice">
           La configuración cambió o no pudo consultarse. Recarga explícitamente
-          antes de continuar; los pendientes anteriores no se muestran.
+          antes de continuar.
         </p>
       ) : (
         <section
-          className="panel panel-content"
+          className="academic-card"
+          style={{ padding: "1.5rem" }}
           aria-label="Preparación del acta"
         >
-          <h2>Preparación del acta</h2>
+          <h2 style={{ marginTop: 0, fontSize: "1.1rem", color: "#1e293b" }}>Estado de Preparación para Cierre de Acta</h2>
           <Facts
             items={[
               [
@@ -195,18 +236,15 @@ function GroupEvaluation({
             ]}
           />
           {readiness.motivos.length > 0 && (
-            <ul>
+            <ul style={{ color: "#b45309", fontSize: "0.8125rem", marginTop: "0.75rem" }}>
               {readiness.motivos.map((message) => (
                 <li key={message}>{message}</li>
               ))}
             </ul>
           )}
-          <p className="help">
-            La preparación del acta indica si faltan criterios o calificaciones.
-            No realiza el cierre.
-          </p>
         </section>
       )}
+
       {applying && (
         <EvaluationActionDialog<GroupEvaluationView>
           kind="apply"
@@ -227,6 +265,6 @@ function GroupEvaluation({
           onReload={() => void refresh()}
         />
       )}
-    </section>
+    </div>
   );
 }
