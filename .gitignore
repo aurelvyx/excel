@@ -36,19 +36,7 @@ playwright/.cache/
 *.dump
 *.bak
 
-# Instrucciones internas de agentes IA, documentos de trabajo (.docx) y notas internas de sprints
-AGENTS.md
-CLAUDE.md
-.agent/
-.agents/
-.gemini/
-.cursor/
-docs/*.docx
-docs/B*.md
-docs/verificacion-*.md
-docs/refactor-*.md
-docs/seed-*.md
-docs/decisiones/
+
 
 # Configuraciones locales de IDE y sistema operativo
 .vscode/
