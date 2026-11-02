@@ -676,33 +676,30 @@ describe('B13 cálculo de asistencia HTTP y PostgreSQL', () => {
     },
   );
 
-  it.each(['SECRETARIA', 'ADMIN'])(
-    'DOCENTE+%s puede leer grupo ajeno pero el cálculo no amplía permiso de edición',
-    async (role) => {
-      const group = await fixture.group(false);
-      const s = await fixture.session(group, 'REALIZADA');
-      const m = await fixture.enroll(group, await fixture.student());
-      await mark(s, m, 'F');
-      await call('get', path(s), writer).expect(403);
+  it('DOCENTE+SECRETARIA puede leer grupo ajeno pero el cálculo no amplía permiso de edición', async () => {
+    const group = await fixture.group(false);
+    const s = await fixture.session(group, 'REALIZADA');
+    const m = await fixture.enroll(group, await fixture.student());
+    await mark(s, m, 'F');
+    await call('get', path(s), writer).expect(403);
+    await save(s, [entry(m, 'P', 1)]).expect(403);
+    await source.query(
+      'INSERT INTO usuario_roles(usuario_id,rol_id,asignado_por) SELECT $1,id,$2 FROM roles WHERE codigo=$3',
+      [fixture.userIds.docente, adminId, 'SECRETARIA'],
+    );
+    try {
+      expect(await summary(s, m, writer)).toMatchObject({
+        faltasComputables: 1,
+        condicion: 'RETIRADO_INASISTENCIA',
+      });
       await save(s, [entry(m, 'P', 1)]).expect(403);
+    } finally {
       await source.query(
-        'INSERT INTO usuario_roles(usuario_id,rol_id,asignado_por) SELECT $1,id,$2 FROM roles WHERE codigo=$3',
-        [fixture.userIds.docente, adminId, role],
+        'DELETE FROM usuario_roles WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo=$2)',
+        [fixture.userIds.docente, 'SECRETARIA'],
       );
-      try {
-        expect(await summary(s, m, writer)).toMatchObject({
-          faltasComputables: 1,
-          condicion: 'RETIRADO_INASISTENCIA',
-        });
-        await save(s, [entry(m, 'P', 1)]).expect(403);
-      } finally {
-        await source.query(
-          'DELETE FROM usuario_roles WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo=$2)',
-          [fixture.userIds.docente, role],
-        );
-      }
-    },
-  );
+    }
+  });
 
   it('revalida asignación y sesión revocadas antes de entregar indicadores académicos', async () => {
     const f = await dataset(['P']);

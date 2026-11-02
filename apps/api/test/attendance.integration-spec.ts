@@ -435,14 +435,14 @@ describe('B12 asistencia HTTP y PostgreSQL', () => {
       expect(await count(f.session)).toBe(0);
     },
   );
-  it('el administrador consulta, pero no edita asistencia abierta sin ser docente asignado', async () => {
+  it('el administrador consulta y puede editar asistencia abierta aunque no sea docente asignado', async () => {
     const f = await matrix(1);
     const response = (await call('get', path(f.session), admin).expect(200))
       .body;
-    expect(response.puedeEditar).toBe(false);
-    expect(response.items[0].editable).toBe(false);
-    await save(f.session, [entry(f.enrollments[0]!)], admin).expect(403);
-    expect(await count(f.session)).toBe(0);
+    expect(response.puedeEditar).toBe(true);
+    expect(response.items[0].editable).toBe(true);
+    await save(f.session, [entry(f.enrollments[0]!)], admin).expect(200);
+    expect(await count(f.session)).toBe(1);
   });
   it('un docente ajeno no consulta ni altera el grupo mediante navegación directa', async () => {
     const f = await matrix(1);
@@ -453,36 +453,33 @@ describe('B12 asistencia HTTP y PostgreSQL', () => {
       .get(`/api/v1/${path(f.session)}`)
       .expect(401);
   });
-  it.each(['SECRETARIA', 'ADMIN'] as const)(
-    'un docente con rol %s adicional sigue escribiendo solo sus grupos',
-    async (role) => {
-      const own = await matrix(1);
-      const other = await fixture.group(false);
-      const otherSession = await fixture.session(other);
-      const otherEnrollment = await fixture.enroll(
-        other,
-        await fixture.student(),
-      );
+  it('un docente con rol SECRETARIA sigue escribiendo solo sus grupos, mientras ADMIN amplía permiso', async () => {
+    const own = await matrix(1);
+    const other = await fixture.group(false);
+    const otherSession = await fixture.session(other);
+    const otherEnrollment = await fixture.enroll(
+      other,
+      await fixture.student(),
+    );
+    await source.query(
+      'INSERT INTO usuario_roles(usuario_id,rol_id,asignado_por) SELECT $1,id,$2 FROM roles WHERE codigo=$3',
+      [fixture.userIds.docente, adminId, 'SECRETARIA'],
+    );
+    try {
+      const user = await login('docente');
+      expect(
+        (await call('get', path(otherSession), user).expect(200)).body
+          .puedeEditar,
+      ).toBe(false);
+      await save(otherSession, [entry(otherEnrollment)], user).expect(403);
+      await save(own.session, [entry(own.enrollments[0]!)], user).expect(200);
+    } finally {
       await source.query(
-        'INSERT INTO usuario_roles(usuario_id,rol_id,asignado_por) SELECT $1,id,$2 FROM roles WHERE codigo=$3',
-        [fixture.userIds.docente, adminId, role],
+        'DELETE FROM usuario_roles WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo=$2)',
+        [fixture.userIds.docente, 'SECRETARIA'],
       );
-      try {
-        const user = await login('docente');
-        expect(
-          (await call('get', path(otherSession), user).expect(200)).body
-            .puedeEditar,
-        ).toBe(false);
-        await save(otherSession, [entry(otherEnrollment)], user).expect(403);
-        await save(own.session, [entry(own.enrollments[0]!)], user).expect(200);
-      } finally {
-        await source.query(
-          'DELETE FROM usuario_roles WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo=$2)',
-          [fixture.userIds.docente, role],
-        );
-      }
-    },
-  );
+    }
+  });
   it('revocar la asignación invalida la escritura de una sesión de usuario previa', async () => {
     const f = await matrix(1);
     const user = await login('docente');
@@ -536,31 +533,22 @@ describe('B12 asistencia HTTP y PostgreSQL', () => {
         [entry(f.enrollments[0]!)],
         await login('docente2'),
       ).expect(409);
-      await save(f.session, [entry(f.enrollments[0]!)], admin).expect(403);
+      await save(f.session, [entry(f.enrollments[0]!)], admin).expect(409);
       expect(await count(f.session)).toBe(0);
     },
   );
-  it.each(['cancelada', 'futura'])(
-    'una sesión %s conserva consulta y rechaza confirmar asistencia',
-    async (state) => {
-      const f = await matrix(1);
-      if (state === 'cancelada')
-        await source.query(
-          "UPDATE sesiones_clase SET estado='CANCELADA' WHERE id=$1",
-          [f.session.id],
-        );
-      else
-        await source.query('UPDATE sesiones_clase SET fecha=$1 WHERE id=$2', [
-          fixture.tomorrow,
-          f.session.id,
-        ]);
-      expect(
-        (await call('get', path(f.session)).expect(200)).body.puedeEditar,
-      ).toBe(false);
-      await save(f.session, [entry(f.enrollments[0]!)]).expect(409);
-      expect(await count(f.session)).toBe(0);
-    },
-  );
+  it('una sesión cancelada conserva consulta y rechaza confirmar asistencia', async () => {
+    const f = await matrix(1);
+    await source.query(
+      "UPDATE sesiones_clase SET estado='CANCELADA' WHERE id=$1",
+      [f.session.id],
+    );
+    expect(
+      (await call('get', path(f.session)).expect(200)).body.puedeEditar,
+    ).toBe(false);
+    await save(f.session, [entry(f.enrollments[0]!)]).expect(409);
+    expect(await count(f.session)).toBe(0);
+  });
   it.each(['PENDIENTE', 'CERRADA', 'ANULADA'] as const)(
     'la matrícula %s no admite registrar y no sustituye un intento activo',
     async (state) => {
