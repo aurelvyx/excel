@@ -12,13 +12,19 @@ const open = {
   today: '2026-10-06',
 };
 describe('B12 registro abierto y corrección versionada', () => {
-  it('permite una sesión actual o realizada de un grupo abierto', () => {
+  it('permite una sesión programada o realizada de un grupo abierto', () => {
     expect(attendanceReadOnlyReason(open)).toBeNull();
     expect(
       attendanceReadOnlyReason({
         ...open,
         sessionState: 'REALIZADA',
         sessionDate: '2026-10-05',
+      }),
+    ).toBeNull();
+    expect(
+      attendanceReadOnlyReason({
+        ...open,
+        sessionDate: '2026-10-07',
       }),
     ).toBeNull();
   });
@@ -29,7 +35,6 @@ describe('B12 registro abierto y corrección versionada', () => {
     { periodState: 'CERRADO' },
     { periodState: 'PLANIFICADO' },
     { sessionState: 'CANCELADA' },
-    { sessionDate: '2026-10-07' },
   ])('bloquea edición en %j', (closed) => {
     expect(attendanceReadOnlyReason({ ...open, ...closed })).toBeTruthy();
   });

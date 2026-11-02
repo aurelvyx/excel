@@ -445,7 +445,7 @@ function GradesMatrix({
   }
 
   // Estadísticas KPI en vivo
-  const kpiStats = useMemo(() => {
+  const kpiStats = (() => {
     let aprobados = 0;
     let enRiesgo = 0;
     let conPendientes = 0;
@@ -461,26 +461,24 @@ function GradesMatrix({
       aprobados,
       enRiesgo,
     };
-  }, [snapshot.items, orderedEvaluations, drafts, actData]);
+  })();
 
   // Filtrado de estudiantes
-  const filteredRows = useMemo(() => {
-    return snapshot.items.filter((row) => {
-      const st = getStudentStatus(row);
-      if (filterType === "PENDIENTES" && !st.hasPending) return false;
-      if (filterType === "APROBADO" && !st.aprobado) return false;
-      if (filterType === "RIESGO" && !st.desaprobado && !st.isDpi) return false;
+  const filteredRows = snapshot.items.filter((row) => {
+    const st = getStudentStatus(row);
+    if (filterType === "PENDIENTES" && !st.hasPending) return false;
+    if (filterType === "APROBADO" && !st.aprobado) return false;
+    if (filterType === "RIESGO" && !st.desaprobado && !st.isDpi) return false;
 
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase().trim();
-        const nom = (row.estudiante || "").toLowerCase();
-        const doc = (row.numero_documento || "").toLowerCase();
-        const cod = (row.codigo_matricula || "").toLowerCase();
-        if (!nom.includes(q) && !doc.includes(q) && !cod.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [snapshot.items, filterType, searchTerm, orderedEvaluations, drafts, actData]);
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim();
+      const nom = (row.estudiante || "").toLowerCase();
+      const doc = (row.numero_documento || "").toLowerCase();
+      const cod = (row.codigo_matricula || "").toLowerCase();
+      if (!nom.includes(q) && !doc.includes(q) && !cod.includes(q)) return false;
+    }
+    return true;
+  });
 
   const totalPages =
     pageSize === 0 ? 1 : Math.max(1, Math.ceil(filteredRows.length / pageSize));
