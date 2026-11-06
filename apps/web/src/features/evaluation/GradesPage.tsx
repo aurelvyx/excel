@@ -46,9 +46,11 @@ function GradesHeading() {
 export function GradesPage({
   groupId,
   query,
+  workspacePath,
 }: {
   groupId: string;
   query: URLSearchParams;
+  workspacePath?: (cursor: string) => string;
 }) {
   const after = query.get("after") ?? "";
   const path = `/evaluacion/grupos/${groupId}/calificaciones`;
@@ -65,6 +67,7 @@ export function GradesPage({
         initial={data}
         endpoint={endpoint}
         path={path}
+        workspacePath={workspacePath}
         after={after}
         queryPath={queryPath}
         reload={reload}
@@ -89,6 +92,7 @@ function GradesMatrix({
   initial,
   endpoint,
   path,
+  workspacePath,
   after,
   queryPath,
   reload,
@@ -96,6 +100,7 @@ function GradesMatrix({
   initial: GradesPageData;
   endpoint: string;
   path: string;
+  workspacePath?: (cursor: string) => string;
   after: string;
   queryPath: string;
   reload: () => void;
@@ -468,7 +473,7 @@ function GradesMatrix({
             nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
-                () => navigate(cursor ? `${path}?after=${cursor}` : path),
+                () => navigate(workspacePath?.(cursor) ?? (cursor ? `${path}?after=${cursor}` : path)),
                 true,
               )
             }

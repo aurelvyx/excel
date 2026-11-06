@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs';
 import request from 'supertest';
 import { databaseOptions } from '../src/database/configuracion/data-source.js';
 import { bootstrapAdministrator } from '../src/database/bootstrap-admin.js';
+import { configureRuntimeRole } from '../src/database/runtime-role.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
 import { AuditService } from '../src/modules/control/audit.service.js';
@@ -67,12 +68,31 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
     fixture = await attendanceFixture(source, adminId, password);
     origin = `http://127.0.0.1:${await freePort()}`;
     process.env.WEB_ORIGINS = origin;
-    const module = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = module.createNestApplication();
-    configureApp(app);
-    await app.init();
+    // Fixtures con la conexión propietaria y exportaciones con el rol B21 sin DDL.
+    const apiRole = 'excel_reports_api_test';
+    const apiPassword = randomBytes(32).toString('hex');
+    await configureRuntimeRole(source, apiRole, apiPassword);
+    const ownerUser = process.env.DB_USER;
+    const ownerPassword = process.env.DB_PASSWORD;
+    try {
+      process.env.DB_USER = apiRole;
+      process.env.DB_PASSWORD = apiPassword;
+      const module = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+      app = module.createNestApplication();
+      configureApp(app);
+      await app.init();
+    } finally {
+      if (ownerUser === undefined) delete process.env.DB_USER;
+      else process.env.DB_USER = ownerUser;
+      if (ownerPassword === undefined) delete process.env.DB_PASSWORD;
+      else process.env.DB_PASSWORD = ownerPassword;
+    }
+    const apiSource = app.get(DataSource);
+    expect(await apiSource.query('SELECT current_user AS rol')).toEqual([
+      { rol: apiRole },
+    ]);
     admin = await login('admin_b19');
     teacher = await login('docente');
     stranger = await login('ajeno');
@@ -702,7 +722,7 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
   );
 
   it('revierte migración vacía; conserva evidencia ante UPDATE DELETE TRUNCATE y down', async () => {
-    // La base de datos genérica verifica además las 16 migraciones desde cero y reversión completa vacía.
+    // La suite de base verifica además todas las migraciones desde cero y su reversión completa vacía.
     const data = await dataset();
     await exported(data.group, await preview(data.group)).expect(201);
     const before = await evidence(data.group);

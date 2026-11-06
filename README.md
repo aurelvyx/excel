@@ -3,6 +3,9 @@
 Monorepositorio con pnpm: API NestJS, web React con TypeScript y PostgreSQL.
 Organización basada en `docs/Arquitectura_del_Sistema.docx`.
 
+La [integración de la interfaz del PR #21](docs/PR21-integracion.md) describe
+cómo la nueva navegación conserva los flujos académicos, permisos y pruebas de B21.
+
 ## Alcance actual
 
 - **B01:** configuración de entornos, Compose de desarrollo y pruebas, API con salud

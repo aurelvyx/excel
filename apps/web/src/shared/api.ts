@@ -124,8 +124,9 @@ export async function allRows(
 ): Promise<Row[]> {
   const rows: Row[] = [];
   let after: string | null = "0";
+  const separator = path.includes("?") ? "&" : "?";
   do {
-    const page: Page = await api<Page>(`${path}?limit=100&after=${after}`, {
+    const page: Page = await api<Page>(`${path}${separator}limit=100&after=${after}`, {
       signal,
     });
     rows.push(...page.items);

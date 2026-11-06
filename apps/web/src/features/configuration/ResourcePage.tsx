@@ -308,6 +308,7 @@ export function ResourcePage({
                   {resource.key === "grupos" && (
                     <>
                       <a href={`#/asistencia/grupos/${row.id}`}>Sesiones</a>
+                      <a href={`#/salones/${row.id}`}>Salón 360°</a>
                       <a href={`#/evaluacion/grupos/${row.id}`}>Evaluaciones</a>
                       <a href={`#/evaluacion/grupos/${row.id}/calificaciones`}>
                         Calificaciones

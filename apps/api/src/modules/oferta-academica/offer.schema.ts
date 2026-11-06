@@ -45,7 +45,7 @@ export function catalogSchema(key: CatalogKey): SchemaObject {
           : ['PLANIFICADO', 'ABIERTO', 'CERRADO'];
   }
   const required = Object.keys(properties);
-  if (key === 'grupos')
+  if (key === 'grupos') {
     properties.contexto = {
       type: 'object',
       description:
@@ -57,6 +57,11 @@ export function catalogSchema(key: CatalogKey): SchemaObject {
         ]),
       ),
     };
+    properties.matriculados = {
+      type: 'integer',
+      description: 'Disponible en el listado; matrículas activas y cerradas',
+    };
+  }
   return { type: 'object', required, properties };
 }
 export const assignmentSchema: SchemaObject = {

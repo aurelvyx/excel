@@ -389,6 +389,19 @@ describe('B05 navegador React → API → PostgreSQL', () => {
       .getByText('Inglés de prueba / Nivel sintético 1', { exact: true })
       .waitFor();
     await page.getByLabel('Cerrar formulario').click();
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'DEMO-EN-G1' })
+      .getByRole('link', { name: 'Salón 360°' })
+      .click();
+    await page.getByRole('heading', { name: 'Salón 360°' }).waitFor();
+    const tabs = page.getByRole('navigation', { name: 'Secciones del salón' });
+    await tabs.getByRole('link', { name: 'Calificaciones', exact: true }).click();
+    await page.getByRole('heading', { name: 'Registro de calificaciones' }).waitFor();
+    await page.getByRole('link', { name: 'Criterios del grupo' }).waitFor();
+    expect(
+      await tabs.getByRole('link', { name: 'Alumnos matriculados' }).count(),
+    ).toBe(0);
     await page.goto(`${origin}/#/configuracion/usuarios`);
     await page.getByRole('heading', { name: 'Página no disponible' }).waitFor();
     expect((await page.request.get(`${origin}/api/v1/usuarios`)).status()).toBe(

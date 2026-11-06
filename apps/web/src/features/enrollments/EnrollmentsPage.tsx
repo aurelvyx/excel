@@ -16,24 +16,39 @@ type Initial = { student: Row; group?: Row; enrollment?: Row };
 export function EnrollmentsPage({
   id,
   studentId,
+  groupId,
 }: {
   id?: string;
   studentId?: string;
+  groupId?: string;
 }) {
   if (id) return <ResumeEnrollment id={id} />;
+  if (groupId) return <StartForGroup id={groupId} studentId={studentId} />;
   if (studentId) return <StartForStudent id={studentId} />;
   return <EnrollmentWizard />;
 }
-function StartForStudent({ id }: { id: string }) {
+function StartForGroup({ id, studentId }: { id: string; studentId?: string }) {
+  const group = useApiQuery<Row>(`oferta/grupos/${encodeURIComponent(id)}`);
+  if (group.loading) return <Loading>Cargando grupo…</Loading>;
+  if (group.error) return <Feedback onRetry={group.reload}>{group.error}</Feedback>;
+  const initialGroup = group.data?.estado === "ACTIVO" ? group.data : undefined;
+  return (
+    <>
+      {!initialGroup && <Feedback tone="notice">El grupo seleccionado no está activo. Elige otro en el asistente.</Feedback>}
+      {studentId ? <StartForStudent id={studentId} group={initialGroup} /> : <EnrollmentWizard initialGroup={initialGroup} />}
+    </>
+  );
+}
+function StartForStudent({ id, group }: { id: string; group?: Row }) {
   const { data, loading, error, reload } = useApiQuery<Row>(
-    `estudiantes/${id}`,
+    `estudiantes/${encodeURIComponent(id)}`,
   );
   return loading ? (
     <Loading>Cargando estudiante…</Loading>
   ) : error ? (
     <Feedback onRetry={reload}>{error}</Feedback>
   ) : data ? (
-    <EnrollmentWizard initial={{ student: studentRow(data) }} />
+    <EnrollmentWizard initial={{ student: studentRow(data), group }} initialGroup={group} />
   ) : null;
 }
 function ResumeEnrollment({ id }: { id: string }) {
@@ -70,12 +85,12 @@ function ResumeEnrollment({ id }: { id: string }) {
     <Loading>Cargando solicitud…</Loading>
   );
 }
-function EnrollmentWizard({ initial }: { initial?: Initial }) {
+function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initialGroup?: Row }) {
   const [student, selectStudent] = useState<Row | null>(
     initial?.student ?? null,
   );
   const [voucher, selectVoucher] = useState<Row | null>(null);
-  const [group, selectGroup] = useState<Row | null>(initial?.group ?? null);
+  const [group, selectGroup] = useState<Row | null>(initial?.group ?? initialGroup ?? null);
   const [filters, setFilters] = useState<GroupFilters>({
     periodoId: "",
     idiomaId: "",
@@ -106,7 +121,7 @@ function EnrollmentWizard({ initial }: { initial?: Initial }) {
       throw new Error("El estudiante está inactivo");
     selectStudent(studentRow(row));
     selectVoucher(null);
-    selectGroup(null);
+    selectGroup(initialGroup ?? null);
     setFilters({ periodoId: "", idiomaId: "", nivelId: "", after: "" });
     key.current = crypto.randomUUID();
   }

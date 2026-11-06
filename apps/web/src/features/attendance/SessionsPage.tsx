@@ -11,6 +11,7 @@ import { Pagination } from "../../shared/ui/Pagination";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { SessionForm } from "./SessionForm";
 import { GroupContext } from "./GroupContext";
+import { safeAttendanceReturnTo, withAttendanceReturn } from "./navigation";
 import {
   sessionDate,
   sessionStates,
@@ -21,21 +22,26 @@ import {
 export function SessionsPage({
   id,
   query,
+  workspacePath,
 }: {
   id: string;
   query: URLSearchParams;
+  workspacePath?: (cursor: string) => string;
 }) {
   const { session } = useAuth();
   const admin = session.user.roles.includes("ADMIN");
   const reader = session.user.roles.some((role) =>
     ["ADMIN", "SECRETARIA", "COORDINADOR"].includes(role),
   );
-  const back = reader
+  const returnTo = safeAttendanceReturnTo(query.get("retorno"), id);
+  const back = returnTo ?? (reader
     ? `${admin ? "/configuracion" : "/consulta"}/grupos`
-    : "/mis-grupos/grupos";
+    : "/mis-grupos/grupos");
   const path = `/asistencia/grupos/${id}`;
   const endpoint = `asistencia/grupos/${id}/sesiones`;
   const after = query.get("after") ?? "";
+  const paginationPath = (cursor: string) => workspacePath?.(cursor) ?? withAttendanceReturn(cursor ? `${path}?after=${cursor}` : path, returnTo);
+  const sessionReturn = workspacePath || returnTo ? paginationPath(after) : null;
   const search = new URLSearchParams({ limit: "20" });
   if (after) search.set("after", after);
   const {
@@ -51,9 +57,9 @@ export function SessionsPage({
   const [success, notify] = useState("");
   return (
     <section>
-      <a href={`#${back}`} className="back-link">
+      {!workspacePath && <a href={`#${back}`} className="back-link">
         ← Volver a grupos
-      </a>
+      </a>}
       <PageHeading
         eyebrow="Asistencia"
         title="Sesiones de clase"
@@ -78,13 +84,17 @@ export function SessionsPage({
         <p>
           <a href={`#${path}/justificaciones`}>Justificaciones</a>
           {" · "}
+          <a href={`#${withAttendanceReturn(`${path}/matriz`, sessionReturn)}`}>Matriz de asistencia</a>
+          {" · "}
           <a href={`#${path}/cierre`}>Cierre de asistencia</a>
           {" · "}
           <a href={`#/evaluacion/grupos/${id}`}>Evaluaciones</a>
-          {" · "}
-          <a href={`#/evaluacion/grupos/${id}/calificaciones`}>
-            Calificaciones
-          </a>
+          {!workspacePath && (
+            <>
+              {" · "}
+              <a href={`#/evaluacion/grupos/${id}/calificaciones`}>Calificaciones</a>
+            </>
+          )}
           {" · "}
           <a href={`#/evaluacion/grupos/${id}/acta`}>Resultados y acta</a>
         </p>
@@ -119,7 +129,7 @@ export function SessionsPage({
             after={after}
             nextCursor={data?.nextCursor ?? null}
             onChange={(cursor) =>
-              navigate(cursor ? `${path}?after=${cursor}` : path)
+              navigate(paginationPath(cursor))
             }
           />
         }
@@ -152,7 +162,7 @@ export function SessionsPage({
               key: "acciones",
               header: "Acciones",
               cell: (row) => (
-                <a href={`#${path}/sesiones/${row.id}`}>Asistencia</a>
+                <a href={`#${withAttendanceReturn(`${path}/sesiones/${row.id}`, sessionReturn)}`}>Asistencia</a>
               ),
             },
           ]}
@@ -170,7 +180,7 @@ export function SessionsPage({
                 ? "Se programó 1 sesión."
                 : `Se programaron ${count} sesiones.`,
             );
-            if (after) navigate(path);
+            if (after) navigate(paginationPath(""));
             else reload();
           }}
         />

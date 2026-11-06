@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ApiError, api, errorText } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
+import { safeAttendanceReturnTo, withAttendanceReturn } from "./navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { useUnsavedChanges } from "../../shared/useUnsavedChanges";
 import { Button } from "../../shared/ui/Button";
@@ -47,6 +48,10 @@ export function AttendancePage({
 }) {
   const after = query.get("after") ?? "";
   const path = `/asistencia/grupos/${groupId}/sesiones/${sessionId}`;
+  const returnTo = safeAttendanceReturnTo(query.get("retorno"), groupId);
+  const returnLabel = returnTo?.startsWith(`/asistencia/grupos/${groupId}/matriz`)
+    ? "Volver a la matriz"
+    : "Volver a sesiones";
   const endpoint = `asistencia/grupos/${groupId}/sesiones/${sessionId}/asistencias`;
   const search = new URLSearchParams({ limit: "20" });
   if (after) search.set("after", after);
@@ -59,6 +64,8 @@ export function AttendancePage({
         key={after}
         initial={data}
         path={path}
+        returnTo={returnTo}
+        returnLabel={returnLabel}
         endpoint={endpoint}
         queryPath={`${endpoint}?${search}`}
         after={after}
@@ -67,7 +74,7 @@ export function AttendancePage({
     );
   return (
     <section>
-      <a href={`#/asistencia/grupos/${groupId}`}>← Volver a sesiones</a>
+      <a href={`#${returnTo ?? `/asistencia/grupos/${groupId}`}`}>← {returnLabel}</a>
       <AttendanceHeading />
       {loading ? (
         <Loading>Cargando asistencia…</Loading>
@@ -98,6 +105,8 @@ function recorded(row: AttendanceRow): Draft {
 function AttendanceMatrix({
   initial,
   path,
+  returnTo,
+  returnLabel,
   endpoint,
   queryPath,
   after,
@@ -105,6 +114,8 @@ function AttendanceMatrix({
 }: {
   initial: AttendancePageData;
   path: string;
+  returnTo: string | null;
+  returnLabel: string;
   endpoint: string;
   queryPath: string;
   after: string;
@@ -238,8 +249,8 @@ function AttendanceMatrix({
   }
   return (
     <section>
-      <a href={`#/asistencia/grupos/${snapshot.grupo.id}`}>
-        ← Volver a sesiones
+      <a href={`#${returnTo ?? `/asistencia/grupos/${snapshot.grupo.id}`}`}>
+        ← {returnLabel}
       </a>
       <AttendanceHeading />
       <GroupContext group={snapshot.grupo} />
@@ -330,7 +341,7 @@ function AttendanceMatrix({
             nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
-                () => navigate(cursor ? `${path}?after=${cursor}` : path),
+                () => navigate(withAttendanceReturn(cursor ? `${path}?after=${cursor}` : path, returnTo)),
                 true,
               )
             }
