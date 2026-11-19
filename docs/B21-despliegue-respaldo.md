@@ -138,7 +138,8 @@ pnpm test:deploy
 ```
 
 `test:b21` prepara un intento sintético con voucher, reglas, asistencia, criterios,
-notas y acta, genera un dump real y restaura sus 32 tablas y 17 migraciones.
+notas y acta, genera un dump real y comprueba que la restauración conserva todas
+las tablas y migraciones del origen.
 Contrasta el intento completo, hashes, inmutabilidad, fallos de herramienta,
 permisos y la pantalla React. El informe se genera en `.tmp/b21/pruebas.json`
 y la captura en `.tmp/b21/respaldos-administracion.png`. La suite completa incluye

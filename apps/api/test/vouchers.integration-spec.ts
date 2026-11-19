@@ -381,6 +381,14 @@ describe('B07 vouchers HTTP, navegador y PostgreSQL', () => {
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      await page.setViewportSize({ width: 320, height: 800 });
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+        .toBe(320);
+      await page.getByRole('button', { name: 'Tarjetas', exact: true }).click();
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+        .toBe(320);
       await page.goto(`${origin}/#/vouchers?estudianteId=${studentId}`);
       await page
         .getByRole('button', { name: 'Registrar voucher', exact: true })

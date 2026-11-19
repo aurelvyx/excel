@@ -196,6 +196,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
               style={{
                 display: "flex",
                 alignItems: "center",
+                flexWrap: "wrap",
                 gap: "0.5rem",
                 marginBottom: "0.4rem",
               }}
@@ -685,16 +686,8 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             marginBottom: "1rem",
           }}
         >
-          <form
-            onSubmit={search}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              flex: "1 1 320px",
-            }}
-          >
-            <div className="academic-search-input-wrapper" style={{ flex: 1 }}>
+          <form onSubmit={search} className="voucher-search-form">
+            <div className="academic-search-input-wrapper">
               <Search size={15} color="#94a3b8" />
               <input
                 type="text"
@@ -748,15 +741,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             )}
           </form>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.45rem",
-              fontSize: "0.75rem",
-              color: "#475569",
-            }}
-          >
+          <div className="voucher-sort">
             <ArrowUpDown size={14} color="#64748b" />
             <span style={{ fontWeight: 700 }}>Ordenar por:</span>
             <select
@@ -1067,7 +1052,8 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(295px, 1fr))",
+                gridTemplateColumns:
+                  "repeat(auto-fill, minmax(min(100%, 295px), 1fr))",
                 gap: "0.85rem",
               }}
             >
@@ -1095,6 +1081,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                       display: "flex",
                       flexDirection: "column",
                       gap: "0.65rem",
+                      overflowWrap: "anywhere",
                     }}
                   >
                     <div
@@ -1194,6 +1181,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                         display: "flex",
                         justifyContent: "flex-end",
                         gap: "0.45rem",
+                        flexWrap: "wrap",
                       }}
                     >
                       {Boolean(

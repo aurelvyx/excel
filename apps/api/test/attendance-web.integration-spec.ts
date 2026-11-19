@@ -18,6 +18,8 @@ import { databaseOptions } from '../src/database/configuracion/data-source.js';
 import { bootstrapAdministrator } from '../src/database/bootstrap-admin.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
+import { AuthService } from '../src/modules/auth/auth.service.js';
+import { COOKIE_NAME, cookieOptions } from '../src/modules/auth/security.js';
 import {
   attendanceFixture,
   type AttendanceFixtures,
@@ -44,10 +46,6 @@ describe('B12 navegador React → API → PostgreSQL', () => {
   let fixture: AttendanceFixtures;
   const previousOrigins = process.env.WEB_ORIGINS;
   const errors: string[] = [];
-  const sessions = new Map<
-    string,
-    Awaited<ReturnType<BrowserContext['cookies']>>
-  >();
   beforeAll(async () => {
     const base = await new DataSource(databaseOptions()).initialize();
     try {
@@ -105,24 +103,27 @@ describe('B12 navegador React → API → PostgreSQL', () => {
     else process.env.WEB_ORIGINS = previousOrigins;
   });
   async function login(name: string) {
-    const cookies = sessions.get(name);
-    if (cookies) await context.addCookies(cookies);
-    await page.goto(origin);
-    if (!cookies) {
-      await page.getByLabel('Usuario', { exact: true }).fill(name);
-      await page.getByLabel('Contraseña', { exact: true }).fill(password);
-      const response = page.waitForResponse(
-        (res) =>
-          res.url().endsWith('/api/v1/auth/login') &&
-          res.request().method() === 'POST',
-      );
-      await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
-      expect((await response).status()).toBe(200);
-    }
+    // Cada contexto prueba la restauración de su propia sesión persistida.
+    // B05 y B20 cubren el formulario de ingreso y B03 el límite por IP.
+    const { token } = await app.get(AuthService).login(name, password);
+    await context.addCookies([
+      {
+        name: COOKIE_NAME,
+        value: token,
+        domain: new URL(origin).hostname,
+        path: cookieOptions().path!,
+        httpOnly: true,
+        sameSite: 'Strict',
+      },
+    ]);
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().endsWith('/api/v1/auth/me')),
+      page.goto(origin),
+    ]);
+    expect(response.status()).toBe(200);
     await page
       .getByRole('button', { name: 'Cerrar sesión', exact: true })
       .waitFor();
-    if (!cookies) sessions.set(name, await context.cookies());
   }
   async function matrix(count = 2) {
     const group = await fixture.group();
