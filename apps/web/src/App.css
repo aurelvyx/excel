@@ -1633,6 +1633,14 @@ dialog::backdrop {
   flex-direction: column;
   gap: 18px;
 }
+.catalog-code-field {
+  display: grid;
+  align-content: start;
+  gap: .4rem;
+}
+.catalog-code-field > button {
+  justify-self: start;
+}
 .form-group-section {
   border: 1px solid #dce4de;
   border-radius: 10px;

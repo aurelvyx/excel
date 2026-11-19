@@ -72,21 +72,27 @@ const routes: AppRoute[] = [
   },
   {
     pattern: re("/matriculas"),
-    title: "Matrículas",
-    allowed: (a) => a.enrollments,
-    render: (_, { query }) => (
-      <EnrollmentsPage
-        key={`${query.get("estudianteId") ?? ""}:${query.get("grupoId") ?? ""}`}
-        studentId={query.get("estudianteId") ?? undefined}
-        groupId={query.get("grupoId") ?? undefined}
-      />
-    ),
+    title: "Gestión de matrículas",
+    allowed: (a) => a.reader,
+    render: (_, { query, access }) =>
+      access.enrollments &&
+      (query.has("estudianteId") || query.has("grupoId")) ? (
+        <EnrollmentsPage
+          key={`${query.get("estudianteId") ?? ""}:${query.get("grupoId") ?? ""}`}
+          studentId={query.get("estudianteId") ?? undefined}
+          groupId={query.get("grupoId") ?? undefined}
+        />
+      ) : (
+        <EnrollmentsHome query={query} canEnroll={access.enrollments} />
+      ),
   },
   {
     pattern: re("/matriculas/padron"),
     title: "Nóminas por grupo",
     allowed: (a) => a.reader,
-    render: (_, { query, access }) => <EnrollmentsHome query={query} canEnroll={access.enrollments} />,
+    render: (_, { query, access }) => (
+      <EnrollmentsHome query={query} canEnroll={access.enrollments} />
+    ),
   },
   {
     pattern: re(`/matriculas/grupo/(${ID})`),
@@ -154,13 +160,17 @@ const routes: AppRoute[] = [
     pattern: re("/docencia/asistencias"),
     title: "Asistencias de mis grupos",
     allowed: (a) => a.teacherOnly,
-    render: (_, { query }) => <GroupAccessPage activity="asistencia" query={query} />,
+    render: (_, { query }) => (
+      <GroupAccessPage activity="asistencia" query={query} />
+    ),
   },
   {
     pattern: re("/docencia/calificaciones"),
     title: "Calificaciones de mis grupos",
     allowed: (a) => a.teacherOnly,
-    render: (_, { query }) => <GroupAccessPage activity="calificaciones" query={query} />,
+    render: (_, { query }) => (
+      <GroupAccessPage activity="calificaciones" query={query} />
+    ),
   },
   // Asistencia
   {
@@ -204,7 +214,9 @@ const routes: AppRoute[] = [
     pattern: re(`/asistencia/grupos/(${ID})/cierre`),
     title: "Cierre de asistencia",
     allowed: anyone,
-    render: ([id], { path }) => <AttendanceClosurePage key={path} groupId={id} />,
+    render: ([id], { path }) => (
+      <AttendanceClosurePage key={path} groupId={id} />
+    ),
   },
   // Evaluación
   {
@@ -275,7 +287,12 @@ const routes: AppRoute[] = [
     title: "Espacio del Salón",
     allowed: (a) => a.reader || a.admin || a.teacherOnly,
     render: ([id], { query, access }) => (
-      <GroupWorkspacePage key={id} groupId={id!} query={query} access={access} />
+      <GroupWorkspacePage
+        key={id}
+        groupId={id!}
+        query={query}
+        access={access}
+      />
     ),
   },
 ];

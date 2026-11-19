@@ -298,7 +298,7 @@ export function TeacherClassesPage() {
                       </div>
                       <div>
                         <h3>
-                          {lang} · {level}
+                          {level}
                         </h3>
                         <small>Salón {code}</small>
                       </div>

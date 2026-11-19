@@ -301,7 +301,7 @@ describe(`B20 recorrido académico integral (${browserName})`, () => {
   ) {
     await login('secretaria_b20');
     await page.goto(
-      `${origin}/#/matriculas${existing ? `?estudianteId=${existing.id}` : ''}`,
+      `${origin}/#/matriculas/nueva${existing ? `?estudianteId=${existing.id}` : ''}`,
     );
     let student = existing;
     if (!student) {
@@ -382,9 +382,10 @@ describe(`B20 recorrido académico integral (${browserName})`, () => {
       .getByRole('button', { name: 'Confirmar y guardar', exact: true })
       .click();
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
-    const voucherRow = page
-      .getByRole('row')
-      .filter({ has: page.getByRole('cell', { name: voucher, exact: true }) });
+    const voucherRow = page.getByRole('article', {
+      name: `Voucher ${voucher}`,
+      exact: true,
+    });
     await voucherRow
       .getByRole('button', { name: 'Revisar voucher', exact: true })
       .click();
@@ -412,8 +413,9 @@ describe(`B20 recorrido académico integral (${browserName})`, () => {
     await page
       .getByLabel('Nivel', { exact: true })
       .selectOption({ label: 'Nivel sintético 1' });
-    const selectedGroup = page.getByRole('row').filter({
-      has: page.getByRole('cell', { name: group.codigo, exact: true }),
+    const selectedGroup = page.getByRole('article', {
+      name: `Grupo ${group.codigo}`,
+      exact: true,
     });
     await selectedGroup
       .getByRole('button', { name: 'Seleccionar grupo', exact: true })
@@ -876,6 +878,9 @@ describe(`B20 recorrido académico integral (${browserName})`, () => {
         ).toEqual([]);
         expect(await academicSnapshot(first.id)).toEqual(original);
         await page.goto(`${origin}/#/estudiantes/${student.id}`);
+        await page
+          .getByRole('button', { name: 'Tabla de intentos', exact: true })
+          .click();
         await contains(
           page.getByRole('table', { name: 'Intentos académicos', exact: true }),
           second.codigo,

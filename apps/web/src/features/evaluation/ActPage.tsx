@@ -25,16 +25,19 @@ import { ActTotals } from "./ActTotals";
 import { GradeSummary } from "./GradeSummary";
 import { ReportLink } from "../reports/ReportLink";
 import { displayedGrade } from "./grade-capture";
+import "../academic/components/workspace.css";
 import type { ActRow, ActView } from "./acts-model";
 
 function Heading({ children }: { children?: React.ReactNode }) {
   return (
-    <PageHeading
-      eyebrow="Evaluación"
-      title="Resultados y acta"
-      description="Revisa asistencia, notas y condición de cada intento antes de confirmar el cierre del grupo."
-      action={children}
-    />
+    <div className="academic-card workspace-hero">
+      <PageHeading
+        eyebrow="Evaluación"
+        title="Resultados y acta"
+        description="Revisa asistencia, notas y condición de cada intento antes de confirmar el cierre del grupo."
+        action={children}
+      />
+    </div>
   );
 }
 export function ActPage({
@@ -140,7 +143,7 @@ function ActReview({
         )}
       </Heading>
       <GroupContext group={data.grupo} />
-      <p>
+      <p className="workspace-tools group-nav-pills">
         <a href={`#/evaluacion/grupos/${data.grupo.id}/calificaciones`}>
           Calificaciones
         </a>

@@ -16,6 +16,7 @@ import { allRows, api, errorText, type Row } from "../../shared/api";
 import { useAuth } from "../auth/session";
 import { RecordForm } from "../configuration/RecordForm";
 import { resources } from "../configuration/model";
+import { GroupStatusModal } from "./components/GroupStatusModal";
 import "./academic.css";
 
 type Tab = "programas" | "grupos" | "docentes";
@@ -41,7 +42,9 @@ export function AcademicManagementPage() {
 
   // Filtros de salones
   const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
-  const [filterEstado, setFilterEstado] = useState<"ACTIVO" | "PLANIFICADO" | "CERRADO" | "TODOS">("TODOS");
+  const [filterEstado, setFilterEstado] = useState<
+    "ACTIVO" | "PLANIFICADO" | "CERRADO" | "TODOS"
+  >("TODOS");
   const [searchSalon, setSearchSalon] = useState<string>("");
 
   const [editor, setEditor] = useState<{
@@ -49,9 +52,11 @@ export function AcademicManagementPage() {
     row?: Row;
     initial?: Row;
   }>();
+  const [statusGroup, setStatusGroup] = useState<Row>();
 
-  const loadData = useCallback((signal?: AbortSignal) =>
-    Promise.all([
+  const loadData = useCallback(
+    (signal?: AbortSignal) =>
+      Promise.all([
         allRows("oferta/idiomas", signal),
         allRows("oferta/niveles", signal),
         allRows("oferta/unidades", signal),
@@ -60,25 +65,25 @@ export function AcademicManagementPage() {
         allRows("oferta/secciones", signal),
         allRows("oferta/periodos", signal),
         admin ? allRows("docentes", signal) : Promise.resolve([]),
-    ])
-      .then(([idms, nivs, unds, grps, trns, secs, perds, docs]) => {
-        if (signal?.aborted) return;
-        setIdiomas(idms);
-        setNiveles(nivs);
-        setUnidades(unds);
-        setGrupos(grps);
-        setTurnos(trns);
-        setSecciones(secs);
-        setPeriodos(perds);
-        setDocentes(docs);
-        setError("");
-      })
-      .catch((err: unknown) => {
-        if (!signal?.aborted) setError(errorText(err));
-      })
-      .finally(() => {
-        if (!signal?.aborted) setLoading(false);
-      }),
+      ])
+        .then(([idms, nivs, unds, grps, trns, secs, perds, docs]) => {
+          if (signal?.aborted) return;
+          setIdiomas(idms);
+          setNiveles(nivs);
+          setUnidades(unds);
+          setGrupos(grps);
+          setTurnos(trns);
+          setSecciones(secs);
+          setPeriodos(perds);
+          setDocentes(docs);
+          setError("");
+        })
+        .catch((err: unknown) => {
+          if (!signal?.aborted) setError(errorText(err));
+        })
+        .finally(() => {
+          if (!signal?.aborted) setLoading(false);
+        }),
     [admin],
   );
 
@@ -91,11 +96,17 @@ export function AcademicManagementPage() {
   // Filtered grupos logic
   const filteredGrupos = grupos.filter((grp) => {
     // 1. Periodo filter
-    if (filterPeriodo !== "all" && String(grp.periodo_id) !== String(filterPeriodo)) {
+    if (
+      filterPeriodo !== "all" &&
+      String(grp.periodo_id) !== String(filterPeriodo)
+    ) {
       return false;
     }
     // 2. Estado filter
-    if (filterEstado !== "TODOS" && String(grp.estado).toUpperCase() !== filterEstado) {
+    if (
+      filterEstado !== "TODOS" &&
+      String(grp.estado).toUpperCase() !== filterEstado
+    ) {
       return false;
     }
     // 3. Search query
@@ -118,22 +129,33 @@ export function AcademicManagementPage() {
       <div className="academic-header">
         <div>
           <h2>Gestión Académica</h2>
-          <p>Supervisa programas, salones en ejecución y docentes del centro de idiomas.</p>
+          <p>
+            Supervisa programas, salones en ejecución y docentes del centro de
+            idiomas.
+          </p>
         </div>
         <div className="academic-info-banner">
           <BookOpen size={16} />
-          <span>Estructura curricular y oferta de salones centralizada para Cusco.</span>
+          <span>
+            Estructura curricular y oferta de salones centralizada para Cusco.
+          </span>
         </div>
       </div>
 
       {/* Notifications */}
       {error && (
-        <div className="feedback error" style={{ padding: "0.75rem", borderRadius: "0.5rem" }}>
+        <div
+          className="feedback error"
+          style={{ padding: "0.75rem", borderRadius: "0.5rem" }}
+        >
           <AlertCircle size={16} /> {error}
         </div>
       )}
       {success && (
-        <div className="feedback success" style={{ padding: "0.75rem", borderRadius: "0.5rem" }}>
+        <div
+          className="feedback success"
+          style={{ padding: "0.75rem", borderRadius: "0.5rem" }}
+        >
           <CheckCircle2 size={16} /> {success}
         </div>
       )}
@@ -170,31 +192,62 @@ export function AcademicManagementPage() {
         <>
           {/* ── TAB 1: SALONES / GRUPOS ────────────────────────────────────────── */}
           {tab === "grupos" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
               {/* Barra de Filtros Inteligentes */}
               <div className="academic-filter-bar">
                 <div className="academic-filter-group">
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
                     <Calendar size={15} color="#007a3d" />
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569" }}>Periodo:</span>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        color: "#475569",
+                      }}
+                    >
+                      Periodo:
+                    </span>
                     <select
                       value={filterPeriodo}
                       onChange={(e) => setFilterPeriodo(e.target.value)}
                       className="input-field"
-                      style={{ padding: "0.375rem 0.625rem", fontSize: "0.75rem", width: "auto" }}
+                      style={{
+                        padding: "0.375rem 0.625rem",
+                        fontSize: "0.75rem",
+                        width: "auto",
+                      }}
                     >
-                      <option value="all">Todos los periodos (Histórico)</option>
+                      <option value="all">
+                        Todos los periodos (Histórico)
+                      </option>
                       {periodos.map((p) => (
                         <option key={p.id} value={String(p.id)}>
-                          {String(p.codigo)} — {String(p.nombre)} {p.estado === "ABIERTO" ? "(Abierto)" : ""}
+                          {String(p.codigo)} — {String(p.nombre)}{" "}
+                          {p.estado === "ABIERTO" ? "(Abierto)" : ""}
                         </option>
                       ))}
                     </select>
                   </div>
 
                   {/* Estado Pills */}
-                  <div style={{ display: "flex", gap: "0.25rem", marginLeft: "0.5rem" }}>
-                    {(["ACTIVO", "PLANIFICADO", "CERRADO", "TODOS"] as const).map((st) => (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.25rem",
+                      marginLeft: "0.5rem",
+                    }}
+                  >
+                    {(
+                      ["ACTIVO", "PLANIFICADO", "CERRADO", "TODOS"] as const
+                    ).map((st) => (
                       <button
                         key={st}
                         type="button"
@@ -202,14 +255,22 @@ export function AcademicManagementPage() {
                         className={`academic-filter-pill ${filterEstado === st ? "active" : ""}`}
                       >
                         {st === "ACTIVO" && "● "}
-                        {st === "TODOS" ? "Todos" : st.charAt(0) + st.slice(1).toLowerCase()}
+                        {st === "TODOS"
+                          ? "Todos"
+                          : st.charAt(0) + st.slice(1).toLowerCase()}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Buscador instantáneo */}
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
                   <Search size={15} color="#94a3b8" />
                   <input
                     type="text"
@@ -217,7 +278,11 @@ export function AcademicManagementPage() {
                     onChange={(e) => setSearchSalon(e.target.value)}
                     placeholder="Buscar salón o idioma..."
                     className="input-field"
-                    style={{ padding: "0.375rem 0.75rem", fontSize: "0.75rem", minWidth: "220px" }}
+                    style={{
+                      padding: "0.375rem 0.75rem",
+                      fontSize: "0.75rem",
+                      minWidth: "220px",
+                    }}
                   />
                 </div>
               </div>
@@ -225,41 +290,68 @@ export function AcademicManagementPage() {
               {/* Grid de Tarjetas de Salones */}
               <div className="academic-grid">
                 {filteredGrupos.map((grp) => {
-                  const contexto = (grp.contexto as Record<string, string>) || {};
-                  const turnoObj = turnos.find((t) => String(t.id) === String(grp.turno_id));
-                  const nivelObj = niveles.find((n) => String(n.id) === String(grp.nivel_id));
-                  const idiomaObj = idiomas.find((i) => String(i.id) === String(nivelObj?.idioma_id));
+                  const contexto =
+                    (grp.contexto as Record<string, string>) || {};
+                  const turnoObj = turnos.find(
+                    (t) => String(t.id) === String(grp.turno_id),
+                  );
+                  const nivelObj = niveles.find(
+                    (n) => String(n.id) === String(grp.nivel_id),
+                  );
+                  const idiomaObj = idiomas.find(
+                    (i) => String(i.id) === String(nivelObj?.idioma_id),
+                  );
                   const matriculados = Number(grp.matriculados ?? 0);
-                  const capacidad = grp.capacidad == null ? null : Number(grp.capacidad);
+                  const capacidad =
+                    grp.capacidad == null ? null : Number(grp.capacidad);
                   const porcentaje = capacidad
-                    ? Math.min(100, Math.round((matriculados / capacidad) * 100))
+                    ? Math.min(
+                        100,
+                        Math.round((matriculados / capacidad) * 100),
+                      )
                     : null;
 
-                  const estadoActual = String(grp.estado ?? "Sin estado").toUpperCase();
+                  const estadoActual = String(
+                    grp.estado ?? "Sin estado",
+                  ).toUpperCase();
                   const badgeClass =
                     estadoActual === "ACTIVO"
                       ? "badge-green"
                       : estadoActual === "PLANIFICADO"
-                      ? "badge-blue"
-                      : "badge-gray";
+                        ? "badge-blue"
+                        : "badge-gray";
 
                   return (
                     <div key={grp.id} className="academic-card">
                       {/* Top badges */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "0.75rem",
+                        }}
+                      >
                         <span className="academic-badge badge-green">
-                          {String(contexto.turno || turnoObj?.nombre || "Turno general")}
+                          {String(
+                            contexto.turno ||
+                              turnoObj?.nombre ||
+                              "Turno general",
+                          )}
                         </span>
 
                         {/* Interactive Status Badge */}
                         {admin ? (
                           <button
                             type="button"
-                            onClick={() => setEditor({ key: "grupos", row: grp })}
+                            onClick={() => setStatusGroup(grp)}
                             className={`academic-badge ${badgeClass} badge-interactive`}
                             title="Editar grupo y su estado"
                           >
-                            <SlidersHorizontal size={10} style={{ marginRight: "3px" }} />
+                            <SlidersHorizontal
+                              size={10}
+                              style={{ marginRight: "3px" }}
+                            />
                             {estadoActual} ▾
                           </button>
                         ) : (
@@ -270,52 +362,116 @@ export function AcademicManagementPage() {
                       </div>
 
                       {/* Title & Code */}
-                      <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.25rem 0" }}>
-                        {idiomaObj?.nombre ? `${String(idiomaObj.nombre)} — ` : ""}
-                        {String(contexto.nivel || nivelObj?.nombre || "Nivel")}
+                      <h3
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          margin: "0 0 0.25rem 0",
+                        }}
+                      >
+                        {idiomaObj?.nombre
+                          ? `${String(idiomaObj.nombre)} — `
+                          : ""}
+                        {String(nivelObj?.nombre || contexto.nivel || "Nivel")}
                       </h3>
-                      <p style={{ fontFamily: "monospace", fontSize: "0.8125rem", color: "#64748b", margin: "0 0 0.75rem 0" }}>
+                      <p
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: "0.8125rem",
+                          color: "#64748b",
+                          margin: "0 0 0.75rem 0",
+                        }}
+                      >
                         {String(grp.codigo)}
                       </p>
 
                       {/* Details list */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.8125rem", color: "#475569" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.5rem",
+                          fontSize: "0.8125rem",
+                          color: "#475569",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
                           <Clock size={14} color="#94a3b8" />
                           <span>
-                            {turnoObj?.hora_inicio ? `${String(turnoObj.hora_inicio)} - ${String(turnoObj.hora_fin)}` : "Horario sin indicar"} · Sección {contexto.seccion || "sin indicar"}
+                            {turnoObj?.hora_inicio
+                              ? `${String(turnoObj.hora_inicio)} - ${String(turnoObj.hora_fin)}`
+                              : "Horario sin indicar"}{" "}
+                            · Sección {contexto.seccion || "sin indicar"}
                           </span>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
                           <Calendar size={14} color="#94a3b8" />
-                          <span>{String(contexto.periodo || "Periodo sin indicar")}</span>
+                          <span>
+                            {String(contexto.periodo || "Periodo sin indicar")}
+                          </span>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
                           <GraduationCap size={14} color="#94a3b8" />
                           <span>
-                            <strong>{matriculados}</strong> estudiantes{capacidad === null
+                            <strong>{matriculados}</strong> estudiantes
+                            {capacidad === null
                               ? " · Capacidad sin indicar"
                               : ` / ${capacidad} (${porcentaje}%)`}
                           </span>
                         </div>
 
                         {porcentaje !== null && (
-                        <div style={{ width: "100%", height: "6px", backgroundColor: "#e2e8f0", borderRadius: "9999px", overflow: "hidden", marginTop: "0.25rem" }}>
                           <div
                             style={{
-                              width: `${porcentaje}%`,
-                              height: "100%",
-                              backgroundColor: porcentaje >= 90 ? "#e11d48" : "#007a3d",
+                              width: "100%",
+                              height: "6px",
+                              backgroundColor: "#e2e8f0",
                               borderRadius: "9999px",
-                              transition: "width 0.3s ease",
+                              overflow: "hidden",
+                              marginTop: "0.25rem",
                             }}
-                          />
-                        </div>
+                          >
+                            <div
+                              style={{
+                                width: `${porcentaje}%`,
+                                height: "100%",
+                                backgroundColor:
+                                  porcentaje >= 90 ? "#e11d48" : "#007a3d",
+                                borderRadius: "9999px",
+                                transition: "width 0.3s ease",
+                              }}
+                            />
+                          </div>
                         )}
                       </div>
 
                       {/* Actions: Salón 360° */}
-                      <div style={{ display: "flex", gap: "0.375rem", marginTop: "1rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.375rem",
+                          marginTop: "1rem",
+                        }}
+                      >
                         <a
                           href={`#/salones/${grp.id}?tab=nomina`}
                           className="academic-btn-action btn-action-primary"
@@ -347,13 +503,39 @@ export function AcademicManagementPage() {
 
                 {/* Empty State */}
                 {filteredGrupos.length === 0 && (
-                  <div className="academic-card" style={{ gridColumn: "1 / -1", padding: "3rem", textAlign: "center", color: "#64748b" }}>
-                    <Calendar size={36} color="#cbd5e1" style={{ margin: "0 auto 0.75rem auto" }} />
-                    <p style={{ fontWeight: 600, fontSize: "0.9375rem", margin: "0 0 0.25rem 0" }}>
-                      No hay salones con el filtro seleccionado ({filterEstado.toLowerCase()})
+                  <div
+                    className="academic-card"
+                    style={{
+                      gridColumn: "1 / -1",
+                      padding: "3rem",
+                      textAlign: "center",
+                      color: "#64748b",
+                    }}
+                  >
+                    <Calendar
+                      size={36}
+                      color="#cbd5e1"
+                      style={{ margin: "0 auto 0.75rem auto" }}
+                    />
+                    <p
+                      style={{
+                        fontWeight: 600,
+                        fontSize: "0.9375rem",
+                        margin: "0 0 0.25rem 0",
+                      }}
+                    >
+                      No hay salones con el filtro seleccionado (
+                      {filterEstado.toLowerCase()})
                     </p>
-                    <p style={{ fontSize: "0.8125rem", color: "#94a3b8", margin: "0 0 1rem 0" }}>
-                      Intenta seleccionando &quot;Todos los periodos&quot; o cambiando el filtro de estado.
+                    <p
+                      style={{
+                        fontSize: "0.8125rem",
+                        color: "#94a3b8",
+                        margin: "0 0 1rem 0",
+                      }}
+                    >
+                      Intenta seleccionando &quot;Todos los periodos&quot; o
+                      cambiando el filtro de estado.
                     </p>
                     <button
                       type="button"
@@ -375,12 +557,15 @@ export function AcademicManagementPage() {
                   <button
                     type="button"
                     className="academic-btn-dashed"
-                    onClick={() => setEditor({
-                      key: "grupos",
-                      initial: filterPeriodo === "all"
-                        ? undefined
-                        : { id: "", periodo_id: filterPeriodo },
-                    })}
+                    onClick={() =>
+                      setEditor({
+                        key: "grupos",
+                        initial:
+                          filterPeriodo === "all"
+                            ? undefined
+                            : { id: "", periodo_id: filterPeriodo },
+                      })
+                    }
                   >
                     <Plus size={20} />
                     <span>Aperturar Nuevo Salón / Grupo</span>
@@ -394,12 +579,22 @@ export function AcademicManagementPage() {
           {tab === "programas" && (
             <div className="academic-stack">
               {niveles.map((niv) => {
-                const idioma = idiomas.find((i) => String(i.id) === String(niv.idioma_id));
-                const uds = unidades.filter((u) => String(u.nivel_id) === String(niv.id));
+                const idioma = idiomas.find(
+                  (i) => String(i.id) === String(niv.idioma_id),
+                );
+                const uds = unidades.filter(
+                  (u) => String(u.nivel_id) === String(niv.id),
+                );
 
                 return (
                   <div key={niv.id} className="academic-card">
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "1rem",
+                      }}
+                    >
                       <div
                         style={{
                           width: "3rem",
@@ -416,30 +611,71 @@ export function AcademicManagementPage() {
                       </div>
 
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                          <h3 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <h3
+                            style={{
+                              fontSize: "1.0625rem",
+                              fontWeight: 700,
+                              color: "#1e293b",
+                              margin: 0,
+                            }}
+                          >
                             {String(niv.nombre)}
                           </h3>
-                          <span className="academic-badge badge-green">{String(niv.codigo)}</span>
-                          {Boolean(idioma) && <span className="academic-badge badge-blue">{String(idioma?.nombre)}</span>}
+                          <span className="academic-badge badge-green">
+                            {String(niv.codigo)}
+                          </span>
+                          {Boolean(idioma) && (
+                            <span className="academic-badge badge-blue">
+                              {String(idioma?.nombre)}
+                            </span>
+                          )}
                           {Boolean(niv.duracion_meses) && (
-                            <span className="academic-badge badge-gray">{String(niv.duracion_meses)} meses</span>
+                            <span className="academic-badge badge-gray">
+                              {String(niv.duracion_meses)} meses
+                            </span>
                           )}
                         </div>
 
                         {/* Units list */}
                         <div style={{ marginTop: "0.75rem" }}>
-                          <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              color: "#64748b",
+                              textTransform: "uppercase",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
                             Unidades Didácticas ({uds.length})
                           </p>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "0.5rem",
+                            }}
+                          >
                             {uds.map((ud) => (
                               <div key={ud.id} className="academic-unit-chip">
                                 <strong>{String(ud.codigo)}</strong>
                                 <ChevronRight size={12} color="#94a3b8" />
                                 <span>{String(ud.nombre)}</span>
                                 {ud.creditos != null && (
-                                  <span style={{ color: "#94a3b8", fontSize: "0.6875rem" }}>
+                                  <span
+                                    style={{
+                                      color: "#94a3b8",
+                                      fontSize: "0.6875rem",
+                                    }}
+                                  >
                                     ({String(ud.creditos)} cr)
                                   </span>
                                 )}
@@ -449,10 +685,15 @@ export function AcademicManagementPage() {
                             {admin && (
                               <button
                                 type="button"
-                                onClick={() => setEditor({
-                                  key: "unidades",
-                                  initial: { id: "", nivel_id: String(niv.id) },
-                                })}
+                                onClick={() =>
+                                  setEditor({
+                                    key: "unidades",
+                                    initial: {
+                                      id: "",
+                                      nivel_id: String(niv.id),
+                                    },
+                                  })
+                                }
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -496,24 +737,66 @@ export function AcademicManagementPage() {
           {admin && tab === "docentes" && (
             <div className="academic-grid">
               {docentes.map((doc) => {
-                const nombreCompleto = `${doc.nombres ? String(doc.nombres) : ""} ${doc.apellido_paterno ? String(doc.apellido_paterno) : ""} ${doc.apellido_materno ? String(doc.apellido_materno) : ""}`.trim() || String(doc.codigo_docente);
+                const nombreCompleto =
+                  `${doc.nombres ? String(doc.nombres) : ""} ${doc.apellido_paterno ? String(doc.apellido_paterno) : ""} ${doc.apellido_materno ? String(doc.apellido_materno) : ""}`.trim() ||
+                  String(doc.codigo_docente);
                 const inicial = nombreCompleto.charAt(0).toUpperCase() || "D";
                 return (
-                  <div key={doc.id} className="academic-card" style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                  <div
+                    key={doc.id}
+                    className="academic-card"
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "1rem",
+                    }}
+                  >
                     <div className="academic-avatar">{inicial}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                        <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#1e293b", margin: 0, wordBreak: "break-word" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontSize: "0.9375rem",
+                            fontWeight: 700,
+                            color: "#1e293b",
+                            margin: 0,
+                            wordBreak: "break-word",
+                          }}
+                        >
                           {nombreCompleto}
                         </h3>
                         <span className="academic-badge badge-blue">
-                          {doc.especialidad ? String(doc.especialidad) : "Idiomas"}
+                          {doc.especialidad
+                            ? String(doc.especialidad)
+                            : "Idiomas"}
                         </span>
                       </div>
-                      <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.25rem 0 0 0" }}>
-                        {doc.correo ? String(doc.correo) : "Sin correo registrado"}
+                      <p
+                        style={{
+                          fontSize: "0.8125rem",
+                          color: "#64748b",
+                          margin: "0.25rem 0 0 0",
+                        }}
+                      >
+                        {doc.correo
+                          ? String(doc.correo)
+                          : "Contacto disponible en la ficha del docente"}
                       </p>
-                      <p style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#94a3b8", margin: "0.25rem 0 0 0" }}>
+                      <p
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: "0.75rem",
+                          color: "#94a3b8",
+                          margin: "0.25rem 0 0 0",
+                        }}
+                      >
                         Código: {String(doc.codigo_docente)}
                       </p>
                     </div>
@@ -522,8 +805,16 @@ export function AcademicManagementPage() {
               })}
 
               {docentes.length === 0 && (
-                <div style={{ gridColumn: "1 / -1", padding: "2rem", textAlign: "center", color: "#64748b" }}>
-                  No se encontraron docentes registrados o disponibles para tu rol.
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    padding: "2rem",
+                    textAlign: "center",
+                    color: "#64748b",
+                  }}
+                >
+                  No se encontraron docentes registrados o disponibles para tu
+                  rol.
                 </div>
               )}
             </div>
@@ -546,6 +837,18 @@ export function AcademicManagementPage() {
             });
             setEditor(undefined);
             setSuccess("Cambios guardados.");
+            setLoading(true);
+            await loadData();
+          }}
+        />
+      )}
+      {admin && statusGroup && (
+        <GroupStatusModal
+          group={statusGroup}
+          onClose={() => setStatusGroup(undefined)}
+          onUpdated={async () => {
+            setStatusGroup(undefined);
+            setSuccess("Estado del salón actualizado.");
             setLoading(true);
             await loadData();
           }}

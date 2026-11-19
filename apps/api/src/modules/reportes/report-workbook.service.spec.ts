@@ -17,6 +17,8 @@ const variants: [ReportType, ReportLanguage, string][] = [
   ['MATRIZ_NOTAS', 'PT', 'Matriz'],
   ['RESUMEN_PARTICIPANTES', 'EN', 'ANEXO N° 05'],
   ['RESUMEN_PARTICIPANTES', 'PT', 'ANEXO N° 05'],
+  ['ACTA_DEMOSTRACION', 'EN', 'Acta Evaluación'],
+  ['ACTA_DEMOSTRACION', 'PT', 'Acta Evaluación'],
 ];
 
 /** Todas las identidades, criterios y resultados de esta prueba son sintéticos. */
@@ -29,6 +31,7 @@ function student(index = 1): ReportRow {
     tipoDocumento: 'DNI',
     documento: String(index).padStart(8, '0'),
     notas: { '101': '12.49', '102': '12.50' },
+    notasComponentes: { '201': '12.495' },
     resumenNotas: {
       configuracionAprobada: true,
       promedio: '12.495',
@@ -104,6 +107,7 @@ async function snapshot(
     indicadores: [
       {
         id: '101',
+        evaluacionId: '201',
         evaluacion: 'Evaluación sintética',
         codigo: 'SYN-1',
         descripcion: 'Indicador A',
@@ -112,12 +116,16 @@ async function snapshot(
       },
       {
         id: '102',
+        evaluacionId: '201',
         evaluacion: 'Evaluación sintética',
         codigo: 'SYN-2',
         descripcion: 'Indicador B',
         pesoEvaluacion: '100.00',
         pesoIndicador: '50.00',
       },
+    ],
+    componentes: [
+      { id: '201', nombre: 'Evaluación sintética', pesoPct: '100.00' },
     ],
     items: [student()],
     anexo: {
@@ -164,6 +172,61 @@ function effectiveValue(cell: ExcelJS.Cell): ExcelJS.CellValue {
 }
 
 describe('B19 adaptador XLSX — RF49/RF51–53 / CU19', () => {
+  it.each(['EN', 'PT'] as const)(
+    'recupera el diseño de acta %s sin datos institucionales supuestos ni promedio redondeado',
+    async (idioma) => {
+      const data = await snapshot('ACTA_DEMOSTRACION', idioma);
+      const sheet = await reopen(
+        data,
+        `acta-demostracion-${idioma.toLowerCase()}.xlsx`,
+      );
+      expect(sheet.getCell('J17').value).toBe(12.495);
+      expect(sheet.getCell('B17').value).toBe('00000001');
+      expect(sheet.getCell('B17').numFmt).toBe('@');
+      expect(sheet.getCell('R17').value).toBe(12.495);
+      expect(sheet.getCell('S17').value).toBe(12);
+      expect(sheet.getCell('T17').value).toBeNull();
+      expect(sheet.getCell('U17').value).toBeNull();
+      expect(sheet.getCell('V17').value).toBeNull();
+      expect(sheet.getCell('W17').text).toContain('pendiente de confirmación');
+      expect(sheet.getCell('D9').text).toBe('Pendiente');
+      expect(sheet.getCell('D12').text).toBe('Pendiente');
+      expect(sheet.getCell('B59').value).toBeNull();
+      expect(sheet.getCell('K59').value).toBeNull();
+      expect(sheet.getCell('S59').value).toBeNull();
+      expect(sheet.getCell('Y13').value).toBeNull();
+    },
+  );
+
+  it('extiende el padrón del acta sin sobrescribir el pie ni combinar distintos estudiantes', async () => {
+    const data = await snapshot('ACTA_DEMOSTRACION');
+    data.items = Array.from({ length: 47 }, (_, i) => ({
+      ...student(i + 1),
+      estudiante: `Estudiante ${String(i + 1).padStart(3, '0')}`,
+    }));
+    data.items[0]!.notasComponentes = { '201': '0.00' };
+    data.items[1]!.notasComponentes = { '201': null };
+    const sheet = await reopen(data, 'acta-demostracion-en-47.xlsx');
+    expect(sheet.getCell('C17').value).toBe('Estudiante 001');
+    expect(sheet.getCell('C63').value).toBe('Estudiante 047');
+    expect(sheet.getCell('J17').value).toBe(0);
+    expect(sheet.getCell('J18').value).toBeNull();
+    expect(sheet.getCell('Q65').text).toContain('Fecha de generación');
+    expect(sheet.getCell('B72').text).toBe('Administración');
+    expect(sheet.model.merges).toContain('C63:I63');
+    expect(sheet.model.merges).not.toContain('C27:I31');
+    expect(sheet.pageSetup.printArea).toBe('A1:AC73');
+  });
+
+  it('rechaza el acta con más componentes que columnas antes de generar datos parciales', async () => {
+    const data = await snapshot('ACTA_DEMOSTRACION');
+    data.componentes = Array.from({ length: 9 }, (_, i) => ({
+      id: String(i),
+      nombre: `Componente ${i}`,
+      pesoPct: '10.00',
+    }));
+    await expect(service.render(data)).rejects.toThrow('ocho componentes');
+  });
   it.each(variants)(
     'abre %s %s como un único XLSX de demostración',
     async (tipo, idioma, sheetName) => {
@@ -183,7 +246,9 @@ describe('B19 adaptador XLSX — RF49/RF51–53 / CU19', () => {
       });
       expect(data.plantilla.sha256).toMatch(/^[a-f0-9]{64}$/);
       expect(sheet.pageSetup.orientation).toBe('landscape');
-      expect(sheet.getCell('A1').text.length).toBeGreaterThan(0);
+      expect(
+        sheet.getCell(tipo === 'ACTA_DEMOSTRACION' ? 'G1' : 'A1').text.length,
+      ).toBeGreaterThan(0);
     },
   );
 

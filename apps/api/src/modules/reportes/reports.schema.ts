@@ -25,6 +25,7 @@ export const reportRowSchema = object({
   tipoDocumento: text,
   documento: text,
   notas: { type: 'object', additionalProperties: nullableText },
+  notasComponentes: { type: 'object', additionalProperties: nullableText },
   resumenNotas: gradeSummarySchema,
   resumenAsistencia: attendanceSummarySchema,
   resultado: { ...storedResultSchema, nullable: true },
@@ -54,6 +55,7 @@ export const reportPreviewSchema = object({
   indicadores: array(
     object({
       id: text,
+      evaluacionId: text,
       evaluacion: text,
       codigo: text,
       descripcion: text,
@@ -61,6 +63,7 @@ export const reportPreviewSchema = object({
       pesoIndicador: text,
     }),
   ),
+  componentes: array(object({ id: text, nombre: text, pesoPct: text })),
   items: array(reportRowSchema),
   nextCursor: nullableText,
   anexo: object({

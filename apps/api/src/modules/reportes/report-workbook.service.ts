@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { ConflictException, Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
+import { populateDemonstrationAct } from './report-acta.js';
 import type {
   ReportLanguage,
   ReportSnapshot,
@@ -101,7 +102,9 @@ export class ReportWorkbookService {
     sheet.getCell('A2').value =
       'BORRADOR. Formato de demostración pendiente de aprobación institucional.';
     if (snapshot.tipo === 'MATRIZ_NOTAS') this.matrix(sheet, entry, snapshot);
-    else this.summary(sheet, snapshot);
+    else if (snapshot.tipo === 'RESUMEN_PARTICIPANTES')
+      this.summary(sheet, snapshot);
+    else populateDemonstrationAct(sheet, snapshot);
     return Buffer.from(await book.xlsx.writeBuffer());
   }
   private matrix(

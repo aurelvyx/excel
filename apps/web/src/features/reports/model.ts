@@ -2,10 +2,12 @@ import type { SessionGroup, AttendanceSummaryData } from "../attendance/model";
 import type { GradeSummaryData } from "../evaluation/grades-model";
 import type { StoredResult } from "../evaluation/acts-model";
 
-export type ReportType = "MATRIZ_NOTAS" | "RESUMEN_PARTICIPANTES";
+export type ReportType =
+  "MATRIZ_NOTAS" | "RESUMEN_PARTICIPANTES" | "ACTA_DEMOSTRACION";
 export const reportNames: Record<ReportType, string> = {
   MATRIZ_NOTAS: "Matriz de notas",
   RESUMEN_PARTICIPANTES: "Resumen de participantes",
+  ACTA_DEMOSTRACION: "Acta de evaluación de demostración",
 };
 export type ReportRow = {
   matriculaId: string;
@@ -15,6 +17,7 @@ export type ReportRow = {
   tipoDocumento: string;
   documento: string;
   notas: Record<string, string | null>;
+  notasComponentes: Record<string, string | null>;
   resumenNotas: GradeSummaryData;
   resumenAsistencia: AttendanceSummaryData;
   resultado: StoredResult | null;
@@ -43,12 +46,14 @@ export type ReportPreview = {
   };
   indicadores: {
     id: string;
+    evaluacionId: string;
     evaluacion: string;
     codigo: string;
     descripcion: string;
     pesoEvaluacion: string;
     pesoIndicador: string;
   }[];
+  componentes: { id: string; nombre: string; pesoPct: string }[];
   items: ReportRow[];
   nextCursor: string | null;
   anexo: {

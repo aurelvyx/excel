@@ -441,6 +441,37 @@ describe('B19 navegador React → API → PostgreSQL → XLSX de demostración',
     }
   }, 60000);
 
+  it('el acta recuperada EN/PT pagina la vista y descarga la nómina completa con su pie conservado', async () => {
+    for (const [level, language] of [
+      [english, 'ingles'],
+      [portuguese, 'portugues'],
+    ] as const) {
+      const f = await matrix(41, level);
+      await login('coordinador');
+      await open(f.group, 'ACTA_DEMOSTRACION');
+      expect(await page.getByLabel('Tipo de reporte').inputValue()).toBe(
+        'ACTA_DEMOSTRACION',
+      );
+      const table = page.getByRole('table', {
+        name: 'Nómina del acta de evaluación de demostración',
+        exact: true,
+      });
+      expect(await table.getByRole('row').count()).toBe(21);
+      await contains(table, 'Pendiente de confirmación');
+      await fact(totals(), 'Intentos matriculados', '41');
+      const { book, file } = await exportBook(f.group);
+      expect(file.suggestedFilename()).toContain('ACTA_DEMOSTRACION');
+      const sheet = book.getWorksheet('Acta Evaluación')!;
+      expect(sheet.getCell('C57').text.length).toBeGreaterThan(0);
+      expect(sheet.getCell('Q59').text).toContain('Fecha de generación');
+      expect(sheet.getCell('B66').text).toBe('Administración');
+      expect(sheet.getCell('Y12').value).toBe(41);
+      expect(sheet.getCell('Y13').value).toBeNull();
+      expect(sheet.getCell('A2').text).toContain('BORRADOR');
+      await screenshot(`acta-recuperada-${language}`);
+    }
+  }, 60000);
+
   it('coordinación exporta los dos resúmenes propuestos con aprobados pendientes y sin inventar datos institucionales', async () => {
     for (const [level, code] of [
       [english, 'ingles'],
@@ -620,13 +651,27 @@ describe('B19 navegador React → API → PostgreSQL → XLSX de demostración',
     );
   });
 
-  it('docente asignado solo ve matriz; docente ajeno y secretaría no acceden a los datos', async () => {
+  it('docente asignado descarga matriz y acta de su grupo; docente ajeno y secretaría no acceden a los datos', async () => {
     const f = await matrix(1);
     await login('docente');
     await open(f.group);
     expect(
       await page.getByLabel('Tipo de reporte').locator('option').count(),
-    ).toBe(1);
+    ).toBe(2);
+    await page.getByLabel('Tipo de reporte').selectOption('ACTA_DEMOSTRACION');
+    await page
+      .getByRole('table', {
+        name: 'Nómina del acta de evaluación de demostración',
+        exact: true,
+      })
+      .waitFor();
+    const { file } = await exportBook(f.group);
+    expect(file.suggestedFilename()).toContain('ACTA_DEMOSTRACION');
+    const authorizedExports = await source.query(
+      'SELECT id FROM exportaciones WHERE grupo_id=$1 ORDER BY id',
+      [f.group.id],
+    );
+    expect(authorizedExports).toHaveLength(1);
     await open(f.group, 'RESUMEN_PARTICIPANTES', 403);
     await page.getByRole('alert').waitFor();
     expect(await page.getByRole('main').textContent()).not.toContain(
@@ -668,7 +713,7 @@ describe('B19 navegador React → API → PostgreSQL → XLSX de demostración',
       await source.query('SELECT id FROM exportaciones WHERE grupo_id=$1', [
         f.group.id,
       ]),
-    ).toEqual([]);
+    ).toEqual(authorizedExports);
   });
 
   it('la descarga con sesión vencida vuelve al ingreso sin enviar datos ni conservar la vista privada', async () => {

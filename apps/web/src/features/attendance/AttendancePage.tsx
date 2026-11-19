@@ -19,6 +19,7 @@ import {
 } from "../../shared/ui/AcademicCells";
 import { CaptureToolbar } from "../../shared/ui/CaptureToolbar";
 import { GroupContext } from "./GroupContext";
+import { WorkspaceSummary } from "../academic/components/WorkspaceSummary";
 import { AttendanceSummary } from "./AttendanceSummary";
 import { AttendanceCorrectionDialog } from "./AttendanceCorrectionDialog";
 import { AttendanceHistoryDialog } from "./AttendanceHistoryDialog";
@@ -41,15 +42,21 @@ export function AttendancePage({
   groupId,
   sessionId,
   query,
+  workspacePath,
+  onChanged,
 }: {
   groupId: string;
   sessionId: string;
   query: URLSearchParams;
+  workspacePath?: (cursor: string) => string;
+  onChanged?: () => void;
 }) {
   const after = query.get("after") ?? "";
   const path = `/asistencia/grupos/${groupId}/sesiones/${sessionId}`;
   const returnTo = safeAttendanceReturnTo(query.get("retorno"), groupId);
-  const returnLabel = returnTo?.startsWith(`/asistencia/grupos/${groupId}/matriz`)
+  const returnLabel = returnTo?.startsWith(
+    `/asistencia/grupos/${groupId}/matriz`,
+  )
     ? "Volver a la matriz"
     : "Volver a sesiones";
   const endpoint = `asistencia/grupos/${groupId}/sesiones/${sessionId}/asistencias`;
@@ -70,11 +77,15 @@ export function AttendancePage({
         queryPath={`${endpoint}?${search}`}
         after={after}
         reload={reload}
+        workspacePath={workspacePath}
+        onChanged={onChanged}
       />
     );
   return (
     <section>
-      <a href={`#${returnTo ?? `/asistencia/grupos/${groupId}`}`}>← {returnLabel}</a>
+      <a href={`#${returnTo ?? `/asistencia/grupos/${groupId}`}`}>
+        ← {returnLabel}
+      </a>
       <AttendanceHeading />
       {loading ? (
         <Loading>Cargando asistencia…</Loading>
@@ -87,11 +98,13 @@ export function AttendancePage({
 
 function AttendanceHeading() {
   return (
-    <PageHeading
-      eyebrow="Asistencia"
-      title="Registro de asistencia"
-      description="Registra P, F, T o J para cada matrícula de la sesión seleccionada."
-    />
+    <div className="academic-card workspace-hero">
+      <PageHeading
+        eyebrow="Asistencia"
+        title="Registro de asistencia"
+        description="Registra P, F, T o J para cada matrícula de la sesión seleccionada."
+      />
+    </div>
   );
 }
 
@@ -111,6 +124,8 @@ function AttendanceMatrix({
   queryPath,
   after,
   reload,
+  workspacePath,
+  onChanged,
 }: {
   initial: AttendancePageData;
   path: string;
@@ -120,6 +135,8 @@ function AttendanceMatrix({
   queryPath: string;
   after: string;
   reload: () => void;
+  workspacePath?: (cursor: string) => string;
+  onChanged?: () => void;
 }) {
   const [snapshot, setSnapshot] = useState(initial);
   const rows = snapshot.items;
@@ -185,6 +202,7 @@ function AttendanceMatrix({
       ),
     }));
     setDrafts({});
+    onChanged?.();
     notify(message);
     setSummaryCurrent(false);
     failSummary("");
@@ -254,7 +272,38 @@ function AttendanceMatrix({
       </a>
       <AttendanceHeading />
       <GroupContext group={snapshot.grupo} />
-      <p>
+      {summaryCurrent && (
+        <WorkspaceSummary
+          label="Marcas guardadas en esta página"
+          items={[
+            {
+              label: "Presentes",
+              value: rows.filter((row) => row.asistencia?.codigo === "P")
+                .length,
+              tone: "green",
+            },
+            {
+              label: "Faltas",
+              value: rows.filter((row) => row.asistencia?.codigo === "F")
+                .length,
+              tone: "amber",
+            },
+            {
+              label: "Tardanzas",
+              value: rows.filter((row) => row.asistencia?.codigo === "T")
+                .length,
+              tone: "blue",
+            },
+            {
+              label: "Justificadas",
+              value: rows.filter((row) => row.asistencia?.codigo === "J")
+                .length,
+              detail: "Su efecto depende de la resolución y recuperación",
+            },
+          ]}
+        />
+      )}
+      <p className="workspace-tools group-nav-pills">
         <a href={`#/asistencia/grupos/${snapshot.grupo.id}/cierre`}>
           Cierre de asistencia
         </a>
@@ -341,7 +390,14 @@ function AttendanceMatrix({
             nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
-                () => navigate(withAttendanceReturn(cursor ? `${path}?after=${cursor}` : path, returnTo)),
+                () =>
+                  navigate(
+                    workspacePath?.(cursor) ??
+                      withAttendanceReturn(
+                        cursor ? `${path}?after=${cursor}` : path,
+                        returnTo,
+                      ),
+                  ),
                 true,
               )
             }

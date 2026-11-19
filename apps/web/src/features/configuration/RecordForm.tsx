@@ -4,6 +4,7 @@ import { Button } from "../../shared/ui/Button";
 import { useState, type FormEvent } from "react";
 import { errorText, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
+import { suggestCatalogCode } from "./code-suggestions";
 import {
   fieldValue,
   labels,
@@ -21,6 +22,7 @@ export function RecordForm({
   lookups,
   onClose,
   onSave,
+  className,
 }: {
   resource: Resource;
   row?: Row;
@@ -28,6 +30,7 @@ export function RecordForm({
   lookups: Record<string, Row[]>;
   onClose: () => void;
   onSave: (body: Record<string, unknown>) => Promise<void>;
+  className?: string;
 }) {
   const editing = !!row;
   const fields = [
@@ -48,6 +51,11 @@ export function RecordForm({
       ]),
     ),
   );
+  const [languageId, setLanguageId] = useState(() => {
+    const levelId = String((row ?? initial)?.nivel_id ?? "");
+    const level = lookups.niveles?.find((item) => String(item.id) === levelId);
+    return level ? String(level.idioma_id) : "";
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, fail] = useState("");
   const [busy, pending] = useState(false);
@@ -61,6 +69,46 @@ export function RecordForm({
         field.key.startsWith("persona.")
       ),
   );
+  const sections =
+    resource.key === "grupos"
+      ? [
+          { title: "Oferta y ciclo académico", keys: ["periodoId", "nivelId"] },
+          {
+            title: "Turno y organización del grupo",
+            keys: ["turnoId", "seccionId", "capacidad"],
+          },
+          {
+            title: "Identificación y estado",
+            keys: ["codigo", "estado", "motivo"],
+          },
+        ]
+      : resource.key === "estudiantes"
+        ? [
+            {
+              title: "Registro e identidad",
+              keys: [
+                "codigoEstudiante",
+                "fechaRegistro",
+                "persona.tipoDocumento",
+                "persona.numeroDocumento",
+              ],
+            },
+            {
+              title: "Datos personales",
+              keys: [
+                "persona.nombres",
+                "persona.apellidoPaterno",
+                "persona.apellidoMaterno",
+                "persona.fechaNacimiento",
+              ],
+            },
+            {
+              title: "Contacto",
+              keys: ["persona.telefono", "persona.correo", "persona.direccion"],
+            },
+            { title: "Estado y motivo", keys: ["activo", "motivo"] },
+          ]
+        : undefined;
   const change = (key: string, value: string | string[]) => {
     setValues((old) => ({ ...old, [key]: value }));
     setErrors((old) => ({ ...old, [key]: "" }));
@@ -184,11 +232,148 @@ export function RecordForm({
       pending(false);
     }
   }
+  const renderFormField = (field: Field) => {
+    const id = `field-${field.key}`;
+    let choices = field.reference ? (lookups[field.reference] ?? []) : [];
+    if (field.reference)
+      choices = choices.filter(
+        (item) =>
+          String(item.id) === values[field.key] ||
+          (item.activo !== false && item.estado !== "CERRADO"),
+      );
+    if (field.key === "prerrequisitoId")
+      choices = choices.filter(
+        (item) =>
+          String(item.id) !== String(row?.id) &&
+          String(item.idioma_id) === values.idiomaId &&
+          Number(item.orden) < Number(values.orden),
+      );
+    if (resource.key === "grupos" && field.key === "nivelId" && languageId)
+      choices = choices.filter((item) => String(item.idioma_id) === languageId);
+    if (field.type === "roles")
+      return (
+        <fieldset
+          key={field.key}
+          className="roles span-2"
+          aria-describedby={errors[field.key] ? `${id}-error` : undefined}
+        >
+          <legend>{field.label}</legend>
+          {Object.entries(roleNames).map(([role, label]) => (
+            <label key={role}>
+              <input
+                type="checkbox"
+                checked={(values[field.key] as string[]).includes(role)}
+                disabled={busy}
+                onChange={(event) =>
+                  change(
+                    field.key,
+                    event.target.checked
+                      ? [...(values[field.key] as string[]), role]
+                      : (values[field.key] as string[]).filter(
+                          (item) => item !== role,
+                        ),
+                  )
+                }
+              />
+              {label}
+            </label>
+          ))}
+          {errors[field.key] && (
+            <small className="field-error" id={`${id}-error`}>
+              {errors[field.key]}
+            </small>
+          )}
+        </fieldset>
+      );
+    const shared = {
+      id,
+      name: field.key,
+      label: field.label,
+      required: field.required,
+      disabled: busy || !!locked(field),
+      error: errors[field.key],
+      hint: [
+        field.hint,
+        locked(field)
+          ? "El contexto se conserva para proteger el historial."
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      fieldClassName: field.key === "motivo" ? "span-2" : "field",
+      value: values[field.key] as string,
+    };
+    const control =
+      field.reference || field.type === "select" ? (
+        <SelectField
+          key={field.key}
+          {...shared}
+          onChange={(event) => change(field.key, event.target.value)}
+        >
+          <option value="">
+            {field.required ? "Selecciona una opción" : "Sin especificar"}
+          </option>
+          {field.reference
+            ? choices.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {optionLabel(item, field.reference!, lookups)}
+                </option>
+              ))
+            : field.options?.map((option) => (
+                <option key={option} value={option}>
+                  {field.key === "esTitular"
+                    ? option === "true"
+                      ? "Titular"
+                      : "Apoyo"
+                    : (labels[option] ?? option)}
+                </option>
+              ))}
+        </SelectField>
+      ) : (
+        <InputField
+          key={field.key}
+          {...shared}
+          type={field.type ?? "text"}
+          onChange={(event) => change(field.key, event.target.value)}
+          autoComplete={field.type === "password" ? "new-password" : "off"}
+          maxLength={field.type !== "number" ? field.max : undefined}
+          min={field.type === "number" ? field.min : undefined}
+          max={field.type === "number" ? field.max : undefined}
+          step={field.type === "number" ? 1 : undefined}
+        />
+      );
+    if (
+      !editing &&
+      field.key === "codigo" &&
+      ["niveles", "unidades", "periodos", "secciones", "grupos"].includes(
+        resource.key,
+      )
+    ) {
+      const suggestion = suggestCatalogCode(resource.key, values, lookups);
+      return (
+        <div key={field.key} className="catalog-code-field">
+          {control}
+          <Button
+            type="button"
+            disabled={busy || !suggestion}
+            onClick={() => change("codigo", suggestion)}
+          >
+            Sugerir código
+          </Button>
+          <small className="muted">
+            Puedes editar la propuesta antes de guardar.
+          </small>
+        </div>
+      );
+    }
+    return control;
+  };
   return (
     <Dialog
       title={`${editing ? "Editar" : "Crear"} ${resource.singular}`}
       onClose={onClose}
       busy={busy}
+      className={`record-form-dialog record-form-${resource.key} ${className ?? ""}`}
     >
       <form onSubmit={submit} noValidate>
         <p className="muted">{resource.description}</p>
@@ -238,125 +423,59 @@ export function RecordForm({
             )}
           </section>
         ) : (
-          <div className="form-grid">
-            {visible.map((field) => {
-              const id = `field-${field.key}`;
-              let choices = field.reference
-                ? (lookups[field.reference] ?? [])
-                : [];
-              if (field.reference)
-                choices = choices.filter(
-                  (item) =>
-                    String(item.id) === values[field.key] ||
-                    (item.activo !== false && item.estado !== "CERRADO"),
-                );
-              if (field.key === "prerrequisitoId")
-                choices = choices.filter(
-                  (item) =>
-                    String(item.id) !== String(row?.id) &&
-                    String(item.idioma_id) === values.idiomaId &&
-                    Number(item.orden) < Number(values.orden),
-                );
-              if (field.type === "roles")
-                return (
-                  <fieldset
-                    key={field.key}
-                    className="roles span-2"
-                    aria-describedby={
-                      errors[field.key] ? `${id}-error` : undefined
-                    }
-                  >
-                    <legend>{field.label}</legend>
-                    {Object.entries(roleNames).map(([role, label]) => (
-                      <label key={role}>
-                        <input
-                          type="checkbox"
-                          checked={(values[field.key] as string[]).includes(
-                            role,
-                          )}
-                          disabled={busy}
-                          onChange={(event) =>
-                            change(
-                              field.key,
-                              event.target.checked
-                                ? [...(values[field.key] as string[]), role]
-                                : (values[field.key] as string[]).filter(
-                                    (item) => item !== role,
-                                  ),
-                            )
-                          }
-                        />
-                        {label}
-                      </label>
-                    ))}
-                    {errors[field.key] && (
-                      <small className="field-error" id={`${id}-error`}>
-                        {errors[field.key]}
-                      </small>
-                    )}
-                  </fieldset>
-                );
-              const shared = {
-                id,
-                name: field.key,
-                label: field.label,
-                required: field.required,
-                disabled: busy || !!locked(field),
-                error: errors[field.key],
-                hint: [
-                  field.hint,
-                  locked(field)
-                    ? "El contexto se conserva para proteger el historial."
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" "),
-                fieldClassName: field.key === "motivo" ? "span-2" : "field",
-                value: values[field.key] as string,
-              };
-              return field.reference || field.type === "select" ? (
-                <SelectField
-                  key={field.key}
-                  {...shared}
-                  onChange={(event) => change(field.key, event.target.value)}
-                >
-                  <option value="">
-                    {field.required
-                      ? "Selecciona una opción"
-                      : "Sin especificar"}
-                  </option>
-                  {field.reference
-                    ? choices.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {optionLabel(item, field.reference!, lookups)}
-                        </option>
-                      ))
-                    : field.options?.map((option) => (
-                        <option key={option} value={option}>
-                          {field.key === "esTitular"
-                            ? option === "true"
-                              ? "Titular"
-                              : "Apoyo"
-                            : (labels[option] ?? option)}
-                        </option>
-                      ))}
-                </SelectField>
-              ) : (
-                <InputField
-                  key={field.key}
-                  {...shared}
-                  type={field.type ?? "text"}
-                  onChange={(event) => change(field.key, event.target.value)}
-                  autoComplete={
-                    field.type === "password" ? "new-password" : "off"
-                  }
-                  maxLength={field.type !== "number" ? field.max : undefined}
-                  min={field.type === "number" ? field.min : undefined}
-                  max={field.type === "number" ? field.max : undefined}
-                  step={field.type === "number" ? 1 : undefined}
-                />
-              );
-            })}
+          <div className={sections ? "group-form-flow" : "form-grid"}>
+            {sections
+              ? sections
+                  .filter((section) =>
+                    section.keys.some((key) =>
+                      visible.some((field) => field.key === key),
+                    ),
+                  )
+                  .map((section, index) => (
+                    <fieldset
+                      className="form-group-section"
+                      key={section.title}
+                    >
+                      <legend className="form-group-legend">
+                        <span className="step-num">{index + 1}</span>
+                        {section.title}
+                      </legend>
+                      <div className="form-grid">
+                        {resource.key === "grupos" && index === 0 && (
+                          <SelectField
+                            id="group-form-language"
+                            label="Idioma"
+                            value={languageId}
+                            disabled={busy || editing}
+                            onChange={(event) => {
+                              setLanguageId(event.target.value);
+                              change("nivelId", "");
+                            }}
+                            hint="Filtra los niveles disponibles del grupo."
+                          >
+                            <option value="">Todos los idiomas</option>
+                            {(lookups.idiomas ?? [])
+                              .filter(
+                                (item) =>
+                                  item.activo !== false ||
+                                  String(item.id) === languageId,
+                              )
+                              .map((item) => (
+                                <option key={item.id} value={String(item.id)}>
+                                  {String(item.nombre)}
+                                </option>
+                              ))}
+                          </SelectField>
+                        )}
+                        {section.keys
+                          .flatMap((key) =>
+                            visible.filter((field) => field.key === key),
+                          )
+                          .map(renderFormField)}
+                      </div>
+                    </fieldset>
+                  ))
+              : visible.map(renderFormField)}
           </div>
         )}
         <Feedback tone="error">{error}</Feedback>

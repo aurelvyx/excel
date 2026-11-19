@@ -40,12 +40,24 @@ export function StudentSummaryDialog({
               ],
               [
                 "Edad",
-                enrollment.edad == null ? "" : `${text(enrollment, "edad")} años`,
+                enrollment.edad == null
+                  ? ""
+                  : `${text(enrollment, "edad")} años`,
               ],
-              ["Nacimiento", s ? text(s, "persona.fechaNacimiento") : ""],
-              ["Teléfono", s ? text(s, "persona.telefono") : ""],
-              ["Correo", s ? text(s, "persona.correo") : ""],
-              ["Dirección", s ? text(s, "persona.direccion") : ""],
+              ...(canViewVoucher
+                ? [
+                    [
+                      "Nacimiento",
+                      s ? text(s, "persona.fechaNacimiento") : "",
+                    ] as const,
+                    ["Teléfono", s ? text(s, "persona.telefono") : ""] as const,
+                    ["Correo", s ? text(s, "persona.correo") : ""] as const,
+                    [
+                      "Dirección",
+                      s ? text(s, "persona.direccion") : "",
+                    ] as const,
+                  ]
+                : []),
               ["Registro", s ? text(s, "fecha_registro") : ""],
             ]}
           />
@@ -71,15 +83,20 @@ export function StudentSummaryDialog({
                 "Turno y sección",
                 `${text(group, "turno")} · ${text(group, "seccion")}`,
               ],
-              ...(canViewVoucher ? [
-                ["Boleta de pago", text(enrollment, "voucher_numero")] as const,
-                [
-                  "Importe",
-                  enrollment.voucher_importe
-                    ? `S/ ${text(enrollment, "voucher_importe")}`
-                    : "",
-                ] as const,
-              ] : []),
+              ...(canViewVoucher
+                ? [
+                    [
+                      "Boleta de pago",
+                      text(enrollment, "voucher_numero"),
+                    ] as const,
+                    [
+                      "Importe",
+                      enrollment.voucher_importe
+                        ? `S/ ${text(enrollment, "voucher_importe")}`
+                        : "",
+                    ] as const,
+                  ]
+                : []),
             ]}
           />
         </div>

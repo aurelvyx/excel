@@ -17,6 +17,7 @@ import {
 } from '../asistencia/academic-context.js';
 import { AttendanceCalculationService } from '../asistencia/attendance-calculation.service.js';
 import { GradeCalculationService } from '../evaluacion/grade-calculation.service.js';
+import { calculateGradeAverage } from '../evaluacion/grade.policy.js';
 import { AuditService } from '../control/audit.service.js';
 import { page, validId } from '../../common/validation.js';
 import { ReportsRepository } from './reports.repository.js';
@@ -123,6 +124,17 @@ export class ReportsService {
     const attendanceSummaries = await this.attendance.summaries(manager, ids);
     const results = await this.repo.results(manager, ids);
     const byEnrollment = new Map(results.map((row) => [row.matricula_id, row]));
+    const componentIndicators = new Map<string, typeof indicators>();
+    for (const indicator of indicators) {
+      const list = componentIndicators.get(indicator.evaluacionId) ?? [];
+      list.push(indicator);
+      componentIndicators.set(indicator.evaluacionId, list);
+    }
+    const componentes = [...componentIndicators].map(([id, entries]) => ({
+      id,
+      nombre: entries[0]!.evaluacion,
+      pesoPct: entries[0]!.pesoEvaluacion,
+    }));
     const items: ReportRow[] = roster.map((row) => ({
       matriculaId: row.matricula_id,
       codigo: row.codigo_matricula,
@@ -134,6 +146,38 @@ export class ReportsService {
         indicators.map((indicator) => [
           indicator.id,
           notesByKey.get(`${row.matricula_id}:${indicator.id}`) ?? null,
+        ]),
+      ),
+      notasComponentes: Object.fromEntries(
+        [...componentIndicators].map(([id, entries]) => [
+          id,
+          plan?.estado === 'APROBADO' && indicators.length <= 100
+            ? calculateGradeAverage(
+                'PONDERADA_JERARQUICA_V1',
+                {
+                  evaluaciones: [
+                    {
+                      nombre: entries[0]!.evaluacion,
+                      unidadId: null,
+                      pesoPct: '100.00',
+                      orden: 1,
+                      indicadores: entries.map((entry, index) => ({
+                        codigo: entry.codigo,
+                        descripcion: entry.descripcion,
+                        pesoPct: entry.pesoIndicador,
+                        orden: index + 1,
+                      })),
+                    },
+                  ],
+                },
+                entries.map((entry, index) => ({
+                  evaluacionOrden: 1,
+                  indicadorOrden: index + 1,
+                  nota:
+                    notesByKey.get(`${row.matricula_id}:${entry.id}`) ?? null,
+                })),
+              ).promedio
+            : null,
         ]),
       ),
       resumenNotas: gradeSummaries.get(row.matricula_id)!,
@@ -218,11 +262,15 @@ export class ReportsService {
         'El grupo supera el límite de 100 indicadores por exportación',
       );
     if (
-      tipo === 'MATRIZ_NOTAS' &&
+      tipo !== 'RESUMEN_PARTICIPANTES' &&
       (!configuration || plan?.estado !== 'APROBADO' || !indicators.length)
     )
       pendientes.push(
         'Aplica criterios de evaluación aprobados al grupo; los criterios históricos no se consideran aprobados',
+      );
+    if (tipo === 'ACTA_DEMOSTRACION' && componentes.length > 8)
+      pendientes.push(
+        'El diseño de acta admite hasta ocho componentes. Utiliza la matriz detallada para conservar todos los criterios.',
       );
     if (!/^[a-f0-9]{64}$/.test(template.sha256))
       pendientes.push('La plantilla no tiene un hash válido');
@@ -293,6 +341,7 @@ export class ReportsService {
       advertencias,
       resumen,
       indicadores: indicators,
+      componentes,
       items,
       anexo,
     };

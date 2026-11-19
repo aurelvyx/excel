@@ -2,7 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { api, errorText, text, type Row } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
-import { PageHeading } from "../../shared/ui/PageHeading";
+import { Dialog } from "../../shared/Dialog";
+import { useUnsavedChanges } from "../../shared/useUnsavedChanges";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Receipt,
+  School,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 import { Feedback, Loading } from "../../shared/ui/Feedback";
 import { Button } from "../../shared/ui/Button";
 import { Facts } from "../../shared/ui/Facts";
@@ -12,6 +21,7 @@ import { RegisterStudent } from "../students/RegisterStudent";
 import { voucherStates } from "../vouchers/model";
 import { VoucherChoice } from "./VoucherChoice";
 import { GroupChoice, type GroupFilters } from "./GroupChoice";
+import "../students/registration.css";
 type Initial = { student: Row; group?: Row; enrollment?: Row };
 export function EnrollmentsPage({
   id,
@@ -30,12 +40,21 @@ export function EnrollmentsPage({
 function StartForGroup({ id, studentId }: { id: string; studentId?: string }) {
   const group = useApiQuery<Row>(`oferta/grupos/${encodeURIComponent(id)}`);
   if (group.loading) return <Loading>Cargando grupo…</Loading>;
-  if (group.error) return <Feedback onRetry={group.reload}>{group.error}</Feedback>;
+  if (group.error)
+    return <Feedback onRetry={group.reload}>{group.error}</Feedback>;
   const initialGroup = group.data?.estado === "ACTIVO" ? group.data : undefined;
   return (
     <>
-      {!initialGroup && <Feedback tone="notice">El grupo seleccionado no está activo. Elige otro en el asistente.</Feedback>}
-      {studentId ? <StartForStudent id={studentId} group={initialGroup} /> : <EnrollmentWizard initialGroup={initialGroup} />}
+      {!initialGroup && (
+        <Feedback tone="notice">
+          El grupo seleccionado no está activo. Elige otro en el asistente.
+        </Feedback>
+      )}
+      {studentId ? (
+        <StartForStudent id={studentId} group={initialGroup} />
+      ) : (
+        <EnrollmentWizard initialGroup={initialGroup} />
+      )}
     </>
   );
 }
@@ -48,7 +67,10 @@ function StartForStudent({ id, group }: { id: string; group?: Row }) {
   ) : error ? (
     <Feedback onRetry={reload}>{error}</Feedback>
   ) : data ? (
-    <EnrollmentWizard initial={{ student: studentRow(data), group }} initialGroup={group} />
+    <EnrollmentWizard
+      initial={{ student: studentRow(data), group }}
+      initialGroup={group}
+    />
   ) : null;
 }
 function ResumeEnrollment({ id }: { id: string }) {
@@ -85,12 +107,20 @@ function ResumeEnrollment({ id }: { id: string }) {
     <Loading>Cargando solicitud…</Loading>
   );
 }
-function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initialGroup?: Row }) {
+function EnrollmentWizard({
+  initial,
+  initialGroup,
+}: {
+  initial?: Initial;
+  initialGroup?: Row;
+}) {
   const [student, selectStudent] = useState<Row | null>(
     initial?.student ?? null,
   );
   const [voucher, selectVoucher] = useState<Row | null>(null);
-  const [group, selectGroup] = useState<Row | null>(initial?.group ?? initialGroup ?? null);
+  const [group, selectGroup] = useState<Row | null>(
+    initial?.group ?? initialGroup ?? null,
+  );
   const [filters, setFilters] = useState<GroupFilters>({
     periodoId: "",
     idiomaId: "",
@@ -110,6 +140,11 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
   const title = useRef<HTMLHeadingElement>(null);
   const finished = !!enrollment && enrollment.estado !== "PENDIENTE";
   const validated = voucher?.estado === "VALIDADO" && !voucher.matricula_id;
+  const modal =
+    new URLSearchParams(window.location.hash.split("?")[1] ?? "").get(
+      "modal",
+    ) === "1";
+  const guard = useUnsavedChanges(!finished && !enrollment && step === 3, busy);
   useEffect(() => title.current?.focus(), [step, finished]);
   const move = (next: number) => {
     fail("");
@@ -180,13 +215,28 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
       pending(false);
     }
   }
-  return (
-    <section className="enrollment-page">
-      <PageHeading
-        eyebrow="Gestión académica"
-        title={finished ? "Matrícula registrada" : "Asistente de matrícula"}
-        description="Una matrícula corresponde al nivel completo. El pago se realiza presencialmente."
-      />
+  const content = (
+    <section className="enrollment-page registration-workspace">
+      <header className="academic-card registration-heading">
+        <div>
+          <span className="academic-badge badge-green">
+            <Sparkles size={13} /> Gestión de matrícula
+          </span>
+          <h1>
+            {finished ? "Matrícula registrada" : "Asistente de matrícula"}
+          </h1>
+          <p>
+            Una matrícula corresponde al nivel completo. Vincula al estudiante,
+            su voucher presencial y el grupo seleccionado.
+          </p>
+        </div>
+        <Button
+          onClick={() => guard.request(() => navigate("/matriculas"), true)}
+          disabled={busy}
+        >
+          <ArrowLeft size={15} /> Gestión de matrículas
+        </Button>
+      </header>
       <a
         className="button"
         href={student ? `#/estudiantes/${student.id}` : "#/estudiantes"}
@@ -232,7 +282,7 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
               });
               key.current = crypto.randomUUID();
               move(0);
-              navigate("/matriculas");
+              navigate("/matriculas/nueva");
             }}
           >
             Nueva matrícula
@@ -240,7 +290,10 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
         </section>
       ) : (
         <>
-          <ol className="wizard-steps" aria-label="Pasos de matrícula">
+          <ol
+            className="wizard-steps registration-steps"
+            aria-label="Pasos de matrícula"
+          >
             {["Estudiante", "Voucher", "Grupo", "Confirmación"].map(
               (name, index) => (
                 <li
@@ -248,15 +301,27 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
                   aria-current={step === index ? "step" : undefined}
                 >
                   <span>{index + 1}</span>
+                  {
+                    [
+                      <UserCheck key="student" size={17} />,
+                      <Receipt key="voucher" size={17} />,
+                      <School key="group" size={17} />,
+                      <CheckCircle2 key="confirmation" size={17} />,
+                    ][index]
+                  }
                   {name}
                 </li>
               ),
             )}
           </ol>
           <section
-            className="panel enrollment-context"
+            className="panel enrollment-context registration-summary"
             aria-label="Contexto de matrícula"
           >
+            <h2>Resumen de matrícula</h2>
+            <p className="muted">
+              Conserva el contexto mientras completas los pasos.
+            </p>
             <Facts
               items={[
                 [
@@ -320,7 +385,7 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
               </>
             )}
             {step === 1 && student && (
-              <VoucherChoice student={student} onSelect={chooseVoucher} />
+              <VoucherChoice student={student} selectedVoucher={voucher} onSelect={chooseVoucher} />
             )}
             {step === 2 &&
               (enrollment ? (
@@ -331,6 +396,7 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
               ) : (
                 <GroupChoice
                   filters={filters}
+                  selectedGroup={group}
                   onFilter={(value) => {
                     setFilters(value);
                     selectGroup(null);
@@ -421,6 +487,7 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
           </section>
         </>
       )}
+      {guard.confirmation}
       {creating && (
         <RegisterStudent
           onClose={() => createStudent(false)}
@@ -435,5 +502,17 @@ function EnrollmentWizard({ initial, initialGroup }: { initial?: Initial; initia
         />
       )}
     </section>
+  );
+  return modal ? (
+    <Dialog
+      title="Proceso de matrícula"
+      className="enrollment-flow-dialog"
+      busy={busy}
+      onClose={() => guard.request(() => navigate("/matriculas"), true)}
+    >
+      {content}
+    </Dialog>
+  ) : (
+    content
   );
 }

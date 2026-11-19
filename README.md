@@ -139,7 +139,8 @@ estructurales rechazan tablas con datos y los roles no se retiran si están asig
 La reversión completa sobre una base vacía se verifica automáticamente en `test:db`.
 Antes de migrar una base institucional, respaldar y acordar el procedimiento de recuperación.
 
-El esquema incluye diecisiete migraciones versionadas hasta B21. Las reversiones de
+El esquema incluye dieciocho migraciones versionadas, con las actas de
+demostración recuperadas de front/1. Las reversiones de
 cierres y criterios rechazan historial existente; no lo eliminan para retirar la migración.
 
 Las migraciones solo crean los roles ADMIN, SECRETARIA, DOCENTE y COORDINADOR.

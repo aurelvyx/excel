@@ -49,6 +49,30 @@
       "hoja": "ANEXO N° 05",
       "filaCabecera": 10,
       "primeraFila": 11
+    },
+    {
+      "id": "ACTA-DEMO-EN-v1",
+      "tipo": "ACTA_DEMOSTRACION",
+      "idioma": "EN",
+      "version": 1,
+      "estado": "PROPUESTA",
+      "sha256": "675adc5b8c63c1567f50c157698c575a8e802e8a06ede08f476b2a031a858a35",
+      "archivo": "acta-en-v1.xlsx",
+      "hoja": "Acta Evaluación",
+      "filaCabecera": 16,
+      "primeraFila": 17
+    },
+    {
+      "id": "ACTA-DEMO-PT-v1",
+      "tipo": "ACTA_DEMOSTRACION",
+      "idioma": "PT",
+      "version": 1,
+      "estado": "PROPUESTA",
+      "sha256": "34ca519ebda1eb1b779c8063f3ca060c8c4a4a68e6ebe808659772b409684bd9",
+      "archivo": "acta-pt-v1.xlsx",
+      "hoja": "Acta Evaluación",
+      "filaCabecera": 16,
+      "primeraFila": 17
     }
   ]
 }

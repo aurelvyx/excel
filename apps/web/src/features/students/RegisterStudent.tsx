@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { ClipboardCheck, Fingerprint, UserRound } from "lucide-react";
 import { api, errorText, text, type Row } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
 import { Dialog } from "../../shared/Dialog";
@@ -7,6 +8,17 @@ import { Feedback } from "../../shared/ui/Feedback";
 import { Button } from "../../shared/ui/Button";
 import { RecordForm } from "../configuration/RecordForm";
 import { studentResource } from "./model";
+import "./registration.css";
+
+function registrationDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 export function RegisterStudent({
   onClose,
   onSaved,
@@ -16,7 +28,7 @@ export function RegisterStudent({
   onSaved: (row: Row) => void;
   onExisting?: (row: Row) => Promise<void>;
 }) {
-  const [type, setType] = useState("");
+  const [type, setType] = useState("DNI");
   const [number, setNumber] = useState("");
   const [error, fail] = useState("");
   const [busy, pending] = useState(false);
@@ -35,6 +47,7 @@ export function RegisterStudent({
       if (!result.registro)
         setInitial({
           id: "",
+          fecha_registro: registrationDate(),
           persona: {
             tipoDocumento: type.trim(),
             numeroDocumento: number.trim(),
@@ -59,6 +72,7 @@ export function RegisterStudent({
       : studentResource;
     return (
       <RecordForm
+        className="student-registration-dialog"
         resource={resource}
         initial={initial}
         lookups={{}}
@@ -77,35 +91,84 @@ export function RegisterStudent({
     );
   }
   return (
-    <Dialog title="Comprobar documento" onClose={onClose} busy={busy}>
-      <p>Busca primero para evitar duplicar la identidad de una persona.</p>
-      <form onSubmit={check}>
-        <div className="form-grid">
-          <InputField
-            label="Tipo de documento"
-            id="doc-type"
-            required
-            maxLength={20}
-            value={type}
-            onChange={(e) => {
-              setType(e.target.value);
-              setFound(undefined);
-            }}
-            disabled={busy}
-          />
-          <InputField
-            label="Número de documento"
-            id="doc-number"
-            required
-            maxLength={25}
-            value={number}
-            onChange={(e) => {
-              setNumber(e.target.value);
-              setFound(undefined);
-            }}
-            disabled={busy}
-          />
+    <Dialog
+      title="Comprobar documento"
+      onClose={onClose}
+      busy={busy}
+      className="student-registration-dialog"
+    >
+      <ol
+        className="student-registration-progress"
+        aria-label="Etapas del registro de estudiante"
+      >
+        <li aria-current="step">
+          <Fingerprint size={18} aria-hidden="true" />
+          <span>
+            <strong>Documento</strong>
+            <small>Consulta de identidad</small>
+          </span>
+        </li>
+        <li>
+          <UserRound size={18} aria-hidden="true" />
+          <span>
+            <strong>Datos personales</strong>
+            <small>Registro y contacto</small>
+          </span>
+        </li>
+        <li>
+          <ClipboardCheck size={18} aria-hidden="true" />
+          <span>
+            <strong>Confirmación</strong>
+            <small>Revisar y guardar</small>
+          </span>
+        </li>
+      </ol>
+      <div className="student-db-alert student-registration-notice">
+        <Fingerprint size={23} aria-hidden="true" />
+        <div>
+          <strong>Registrar o reutilizar estudiante</strong>
+          <span>
+            Busca primero el documento para conservar una sola identidad y su
+            historial académico.
+          </span>
         </div>
+      </div>
+      <form onSubmit={check} className="student-document-form">
+        <fieldset className="student-document-fields">
+          <legend>Identificación del estudiante</legend>
+          <div className="form-grid">
+            <InputField
+              label="Tipo de documento"
+              id="doc-type"
+              required
+              maxLength={20}
+              list="student-document-types"
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value);
+                setFound(undefined);
+              }}
+              disabled={busy}
+            />
+            <datalist id="student-document-types">
+              <option value="DNI" />
+              <option value="CE" />
+              <option value="PASAPORTE" />
+            </datalist>
+            <InputField
+              label="Número de documento"
+              id="doc-number"
+              required
+              maxLength={25}
+              value={number}
+              onChange={(e) => {
+                setNumber(e.target.value);
+                setFound(undefined);
+              }}
+              disabled={busy}
+            />
+          </div>
+        </fieldset>
         <div className="actions">
           <Button type="button" onClick={onClose} disabled={busy}>
             Cancelar
@@ -117,7 +180,7 @@ export function RegisterStudent({
       </form>
       <Feedback tone="error">{error}</Feedback>
       {found && (
-        <div className="notice">
+        <div className="notice student-existing-person">
           <p>
             Persona registrada: {text(found, "persona.nombres")}{" "}
             {text(found, "persona.apellidoPaterno")}.
@@ -160,6 +223,7 @@ export function RegisterStudent({
               onClick={() =>
                 setInitial({
                   id: "",
+                  fecha_registro: registrationDate(),
                   personaId: text(found, "persona.id"),
                   persona: found.persona,
                 })

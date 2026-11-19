@@ -180,6 +180,18 @@ Detalle: `docs/B21-despliegue-respaldo.md` y
 
 ## 11. Documentación técnica de referencia
 
+### Recuperación de la interfaz y actas de front/1 — 19 de noviembre de 2026
+
+El equipo pidió recuperar lo más posible del PR `front/1` y adaptar su interfaz
+y plantillas al funcionamiento del sistema. Se incorporan sus actas EN/PT como
+`ACTA_DEMOSTRACION`, con diseños derivados anonimizados e identificación
+**BORRADOR**. El docente puede exportarlas exclusivamente para sus grupos
+asignados, con revalidación de permisos en la transacción. Administración y
+coordinación conservan acceso. Los componentes proceden de los criterios del
+grupo y los resultados confirmados proceden del cierre B18. Las equivalencias
+institucionales y el destinatario externo conservan su estado pendiente.
+Detalle y límites del formato en `docs/PR21-integracion.md`.
+
 Consultar siempre la documentación de la versión instalada en el repositorio al ejecutar comandos o elegir una API concreta:
 
 - [NestJS: autorización](https://docs.nestjs.com/security/authorization) y [validación](https://docs.nestjs.com/application/validation).

@@ -22,6 +22,7 @@ import { academicTime } from "../attendance/model";
 import { GradeHistoryDialog } from "./GradeHistoryDialog";
 import { GradeSummary } from "./GradeSummary";
 import { ReportLink } from "../reports/ReportLink";
+import { WorkspaceSummary } from "../academic/components/WorkspaceSummary";
 import {
   captureGradeError,
   displayedGrade,
@@ -36,21 +37,25 @@ import type {
 
 function GradesHeading() {
   return (
-    <PageHeading
-      eyebrow="Evaluación"
-      title="Registro de calificaciones"
-      description="Registra notas de 0 a 20 y consulta el promedio de cada intento según sus criterios aprobados."
-    />
+    <div className="academic-card workspace-hero">
+      <PageHeading
+        eyebrow="Evaluación"
+        title="Registro de calificaciones"
+        description="Registra notas de 0 a 20 y consulta el promedio de cada intento según sus criterios aprobados."
+      />
+    </div>
   );
 }
 export function GradesPage({
   groupId,
   query,
   workspacePath,
+  onChanged,
 }: {
   groupId: string;
   query: URLSearchParams;
   workspacePath?: (cursor: string) => string;
+  onChanged?: () => void;
 }) {
   const after = query.get("after") ?? "";
   const path = `/evaluacion/grupos/${groupId}/calificaciones`;
@@ -68,6 +73,7 @@ export function GradesPage({
         endpoint={endpoint}
         path={path}
         workspacePath={workspacePath}
+        onChanged={onChanged}
         after={after}
         queryPath={queryPath}
         reload={reload}
@@ -93,6 +99,7 @@ function GradesMatrix({
   endpoint,
   path,
   workspacePath,
+  onChanged,
   after,
   queryPath,
   reload,
@@ -101,6 +108,7 @@ function GradesMatrix({
   endpoint: string;
   path: string;
   workspacePath?: (cursor: string) => string;
+  onChanged?: () => void;
   after: string;
   queryPath: string;
   reload: () => void;
@@ -129,6 +137,12 @@ function GradesMatrix({
   const evaluation = snapshot.evaluaciones.find(
     (item) => item.id === evaluationId,
   );
+  const visibleEvaluations =
+    evaluationId === "__all__"
+      ? snapshot.evaluaciones
+      : evaluation
+        ? [evaluation]
+        : [];
   const key = (rowId: string, indicatorId: string) => `${rowId}:${indicatorId}`;
   const recorded = (row: GradeRow, indicatorId: string) =>
     row.calificaciones.find((item) => item.indicador_id === indicatorId);
@@ -172,6 +186,7 @@ function GradesMatrix({
       }),
     }));
     setDrafts({});
+    onChanged?.();
     notify("Calificaciones guardadas.");
     setSummaryCurrent(false);
     failSummary("");
@@ -316,21 +331,28 @@ function GradesMatrix({
         />
       ),
     },
-    ...(evaluation?.indicadores.map((indicator) => ({
-      key: indicator.id,
-      header: (
-        <>
-          <span>
-            {indicator.codigo} · {indicator.peso_pct} %
-          </span>
-          <small className="grade-indicator-description">
-            {indicator.descripcion}
-          </small>
-        </>
-      ),
-      className: "grade-cell",
-      cell: (row: GradeRow) => gradeCell(row, indicator),
-    })) ?? []),
+    ...visibleEvaluations.flatMap((component) =>
+      component.indicadores.map((indicator) => ({
+        key: indicator.id,
+        header: (
+          <>
+            {evaluationId === "__all__" && (
+              <strong className="workspace-evaluation-title">
+                {component.nombre} · {component.peso_pct} %
+              </strong>
+            )}
+            <span>
+              {indicator.codigo} · {indicator.peso_pct} %
+            </span>
+            <small className="grade-indicator-description">
+              {indicator.descripcion}
+            </small>
+          </>
+        ),
+        className: "grade-cell",
+        cell: (row: GradeRow) => gradeCell(row, indicator),
+      })),
+    ),
     {
       key: "resumen",
       header: "Calificación del nivel",
@@ -345,7 +367,7 @@ function GradesMatrix({
     },
   ];
   return (
-    <section>
+    <section className="workspace-grade-matrix">
       <a
         className="back-link"
         href={`#/evaluacion/grupos/${snapshot.grupo.id}`}
@@ -354,7 +376,37 @@ function GradesMatrix({
       </a>
       <GradesHeading />
       <GroupContext group={snapshot.grupo} />
-      <p>
+      {summaryCurrent && (
+        <WorkspaceSummary
+          label="Resumen de la planilla"
+          items={[
+            {
+              label: "Matrículas del grupo",
+              value: snapshot.preparacionActa.matriculasRevisables,
+              detail: "Incluye todas las páginas",
+              tone: "blue",
+            },
+            {
+              label: "Notas registradas",
+              value: snapshot.preparacionActa.calificacionesRegistradas,
+              tone: "green",
+            },
+            {
+              label: "Notas pendientes",
+              value: snapshot.preparacionActa.calificacionesPendientes,
+              tone: "amber",
+            },
+            {
+              label: "Estado del acta",
+              value: snapshot.acta.cerrada ? "Cerrada" : "Abierta",
+              detail: snapshot.plan
+                ? `Criterios v${snapshot.plan.version}`
+                : "Criterios pendientes",
+            },
+          ]}
+        />
+      )}
+      <p className="workspace-tools group-nav-pills">
         <a href={`#/asistencia/grupos/${snapshot.grupo.id}`}>
           Sesiones y asistencia
         </a>
@@ -409,12 +461,39 @@ function GradesMatrix({
             onChange={(event) => selectEvaluation(event.target.value)}
             hint="El cambio de evaluación conserva las notas capturadas de esta página."
           >
+            <option value="__all__">
+              Planilla completa · Todas las evaluaciones
+            </option>
             {snapshot.evaluaciones.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.nombre} · {item.peso_pct} %
               </option>
             ))}
           </SelectField>
+        )}
+        {snapshot.evaluaciones.length > 0 && (
+          <div
+            className="workspace-evaluation-tabs"
+            aria-label="Componentes de la planilla"
+          >
+            <Button
+              disabled={busy || conflict}
+              aria-pressed={evaluationId === "__all__"}
+              onClick={() => selectEvaluation("__all__")}
+            >
+              Planilla completa
+            </Button>
+            {snapshot.evaluaciones.map((item) => (
+              <Button
+                key={item.id}
+                disabled={busy || conflict}
+                aria-pressed={evaluationId === item.id}
+                onClick={() => selectEvaluation(item.id)}
+              >
+                {item.nombre} · {item.peso_pct} %
+              </Button>
+            ))}
+          </div>
         )}
         {evaluation?.unidad_id && (
           <p className="help">
@@ -473,7 +552,11 @@ function GradesMatrix({
             nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
-                () => navigate(workspacePath?.(cursor) ?? (cursor ? `${path}?after=${cursor}` : path)),
+                () =>
+                  navigate(
+                    workspacePath?.(cursor) ??
+                      (cursor ? `${path}?after=${cursor}` : path),
+                  ),
                 true,
               )
             }

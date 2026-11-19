@@ -506,4 +506,110 @@ describe('B12 navegador React → API → PostgreSQL', () => {
     ).toBe(200);
     expect(await persisted(f.session)).toEqual([]);
   });
+
+  it('la celda mensual permite editar con revisión, conserva la captura ante conflicto y exige descarte al recargar', async () => {
+    const f = await matrix(2);
+    await login('docente');
+    await page.goto(`${origin}/#/asistencia/grupos/${f.group.id}/matriz`);
+    await page
+      .getByRole('heading', { name: 'Matriz de asistencia', exact: true })
+      .waitFor();
+    const openCell = () =>
+      page
+        .getByRole('button', {
+          name: new RegExp(`${f.students[0]!.nombre}, .*Ver detalle`),
+        })
+        .click();
+    await openCell();
+    let dialog = page.getByRole('dialog', {
+      name: 'Detalle de asistencia',
+      exact: true,
+    });
+    await dialog.getByLabel('Marca', { exact: true }).waitFor();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      '',
+    );
+    await dialog.getByLabel('Marca', { exact: true }).selectOption('F');
+    await dialog
+      .getByLabel('Observación', { exact: true })
+      .fill('Registro sintético desde la celda mensual');
+    await dialog
+      .getByRole('button', { name: 'Revisar cambio', exact: true })
+      .click();
+    const saved = page.waitForResponse(
+      (res) =>
+        res.url().endsWith(`/sesiones/${f.session.id}/asistencias`) &&
+        res.request().method() === 'PATCH',
+    );
+    await dialog
+      .getByRole('button', { name: 'Confirmar cambio', exact: true })
+      .click();
+    expect((await saved).status()).toBe(200);
+    await dialog.waitFor({ state: 'hidden' });
+    expect(await persisted(f.session)).toHaveLength(1);
+    expect((await persisted(f.session))[0]).toMatchObject({
+      matricula_id: f.enrollments[0]!.id,
+      codigo: 'F',
+      version: 1,
+    });
+    await openCell();
+    dialog = page.getByRole('dialog', {
+      name: 'Detalle de asistencia',
+      exact: true,
+    });
+    await dialog.getByLabel('Marca', { exact: true }).selectOption('T');
+    await page.route(
+      `**/api/v1/asistencia/grupos/${f.group.id}/sesiones/${f.session.id}/asistencias`,
+      async (route) => {
+        if (route.request().method() === 'PATCH')
+          await route.fulfill({
+            status: 409,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              message: 'Conflicto sintético de la celda',
+            }),
+          });
+        else await route.continue();
+      },
+    );
+    await dialog
+      .getByRole('button', { name: 'Revisar cambio', exact: true })
+      .click();
+    await dialog
+      .getByRole('button', { name: 'Confirmar cambio', exact: true })
+      .click();
+    await dialog.getByRole('alert').waitFor();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      'T',
+    );
+    expect(
+      await dialog
+        .getByRole('button', { name: 'Revisar cambio', exact: true })
+        .isDisabled(),
+    ).toBe(true);
+    await dialog
+      .getByRole('button', { name: 'Recargar detalle', exact: true })
+      .click();
+    const discard = page.getByRole('dialog', {
+      name: 'Descartar cambios',
+      exact: true,
+    });
+    await discard
+      .getByRole('button', { name: 'Seguir editando', exact: true })
+      .click();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      'T',
+    );
+    await dialog
+      .getByRole('button', { name: 'Recargar detalle', exact: true })
+      .click();
+    await discard
+      .getByRole('button', { name: 'Descartar y continuar', exact: true })
+      .click();
+    await dialog.getByLabel('Marca', { exact: true }).waitFor();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      'F',
+    );
+    expect(await persisted(f.session)).toHaveLength(1);
+  });
 });

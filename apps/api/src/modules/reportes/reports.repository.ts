@@ -80,7 +80,7 @@ export class ReportsRepository {
     configurationId: string,
   ): Promise<ReportIndicator[]> {
     return manager.query(
-      `SELECT i.id,e.nombre AS evaluacion,i.codigo,i.descripcion,e.peso_pct::text AS "pesoEvaluacion",i.peso_pct::text AS "pesoIndicador"
+      `SELECT i.id,e.id AS "evaluacionId",e.nombre AS evaluacion,i.codigo,i.descripcion,e.peso_pct::text AS "pesoEvaluacion",i.peso_pct::text AS "pesoIndicador"
       FROM evaluaciones e JOIN indicadores_evaluacion i ON i.evaluacion_id=e.id
       WHERE e.configuracion_id=$1::bigint AND e.activo AND i.activo ORDER BY e.orden,e.id,i.orden,i.id LIMIT 101 FOR SHARE OF e,i`,
       [configurationId],
@@ -146,12 +146,12 @@ export class ReportsRepository {
     groupId: string,
     after: string,
     limit: number,
-    matrixOnly: boolean,
+    excludeSummary: boolean,
   ) {
     return manager.query(
       `SELECT e.*,u.nombre_usuario FROM exportaciones e JOIN usuarios u ON u.id=e.usuario_id
-      WHERE e.grupo_id=$1::bigint AND e.id>$2::bigint AND ($4::boolean=false OR e.tipo='MATRIZ_NOTAS') ORDER BY e.id LIMIT $3`,
-      [groupId, after, limit + 1, matrixOnly],
+      WHERE e.grupo_id=$1::bigint AND e.id>$2::bigint AND ($4::boolean=false OR e.tipo<>'RESUMEN_PARTICIPANTES') ORDER BY e.id LIMIT $3`,
+      [groupId, after, limit + 1, excludeSummary],
     );
   }
   async insert(

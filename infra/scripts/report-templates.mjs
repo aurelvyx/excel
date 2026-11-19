@@ -6,7 +6,7 @@ const requireApi = createRequire(new URL('../../apps/api/package.json', import.m
 const ExcelJS = requireApi('exceljs');
 const folder = new URL('../../apps/api/templates/reportes/', import.meta.url);
 const registry = JSON.parse(await readFile(new URL('registro.json', folder), 'utf8'));
-if (registry.version !== 1 || registry.estado !== 'PROPUESTA' || registry.plantillas.length !== 4)
+if (registry.version !== 1 || registry.estado !== 'PROPUESTA' || registry.plantillas.length !== 6)
   throw new Error('Registro de plantillas de demostración inválido');
 for (const entry of registry.plantillas) {
   if (!/^[a-z0-9-]+\.xlsx$/.test(entry.archivo)) throw new Error('Archivo de plantilla inválido');

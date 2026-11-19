@@ -443,6 +443,11 @@ describe('B17 navegador React → API → PostgreSQL', () => {
       .getByLabel('Evaluación', { exact: true })
       .selectOption(f.indicators[0]!.evaluacion_id);
     expect(await grade(f.students[0]!).inputValue()).toBe('10');
+    await page
+      .getByRole('button', { name: 'Planilla completa', exact: true })
+      .click();
+    expect(await grade(f.students[0]!, 'SYN-A').inputValue()).toBe('10');
+    expect(await grade(f.students[0]!, 'SYN-C').inputValue()).toBe('12.00');
     expect(await persisted(f.group)).toEqual([]);
     await fact(summary(f.students[0]!), 'Promedio', 'Pendiente');
     await saveSuccess(f.group);

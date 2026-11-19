@@ -1,0 +1,310 @@
+.workspace-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+.workspace-summary-card {
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #64748b;
+  border-radius: 0.75rem;
+  padding: 1rem 1.15rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.workspace-summary-card > span {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.workspace-summary-card > strong {
+  color: #1e293b;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+.workspace-summary-card > small {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+.workspace-facts .facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 0.75rem;
+}
+.workspace-facts .facts > div {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.85rem 1rem;
+  border-top: 3px solid #007a3d;
+}
+.workspace-facts .facts dt {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+.workspace-facts .facts dd {
+  color: #1e293b;
+  font-weight: 800;
+  font-size: 1.3rem;
+  margin-top: 0.35rem;
+}
+.workspace-tone-green {
+  border-top-color: #007a3d;
+}
+.workspace-tone-amber {
+  border-top-color: #d97706;
+}
+.workspace-tone-blue {
+  border-top-color: #0284c7;
+}
+.workspace-hero {
+  border-top: 4px solid #007a3d;
+}
+.workspace-hero-main {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.workspace-hero-main h2 {
+  margin: 0.55rem 0;
+  color: #1e293b;
+  font-size: 1.35rem;
+}
+.workspace-hero-main p {
+  color: #64748b;
+  margin: 0.35rem 0;
+}
+.workspace-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.85rem 0;
+}
+.workspace-tools a,
+.workspace-tools button {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.workspace-panel {
+  max-height: 75vh;
+  overflow: auto;
+  padding: 0.25rem;
+}
+dialog:has(> .workspace-panel) {
+  width: min(1100px, calc(100vw - 2rem));
+  max-width: 1100px;
+}
+dialog.workspace-drawer {
+  width: min(940px, calc(100vw - 1rem));
+  max-width: 940px;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 0 0 auto;
+  border-radius: 1rem 0 0 1rem;
+}
+.workspace-drawer > .workspace-panel {
+  max-height: calc(100dvh - 6rem);
+}
+@media (max-width: 640px) {
+  dialog.workspace-drawer {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+  }
+}
+.workspace-panel .page-heading h1 {
+  font-size: 1.2rem;
+}
+.workspace-table {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  background: #fff;
+  overflow: hidden;
+}
+.workspace-table > .list-panel {
+  border: 0;
+}
+.workspace-evaluation-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.workspace-evaluation-tabs button {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  color: #475569;
+  background: #fff;
+  font-weight: 650;
+}
+.workspace-evaluation-tabs button[aria-pressed="true"] {
+  background: #eaf7ef;
+  border-color: #007a3d;
+  color: #006936;
+}
+.workspace-evaluation-title {
+  display: block;
+  padding: 0.25rem 0;
+  color: #006936;
+}
+.workspace-grade-matrix .table-scroll {
+  max-width: 100%;
+}
+.workspace-grade-matrix .grade-cell {
+  min-width: 150px;
+}
+.workspace-calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+.workspace-calendar-toolbar > div {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.workspace-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #fff;
+}
+.workspace-calendar-weekday {
+  background: #f8fafc;
+  padding: 0.65rem 0.2rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+.workspace-calendar-day {
+  min-height: 110px;
+  padding: 0.45rem;
+  border-top: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.workspace-calendar-day:nth-child(7n) {
+  border-right: 0;
+}
+.workspace-calendar-day.is-outside {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+.workspace-calendar-day.is-today {
+  background: #f0fdf4;
+  box-shadow: inset 0 0 0 1px #007a3d;
+}
+.workspace-calendar-date {
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+.workspace-calendar-session {
+  padding: 0.45rem;
+  border-radius: 0.4rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.workspace-calendar-session.is-realizada {
+  background: #dcfce7;
+  color: #166534;
+}
+.workspace-calendar-session.is-cancelada {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.workspace-calendar-session small {
+  display: block;
+  font-size: 0.65rem;
+  margin-top: 0.15rem;
+}
+.workspace-calendar-add {
+  padding: 0.2rem;
+  background: transparent;
+  color: #007a3d;
+  border: 1px dashed #a7d5bb;
+  border-radius: 0.3rem;
+  font-size: 0.7rem;
+  margin-top: auto;
+}
+.workspace-session-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 1rem;
+}
+.workspace-session-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.workspace-session-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1e293b;
+}
+.workspace-session-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+.workspace-session-card a {
+  color: #007a3d;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.workspace-session-form {
+  border-top: 3px solid #007a3d;
+  padding-top: 1rem;
+}
+.workspace-session-form .session-dates {
+  padding: 0;
+  list-style: none;
+}
+.workspace-session-form .session-dates li {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.5rem;
+  margin: 0.4rem 0;
+}
+@media (max-width: 600px) {
+  .workspace-calendar-day {
+    min-height: 86px;
+    padding: 0.25rem;
+  }
+  .workspace-calendar-session {
+    padding: 0.2rem;
+    font-size: 0.65rem;
+  }
+  .workspace-calendar-session small {
+    display: none;
+  }
+  .workspace-calendar-add {
+    font-size: 0.6rem;
+  }
+  .workspace-hero-main h2 {
+    font-size: 1.1rem;
+  }
+}

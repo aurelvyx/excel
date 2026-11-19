@@ -236,9 +236,9 @@ try {
       assert.equal(existsSync('/app/src'),false);
       assert.equal(existsSync('/app/node_modules/@nestjs/cli'),false);
       const registry=JSON.parse(readFileSync('/app/templates/reportes/registro.json','utf8'));
-      assert.equal(registry.plantillas.length,4);
+      assert.equal(registry.plantillas.length,6);
       for(const template of registry.plantillas) assert.equal(createHash('sha256').update(readFileSync('/app/templates/reportes/'+template.archivo)).digest('hex'),template.sha256);
-      console.log('Rol API sin DDL; auditoría protegida; imagen con dependencias de producción y cuatro plantillas íntegras.');
+      console.log('Rol API sin DDL; auditoría protegida; imagen con dependencias de producción y seis plantillas íntegras.');
     } finally {await client.end();}
   `;
   run("exec", "-T", "api", "node", "--input-type=module", "-e", probe);
@@ -246,7 +246,7 @@ try {
     "El rol de API carece de DDL/privilegios administrativos y no puede desactivar la auditoría.",
   );
   checks.push(
-    "La imagen de API contiene las cuatro plantillas con sus hashes, sin .env ni código o herramientas de desarrollo.",
+    "La imagen de API contiene las seis plantillas con sus hashes, sin .env ni código o herramientas de desarrollo.",
   );
   checks.push(
     "La auditoría conserva la IP depurada por el proxy e ignora cabeceras de IP falsificadas por el cliente.",

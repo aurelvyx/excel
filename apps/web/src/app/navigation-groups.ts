@@ -17,7 +17,10 @@ const exact = (value: string) => (path: string) => path === value;
 /** Menú agrupado por tarea y flujo de trabajo administrativo. */
 export function navGroups(access: Access, path: string): NavGroup[] {
   const groups: NavGroup[] = [];
-  const add = (label: string, items: (NavItem | false | undefined | null)[]) => {
+  const add = (
+    label: string,
+    items: (NavItem | false | undefined | null)[],
+  ) => {
     const visible = items.filter((i): i is NavItem => !!i);
     if (visible.length) groups.push({ label, items: visible });
   };
@@ -31,14 +34,17 @@ export function navGroups(access: Access, path: string): NavGroup[] {
 
   add("Matrícula", [
     access.enrollments && {
-      href: "#/matriculas",
+      href: "#/matriculas/nueva",
       label: "Matrículas",
       current: (p) => /^\/matriculas(?:\/nueva|\/[0-9]+)?$/.test(p),
     },
     access.reader && {
-      href: "#/matriculas/padron",
-      label: "Nóminas por grupo",
-      current: (p) => p === "/matriculas/padron" || p.startsWith("/matriculas/grupo/"),
+      href: "#/matriculas",
+      label: "Gestión de matrículas",
+      current: (p) =>
+        p === "/matriculas" ||
+        p === "/matriculas/padron" ||
+        p.startsWith("/matriculas/grupo/"),
     },
     access.reader && {
       href: "#/estudiantes",
@@ -135,7 +141,9 @@ export function navGroups(access: Access, path: string): NavGroup[] {
     {
       href: "#/evaluacion/niveles",
       label: "Criterios de evaluación",
-      current: (p) => p.startsWith("/evaluacion/niveles") || p.startsWith("/evaluacion/planes"),
+      current: (p) =>
+        p.startsWith("/evaluacion/niveles") ||
+        p.startsWith("/evaluacion/planes"),
     },
     (access.admin || access.reader) && {
       href: "#/actas",

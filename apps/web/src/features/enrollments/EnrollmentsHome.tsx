@@ -52,7 +52,8 @@ export function EnrollmentsHome({
   const [search, setSearch] = useState("");
   const [groupSearch, setGroupSearch] = useState("");
   const [languageFilter, setLanguageFilter] = useState<string>("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<GroupCategoryFilter>("ALL");
+  const [categoryFilter, setCategoryFilter] =
+    useState<GroupCategoryFilter>("ALL");
 
   const sorted = useMemo(
     () =>
@@ -170,7 +171,14 @@ export function EnrollmentsHome({
           }}
         >
           <div style={{ maxWidth: "660px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginBottom: "0.4rem",
+              }}
+            >
               <span className="academic-badge badge-green">
                 <Sparkles size={11} style={{ marginRight: "0.25rem" }} />
                 ADMISIÓN Y REGISTRO ACADÉMICO
@@ -181,21 +189,49 @@ export function EnrollmentsHome({
                 </span>
               )}
             </div>
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.3rem 0" }}>
+            <h1
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: "0 0 0.3rem 0",
+              }}
+            >
               Gestión de Matrículas y Nóminas por Salón
             </h1>
-            <p style={{ fontSize: "0.84rem", color: "#475569", margin: 0, lineHeight: 1.5 }}>
-              Selecciona un periodo, consulta la ocupación y las solicitudes pendientes, o abre la nómina del salón.
+            <p
+              style={{
+                fontSize: "0.84rem",
+                color: "#475569",
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Selecciona un periodo, consulta la ocupación y las solicitudes
+              pendientes, o abre la nómina del salón.
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.6rem",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             {canEnroll && (
               <>
-                <a href="#/vouchers" className="academic-btn-action btn-action-secondary">
+                <a
+                  href="#/vouchers"
+                  className="academic-btn-action btn-action-secondary"
+                >
                   Revisar vouchers
                 </a>
-                <a href="#/matriculas/nueva" className="academic-btn-action btn-action-primary">
+                <a
+                  href="#/matriculas/nueva?modal=1"
+                  className="academic-btn-action btn-action-primary"
+                >
                   <Plus size={16} /> Matricular estudiante
                 </a>
               </>
@@ -245,13 +281,29 @@ export function EnrollmentsHome({
             <School size={20} color="#007a3d" />
           </div>
           <div>
-            <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                fontWeight: 700,
+                color: "#64748b",
+                textTransform: "uppercase",
+              }}
+            >
               Salones del Periodo
             </span>
-            <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>
+            <div
+              style={{
+                fontSize: "1.35rem",
+                fontWeight: 800,
+                color: "#0f172a",
+                lineHeight: 1.2,
+              }}
+            >
               {groups.loading ? "…" : groupItems.length}
             </div>
-            <span style={{ fontSize: "0.72rem", color: "#007a3d", fontWeight: 600 }}>
+            <span
+              style={{ fontSize: "0.72rem", color: "#007a3d", fontWeight: 600 }}
+            >
               {period ? text(period, "nombre") : "Selecciona un ciclo"}
             </span>
           </div>
@@ -266,7 +318,8 @@ export function EnrollmentsHome({
             alignItems: "center",
             gap: "0.85rem",
             cursor: "pointer",
-            border: categoryFilter === "AVAILABLE" ? "2px solid #2563eb" : undefined,
+            border:
+              categoryFilter === "AVAILABLE" ? "2px solid #2563eb" : undefined,
           }}
         >
           <div
@@ -284,13 +337,29 @@ export function EnrollmentsHome({
             <Users size={20} color="#2563eb" />
           </div>
           <div>
-            <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                fontWeight: 700,
+                color: "#64748b",
+                textTransform: "uppercase",
+              }}
+            >
               Matrículas activas y cerradas
             </span>
-            <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>
+            <div
+              style={{
+                fontSize: "1.35rem",
+                fontWeight: 800,
+                color: "#0f172a",
+                lineHeight: 1.2,
+              }}
+            >
               {groups.loading ? "…" : metrics.enrolled}
             </div>
-            <span style={{ fontSize: "0.72rem", color: "#2563eb", fontWeight: 600 }}>
+            <span
+              style={{ fontSize: "0.72rem", color: "#2563eb", fontWeight: 600 }}
+            >
               {metrics.availableGroups} salones con vacantes
             </span>
           </div>
@@ -320,20 +389,38 @@ export function EnrollmentsHome({
             <CheckCircle2 size={20} color="#059669" />
           </div>
           <div>
-            <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                fontWeight: 700,
+                color: "#64748b",
+                textTransform: "uppercase",
+              }}
+            >
               Capacidad total
             </span>
-            <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#059669", lineHeight: 1.2 }}>
+            <div
+              style={{
+                fontSize: "1.35rem",
+                fontWeight: 800,
+                color: "#059669",
+                lineHeight: 1.2,
+              }}
+            >
               {groups.loading ? "…" : metrics.totalCapacity}
             </div>
-            <span style={{ fontSize: "0.72rem", color: "#065f46", fontWeight: 600 }}>
+            <span
+              style={{ fontSize: "0.72rem", color: "#065f46", fontWeight: 600 }}
+            >
               Cupos registrados
             </span>
           </div>
         </div>
 
         <div
-          onClick={() => setCategoryFilter(categoryFilter === "PENDING" ? "ALL" : "PENDING")}
+          onClick={() =>
+            setCategoryFilter(categoryFilter === "PENDING" ? "ALL" : "PENDING")
+          }
           className="academic-card"
           style={{
             padding: "1rem 1.15rem",
@@ -341,7 +428,8 @@ export function EnrollmentsHome({
             alignItems: "center",
             gap: "0.85rem",
             cursor: "pointer",
-            border: categoryFilter === "PENDING" ? "2px solid #d97706" : undefined,
+            border:
+              categoryFilter === "PENDING" ? "2px solid #d97706" : undefined,
           }}
         >
           <div
@@ -359,14 +447,32 @@ export function EnrollmentsHome({
             <AlertCircle size={20} color="#d97706" />
           </div>
           <div>
-            <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                fontWeight: 700,
+                color: "#64748b",
+                textTransform: "uppercase",
+              }}
+            >
               Solicitudes pendientes
             </span>
-            <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#d97706", lineHeight: 1.2 }}>
+            <div
+              style={{
+                fontSize: "1.35rem",
+                fontWeight: 800,
+                color: "#d97706",
+                lineHeight: 1.2,
+              }}
+            >
               {groups.loading ? "…" : metrics.pending}
             </div>
-            <span style={{ fontSize: "0.72rem", color: "#b45309", fontWeight: 600 }}>
-              En {metrics.groupsWithPending} {metrics.groupsWithPending === 1 ? "salón" : "salones"} (clic para filtrar)
+            <span
+              style={{ fontSize: "0.72rem", color: "#b45309", fontWeight: 600 }}
+            >
+              En {metrics.groupsWithPending}{" "}
+              {metrics.groupsWithPending === 1 ? "salón" : "salones"} (clic para
+              filtrar)
             </span>
           </div>
         </div>
@@ -382,13 +488,38 @@ export function EnrollmentsHome({
         }}
       >
         {/* Columna Izquierda: Selector de Periodos Académicos */}
-        <aside className="academic-card" style={{ padding: "1.25rem" }} aria-label="Periodos académicos">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+        <aside
+          className="academic-card"
+          style={{ padding: "1.25rem" }}
+          aria-label="Periodos académicos"
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "0.75rem",
+            }}
+          >
             <div>
-              <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#007a3d", textTransform: "uppercase" }}>
+              <span
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 800,
+                  color: "#007a3d",
+                  textTransform: "uppercase",
+                }}
+              >
                 Ciclos Disponibles
               </span>
-              <h2 style={{ fontSize: "1rem", fontWeight: 800, color: "#1e293b", margin: "0.1rem 0 0 0" }}>
+              <h2
+                style={{
+                  fontSize: "1rem",
+                  fontWeight: 800,
+                  color: "#1e293b",
+                  margin: "0.1rem 0 0 0",
+                }}
+              >
                 Periodos Académicos
               </h2>
             </div>
@@ -397,7 +528,10 @@ export function EnrollmentsHome({
             </span>
           </div>
 
-          <div className="academic-search-input-wrapper" style={{ marginBottom: "0.85rem" }}>
+          <div
+            className="academic-search-input-wrapper"
+            style={{ marginBottom: "0.85rem" }}
+          >
             <Search size={14} color="#94a3b8" />
             <input
               type="text"
@@ -410,7 +544,13 @@ export function EnrollmentsHome({
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                }}
               >
                 <X size={13} color="#94a3b8" />
               </button>
@@ -422,7 +562,13 @@ export function EnrollmentsHome({
           ) : periods.error ? (
             <Feedback onRetry={periods.reload}>{periods.error}</Feedback>
           ) : visible.length ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
               {visible.map((row) => {
                 const key = String(row.id);
                 const isSel = key === selected;
@@ -436,7 +582,9 @@ export function EnrollmentsHome({
                     onClick={() => {
                       setLanguageFilter("ALL");
                       setCategoryFilter("ALL");
-                      navigate(`/matriculas/padron?periodo=${encodeURIComponent(key)}`);
+                      navigate(
+                        `/matriculas/padron?periodo=${encodeURIComponent(key)}`,
+                      );
                     }}
                     style={{
                       display: "flex",
@@ -466,11 +614,19 @@ export function EnrollmentsHome({
                       >
                         {text(row, "nombre")}
                       </strong>
-                      <small style={{ fontSize: "0.72rem", color: "#64748b", fontFamily: "monospace" }}>
+                      <small
+                        style={{
+                          fontSize: "0.72rem",
+                          color: "#64748b",
+                          fontFamily: "monospace",
+                        }}
+                      >
                         {text(row, "codigo")}
                       </small>
                     </div>
-                    <span className={`academic-badge ${isOpen ? "badge-green" : "badge-gray"}`}>
+                    <span
+                      className={`academic-badge ${isOpen ? "badge-green" : "badge-gray"}`}
+                    >
                       {periodLabels[est] ?? est}
                     </span>
                   </button>
@@ -478,14 +634,25 @@ export function EnrollmentsHome({
               })}
             </div>
           ) : (
-            <p style={{ fontSize: "0.8125rem", color: "#94a3b8", textAlign: "center", padding: "1rem 0" }}>
+            <p
+              style={{
+                fontSize: "0.8125rem",
+                color: "#94a3b8",
+                textAlign: "center",
+                padding: "1rem 0",
+              }}
+            >
               No hay periodos con ese criterio.
             </p>
           )}
         </aside>
 
         {/* Columna Derecha: Salones Clasificados del Periodo */}
-        <section className="academic-card" style={{ padding: "1.35rem 1.5rem" }} aria-label="Grupos del periodo">
+        <section
+          className="academic-card"
+          style={{ padding: "1.35rem 1.5rem" }}
+          aria-label="Grupos del periodo"
+        >
           {/* Cabecera del panel de salones */}
           <div
             style={{
@@ -498,17 +665,33 @@ export function EnrollmentsHome({
             }}
           >
             <div>
-              <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#007a3d", textTransform: "uppercase" }}>
+              <span
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 800,
+                  color: "#007a3d",
+                  textTransform: "uppercase",
+                }}
+              >
                 Nóminas y Cupos por Salón
               </span>
-              <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", margin: "0.1rem 0 0 0" }}>
+              <h2
+                style={{
+                  fontSize: "1.15rem",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  margin: "0.1rem 0 0 0",
+                }}
+              >
                 {period ? text(period, "nombre") : "Grupos del periodo elegido"}
               </h2>
             </div>
 
             {/* Filtro por Idioma */}
             {availableLanguages.length > 1 && (
-              <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+              <div
+                style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}
+              >
                 <button
                   type="button"
                   onClick={() => setLanguageFilter("ALL")}
@@ -517,8 +700,12 @@ export function EnrollmentsHome({
                     borderRadius: "999px",
                     fontSize: "0.74rem",
                     fontWeight: 700,
-                    border: languageFilter === "ALL" ? "1px solid #007a3d" : "1px solid #e2e8f0",
-                    backgroundColor: languageFilter === "ALL" ? "#007a3d" : "#f8fafc",
+                    border:
+                      languageFilter === "ALL"
+                        ? "1px solid #007a3d"
+                        : "1px solid #e2e8f0",
+                    backgroundColor:
+                      languageFilter === "ALL" ? "#007a3d" : "#f8fafc",
                     color: languageFilter === "ALL" ? "#ffffff" : "#475569",
                     cursor: "pointer",
                   }}
@@ -537,7 +724,9 @@ export function EnrollmentsHome({
                         borderRadius: "999px",
                         fontSize: "0.74rem",
                         fontWeight: 700,
-                        border: active ? "1px solid #007a3d" : "1px solid #e2e8f0",
+                        border: active
+                          ? "1px solid #007a3d"
+                          : "1px solid #e2e8f0",
                         backgroundColor: active ? "#007a3d" : "#f8fafc",
                         color: active ? "#ffffff" : "#475569",
                         cursor: "pointer",
@@ -567,7 +756,14 @@ export function EnrollmentsHome({
                 marginBottom: "1rem",
               }}
             >
-              <div className="academic-search-input-wrapper" style={{ flex: 1, minWidth: "240px", backgroundColor: "#ffffff" }}>
+              <div
+                className="academic-search-input-wrapper"
+                style={{
+                  flex: 1,
+                  minWidth: "240px",
+                  backgroundColor: "#ffffff",
+                }}
+              >
                 <Search size={15} color="#94a3b8" />
                 <input
                   type="text"
@@ -580,20 +776,46 @@ export function EnrollmentsHome({
                   <button
                     type="button"
                     onClick={() => setGroupSearch("")}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      display: "flex",
+                    }}
                   >
                     <X size={14} color="#94a3b8" />
                   </button>
                 )}
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
-                <Filter size={13} color="#64748b" style={{ marginRight: "0.15rem" }} />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Filter
+                  size={13}
+                  color="#64748b"
+                  style={{ marginRight: "0.15rem" }}
+                />
                 {[
                   { id: "ALL" as const, label: `Todos (${groupItems.length})` },
-                  { id: "AVAILABLE" as const, label: `Con vacantes (${metrics.availableGroups})` },
-                  { id: "FULL" as const, label: `Cupo lleno (${metrics.fullGroups})` },
-                  { id: "PENDING" as const, label: `Con solicitudes pendientes (${metrics.groupsWithPending})` },
+                  {
+                    id: "AVAILABLE" as const,
+                    label: `Con vacantes (${metrics.availableGroups})`,
+                  },
+                  {
+                    id: "FULL" as const,
+                    label: `Cupo lleno (${metrics.fullGroups})`,
+                  },
+                  {
+                    id: "PENDING" as const,
+                    label: `Con solicitudes pendientes (${metrics.groupsWithPending})`,
+                  },
                 ].map((tab) => {
                   const active = categoryFilter === tab.id;
                   return (
@@ -606,7 +828,9 @@ export function EnrollmentsHome({
                         borderRadius: "0.5rem",
                         fontSize: "0.72rem",
                         fontWeight: 700,
-                        border: active ? "1px solid #0f172a" : "1px solid #cbd5e1",
+                        border: active
+                          ? "1px solid #0f172a"
+                          : "1px solid #cbd5e1",
                         backgroundColor: active ? "#0f172a" : "#ffffff",
                         color: active ? "#ffffff" : "#475569",
                         cursor: "pointer",
@@ -628,12 +852,30 @@ export function EnrollmentsHome({
           ) : groups.error ? (
             <Feedback onRetry={groups.reload}>{groups.error}</Feedback>
           ) : !groupItems.length ? (
-            <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#64748b" }}>
-              <Calendar size={32} color="#cbd5e1" style={{ margin: "0 auto 0.5rem" }} />
-              <p style={{ margin: 0, fontWeight: 600 }}>Este periodo todavía no tiene salones aperturados.</p>
+            <div
+              style={{
+                textAlign: "center",
+                padding: "3rem 1rem",
+                color: "#64748b",
+              }}
+            >
+              <Calendar
+                size={32}
+                color="#cbd5e1"
+                style={{ margin: "0 auto 0.5rem" }}
+              />
+              <p style={{ margin: 0, fontWeight: 600 }}>
+                Este periodo todavía no tiene salones aperturados.
+              </p>
             </div>
           ) : !filteredGroups.length ? (
-            <div style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#64748b" }}>
+            <div
+              style={{
+                textAlign: "center",
+                padding: "2.5rem 1rem",
+                color: "#64748b",
+              }}
+            >
               <p style={{ margin: "0 0 0.75rem" }}>
                 Ningún salón coincide con los filtros actuales.
               </p>
@@ -650,12 +892,22 @@ export function EnrollmentsHome({
               </button>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
               {filteredGroups.map((group) => (
                 <GroupRow
                   key={group.id}
                   group={group}
                   periodId={selected}
+                  canEnroll={
+                    canEnroll &&
+                    (!period || text(period, "estado") === "ABIERTO")
+                  }
                 />
               ))}
             </div>
@@ -669,9 +921,11 @@ export function EnrollmentsHome({
 function GroupRow({
   group,
   periodId,
+  canEnroll,
 }: {
   group: Row;
   periodId: string;
+  canEnroll: boolean;
 }) {
   const capacity = text(group, "capacidad");
   const enrolled = Number(group.matriculados) || 0;
@@ -697,8 +951,18 @@ function GroupRow({
   const theme = isEnglish
     ? { bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0", accent: "#007a3d" }
     : isPortuguese
-      ? { bg: "#fef3c7", color: "#92400e", border: "#fde68a", accent: "#d97706" }
-      : { bg: "#eff6ff", color: "#1e40af", border: "#bfdbfe", accent: "#2563eb" };
+      ? {
+          bg: "#fef3c7",
+          color: "#92400e",
+          border: "#fde68a",
+          accent: "#d97706",
+        }
+      : {
+          bg: "#eff6ff",
+          color: "#1e40af",
+          border: "#bfdbfe",
+          accent: "#2563eb",
+        };
 
   return (
     <div
@@ -718,7 +982,14 @@ function GroupRow({
       }}
     >
       {/* Información del Salón */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.85rem", flex: "1 1 300px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.85rem",
+          flex: "1 1 300px",
+        }}
+      >
         <div
           style={{
             width: "2.65rem",
@@ -739,7 +1010,14 @@ function GroupRow({
         </div>
 
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              flexWrap: "wrap",
+            }}
+          >
             <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>
               {idioma} — {text(group, "nivel")}
             </strong>
@@ -817,12 +1095,32 @@ function GroupRow({
 
       {/* Ocupación y solicitudes pendientes */}
       <div style={{ minWidth: "190px", flex: "0 1 220px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.3rem" }}>
-          <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>Ocupación:</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            marginBottom: "0.3rem",
+          }}
+        >
+          <span
+            style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}
+          >
+            Ocupación:
+          </span>
           <strong style={{ fontSize: "0.875rem", color: "#0f172a" }}>
             {enrolled}
-            {capacityNumber > 0 ? <span style={{ color: "#64748b", fontWeight: 500 }}> / {capacityNumber}</span> : null}{" "}
-            <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "#64748b" }}>alumnos</span>
+            {capacityNumber > 0 ? (
+              <span style={{ color: "#64748b", fontWeight: 500 }}>
+                {" "}
+                / {capacityNumber}
+              </span>
+            ) : null}{" "}
+            <span
+              style={{ fontSize: "0.72rem", fontWeight: 600, color: "#64748b" }}
+            >
+              alumnos
+            </span>
           </strong>
         </div>
 
@@ -847,10 +1145,19 @@ function GroupRow({
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", fontWeight: 600 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+          }}
+        >
           <span style={{ color: "#059669" }}>{enrolled} matrículas</span>
           {pending > 0 ? (
-            <span style={{ color: "#d97706" }}>{pending} solicitudes pendientes</span>
+            <span style={{ color: "#d97706" }}>
+              {pending} solicitudes pendientes
+            </span>
           ) : (
             <span style={{ color: "#94a3b8" }}>0 pendientes</span>
           )}
@@ -858,7 +1165,30 @@ function GroupRow({
       </div>
 
       {/* Acciones del Salón */}
-      <div style={{ display: "flex", gap: "0.45rem", alignItems: "center", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.45rem",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        {canEnroll && group.estado === "ACTIVO" && !isFull && (
+          <a
+            href={`#/matriculas/nueva?grupoId=${group.id}&modal=1`}
+            className="academic-btn-action btn-action-secondary"
+            style={{
+              borderColor: "#bbf7d0",
+              backgroundColor: "#f0fdf4",
+              color: "#007a3d",
+              fontSize: "0.75rem",
+              padding: "0.45rem 0.75rem",
+            }}
+            title="Matricular un estudiante directamente en este salón"
+          >
+            <Plus size={13} /> Matricular aquí
+          </a>
+        )}
         <a
           href={`#/matriculas/grupo/${group.id}?periodo=${periodId}`}
           className="academic-btn-action btn-action-primary"
