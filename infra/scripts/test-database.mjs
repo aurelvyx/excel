@@ -7,6 +7,10 @@ import { dirname, join } from "node:path";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const options = process.argv.slice(2);
 const profiles = {
+  "--seed": {
+    folder: "seed",
+    files: ["test/seed-practice.integration-spec.ts"],
+  },
   "--b10": {
     folder: "b10",
     files: [
@@ -29,7 +33,7 @@ if (
   options.length > 1 ||
   (options.length === 1 && !Object.hasOwn(profiles, options[0]))
 ) {
-  throw new Error("Usar pnpm test:db, pnpm test:b10, pnpm test:b20 o pnpm test:b21");
+  throw new Error("Usar pnpm test:db, pnpm test:b10, pnpm test:b20, pnpm test:b21 o pnpm test:seed");
 }
 const profile = profiles[options[0]];
 const browser = process.env.B20_BROWSER ?? "chromium";

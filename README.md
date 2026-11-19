@@ -158,6 +158,13 @@ turno, sección, docente, dos grupos y una versión de reglas 13/30/3 para demos
 Todos los códigos son DEMO; la cuenta de referencia está deshabilitada y su contraseña
 aleatoria no se conserva. No es una cuenta para iniciar sesión. No se fijan pesos de evaluación.
 
+Para ensayar la aplicación con más registros, `pnpm db:seed:practice` genera un lote
+configurable con estudiantes, cuentas por rol, grupos EN/PT, vouchers, matrículas,
+sesiones, asistencias, justificaciones y notas sintéticas. Acepta `--students`,
+`--groups`, `--teachers`, `--sessions` y `--batch`. Requiere habilitación explícita
+y una contraseña temporal recibida por entorno. Uso y escenarios disponibles en
+[Datos para pruebas manuales](docs/datos-prueba.md). Ayuda con `pnpm db:seed:practice --help`.
+
 ## Verificación automática
 
 ```sh
