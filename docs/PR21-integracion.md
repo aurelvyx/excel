@@ -13,8 +13,8 @@ criterios de evaluación ni el estado de la puesta en producción.
 | Asistencia y justificaciones (B11–B15) | La nueva navegación enlaza las operaciones existentes. Una asistencia pendiente no se guarda como presente; solo el docente asignado registra en sesiones habilitadas. La resolución conserva su motivo y el registro posterior al cierre conserva su auditoría. |
 | Notas y actas (B16–B18) | Se usa el cálculo del servidor, los criterios aprobados, el mínimo de 13 y la prioridad de asistencia. Las notas incompletas no se presentan como resultado definitivo. |
 | Reportes (B19) | Se recuperan los diseños de acta EN/PT de front/1 como `ACTA_DEMOSTRACION`, anonimizados y marcados **BORRADOR**. La matriz y el resumen existentes completan seis plantillas. La nota y los componentes usan los cálculos del servidor; la condición confirmada procede de B18. |
-| Datos de demostración (B02, B20) | Se conserva `pnpm db:seed:demo` con habilitación explícita y carga no destructiva. No se añade el reemplazo masivo de datos ni sus credenciales de ejemplo. |
-| Operación (B21) | Se mantienen la consulta de respaldos para administración, el aislamiento del despliegue y la verificación con PostgreSQL, Chromium, HTTPS y restauración. |
+| Datos de demostración (B02, B20) | `pnpm db:seed:practice` carga lotes con personas ficticias, salones reconocibles y casos académicos listos para pruebas manuales. |
+| Operación (B02, B21) | `pnpm db:restart` reinicia PostgreSQL conservando datos. `pnpm db:fresh` verifica el PostgreSQL local de desarrollo y reconstruye el esquema previa confirmación explícita, con carga opcional en la misma transacción. |
 
 Las migraciones aplicadas y las plantillas vigentes de B19 se conservan. La API
 con el rol limitado de B21 puede registrar una descarga sin modificar el esquema.
@@ -31,18 +31,21 @@ los contratos actuales de la API.
 | Asistente, selectores de estudiante, voucher y grupo | Se recuperan tarjetas, pasos y resumen lateral. Se conserva la secuencia estudiante → voucher → grupo → confirmación y el reintento de una misma solicitud. |
 | Fichas y comprobantes | Se recuperan las tarjetas, filtros, detalle del voucher e historial por intento con consulta semanal de asistencia. |
 | Catálogos y gestión académica | Se recuperan la guía de preparación, acciones por salón, campos agrupados y cambios de estado con motivo y confirmación. Las sugerencias de código son editables. |
-| Sesiones y asistencia | Se recuperan calendario, tarjetas, matriz, edición desde el detalle y contexto de retorno. Los datos pendientes conservan ese estado y los cambios se validan en la API. |
+| Sesiones y asistencia | El control abre desde Salón 360° con selector de sesión, búsqueda por nombre o documento y marcas P/F/T/J. Calendario y matriz conservan el contexto y la edición valida permisos, cierre y cambios sin guardar. |
 | Salón 360° y notas | Se recuperan resumen, matrices y accesos a justificaciones y cierres. La vista completa de evaluaciones comparte la captura y sus controles de conflicto y permisos. |
 | Criterios y resultados | Se recupera la presentación de componentes, pesos y actas. Los cálculos oficiales corresponden al servidor y al cierre académico. |
 | Reportes | Se recuperan tarjetas, pestañas y vista previa del acta. Las descargas usan todos los registros autorizados del grupo y registran cada exportación. |
 
 ## Actas de demostración
 
-Las dos plantillas derivadas conservan el diseño de front/1 y usan encabezados
-de demostración y campos institucionales pendientes. El bloque de estudiantes
-crece para conservar la nómina completa y desplazar el pie y las firmas. La
-plantilla admite hasta ocho componentes de evaluación; una configuración mayor
-recibe un error explícito y puede utilizar la matriz de notas.
+Las plantillas activas en desarrollo, CI y Coolify son
+`acta-ugel-en-v1-limpia.xlsx` y `acta-ugel-pt-v1-limpia.xlsx`. En **Reportes →
+Acta de evaluación de demostración → Ver vista previa** se muestra la hoja
+preparada para Excel, con logotipos, celdas combinadas, anchos y estilos del
+formato. La nómina alfabética se consulta por páginas con numeración continua.
+El XLSX incluye el padrón completo y desplaza las firmas al superar las filas
+previstas. Si el grupo supera ocho componentes, se informa el límite del acta
+y sigue disponible la matriz de notas.
 
 Administración y coordinación pueden exportar el acta. El docente puede hacerlo
 para sus grupos asignados. La exportación revalida la sesión y la asignación.

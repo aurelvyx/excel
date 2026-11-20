@@ -22,9 +22,11 @@ import { AuditService } from '../control/audit.service.js';
 import { page, validId } from '../../common/validation.js';
 import { ReportsRepository } from './reports.repository.js';
 import { ReportWorkbookService } from './report-workbook.service.js';
+import { actSheetLayout, compareActRows } from './report-acta.js';
 import {
   reportTypes,
   type ReportLanguage,
+  type ReportPage,
   type ReportRow,
   type ReportSnapshot,
   type ReportType,
@@ -184,6 +186,7 @@ export class ReportsService {
       resumenAsistencia: attendanceSummaries.get(row.matricula_id)!,
       resultado: byEnrollment.get(row.matricula_id) ?? null,
     }));
+    if (tipo === 'ACTA_DEMOSTRACION') items.sort(compareActRows);
     const confirmed = items.filter((row) => {
       const result = row.resultado;
       return (
@@ -268,7 +271,10 @@ export class ReportsService {
       pendientes.push(
         'Aplica criterios de evaluación aprobados al grupo; los criterios históricos no se consideran aprobados',
       );
-    if (tipo === 'ACTA_DEMOSTRACION' && componentes.length > 8)
+    if (
+      tipo === 'ACTA_DEMOSTRACION' &&
+      componentes.length > actSheetLayout.components
+    )
       pendientes.push(
         'El diseño de acta admite hasta ocho componentes. Utiliza la matriz detallada para conservar todos los criterios.',
       );
@@ -351,22 +357,49 @@ export class ReportsService {
     actor: Identity,
     groupId: string,
     query: Record<string, unknown>,
-  ) {
+  ): Promise<ReportPage> {
     validId(groupId);
     const { after, limit } = page(query, ['tipo']);
     const tipo = this.type(query.tipo);
-    return this.source.transaction(async (manager) => {
-      const { group } = await this.scope(manager, actor, groupId, tipo);
-      const snapshot = await this.snapshot(manager, group, tipo);
-      const rows = snapshot.items
-        .filter((row) => BigInt(row.matriculaId) > BigInt(after))
-        .slice(0, limit + 1);
-      return {
-        ...snapshot,
-        items: rows.slice(0, limit),
-        nextCursor: rows.length > limit ? rows[limit - 1]!.matriculaId : null,
-      };
-    });
+    const report: ReportPage = await this.source.transaction(
+      async (manager) => {
+        const { group } = await this.scope(manager, actor, groupId, tipo);
+        const snapshot = await this.snapshot(manager, group, tipo);
+        if (tipo === 'ACTA_DEMOSTRACION') {
+          const offset =
+            after === '0'
+              ? 0
+              : snapshot.items.findIndex((row) => row.matriculaId === after) +
+                1;
+          if (after !== '0' && offset === 0)
+            throw new ConflictException(
+              'El padrón cambió. Recarga la vista desde la primera página',
+            );
+          const nextOffset = offset + limit;
+          const items = snapshot.items.slice(offset, nextOffset);
+          return {
+            ...snapshot,
+            items,
+            offset,
+            nextCursor:
+              nextOffset < snapshot.items.length
+                ? items.at(-1)!.matriculaId
+                : null,
+          };
+        }
+        const rows = snapshot.items
+          .filter((row) => BigInt(row.matriculaId) > BigInt(after))
+          .slice(0, limit + 1);
+        return {
+          ...snapshot,
+          items: rows.slice(0, limit),
+          nextCursor: rows.length > limit ? rows[limit - 1]!.matriculaId : null,
+        };
+      },
+    );
+    if (tipo === 'ACTA_DEMOSTRACION')
+      report.acta = await this.workbook.previewAct(report, report.offset ?? 0);
+    return report;
   }
 
   async export(

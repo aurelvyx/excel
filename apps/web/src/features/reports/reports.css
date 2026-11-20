@@ -39,52 +39,60 @@
   padding-top: 0.75rem;
   border-top: 1px solid #e2e8f0;
 }
-.report-act-preview {
-  background: #fff;
-  border: 2px solid #334155;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  color: #1e293b;
+.report-preview-heading {
+  scroll-margin-block-start: 5rem;
 }
-.report-act-title {
-  padding: 1rem;
-  text-align: center;
-  background: #f1f5f9;
-  border-bottom: 1px solid #cbd5e1;
+.report-act-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #dce4de;
 }
-.report-act-title h3 {
-  margin: 0 0 0.5rem;
-}
-.report-act-metadata {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  border-bottom: 1px solid #cbd5e1;
-}
-.report-act-metadata > section {
-  padding: 1rem;
-  border-right: 1px solid #e2e8f0;
-}
-.report-act-metadata h4 {
-  margin: 0 0 0.75rem;
-  color: #475569;
-}
-.report-act-preview .table-scroll {
+.report-act-scroll {
+  max-inline-size: 100%;
   overflow: auto;
+  background: #eef2ef;
 }
-.report-act-preview th {
-  background: #e2e8f0;
-  color: #1e293b;
+.report-act-scroll:focus-visible {
+  outline-offset: -2px;
 }
-.report-act-preview td,
-.report-act-preview th {
-  border-right: 1px solid #e2e8f0;
+.report-act-sheet {
+  position: relative;
+  margin-inline: auto;
+  background: #fff;
+  color: #151515;
+  font-family: Arial, sans-serif;
 }
-.report-act-signatures {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 2rem 1rem 1rem;
-  text-align: center;
-  color: #64748b;
-  font-size: 0.85rem;
+.report-act-sheet table {
+  table-layout: fixed;
+  font-size: 13.33px;
+  line-height: 1.15;
+}
+.report-act-sheet :is(th, td) {
+  border: 0;
+  padding: 0 3px;
+  max-width: none;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+.report-act-sheet tr:hover {
+  background: transparent;
+}
+.report-act-rotated {
+  display: inline-block;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.report-act-sheet img {
+  position: absolute;
+  max-width: none;
+  object-fit: contain;
+  pointer-events: none;
 }

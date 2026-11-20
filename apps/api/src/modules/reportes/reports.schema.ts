@@ -17,6 +17,26 @@ const array = (items: SchemaObject): SchemaObject => ({ type: 'array', items });
 const nullableText: SchemaObject = { ...text, nullable: true };
 const hash: SchemaObject = { ...text, pattern: '^[a-f0-9]{64}$' };
 const tipo: SchemaObject = { ...text, enum: [...reportTypes] };
+const pixels: SchemaObject = { type: 'number', minimum: 0 };
+const actCellStyleSchema: SchemaObject = {
+  type: 'object',
+  properties: {
+    color: text,
+    backgroundColor: text,
+    fontSize: pixels,
+    fontFamily: { ...text, enum: ['Arial', 'Arial Narrow'] },
+    fontWeight: { type: 'integer' },
+    fontStyle: { ...text, enum: ['italic'] },
+    textDecoration: { ...text, enum: ['underline'] },
+    textAlign: { ...text, enum: ['left', 'center', 'right'] },
+    verticalAlign: { ...text, enum: ['top', 'middle', 'bottom'] },
+    rotate: { type: 'boolean' },
+    borderTop: text,
+    borderRight: text,
+    borderBottom: text,
+    borderLeft: text,
+  },
+};
 export const reportRowSchema = object({
   matriculaId: text,
   codigo: text,
@@ -37,7 +57,7 @@ export const reportPreviewSchema = object({
     id: text,
     tipo,
     idioma: { ...text, enum: ['EN', 'PT'] },
-    version: { type: 'integer', enum: [1] },
+    version: { type: 'integer', minimum: 1 },
     estado: { ...text, enum: ['PROPUESTA'] },
     sha256: hash,
   }),
@@ -77,6 +97,41 @@ export const reportPreviewSchema = object({
     aprobados: { ...count, nullable: true },
   }),
 });
+reportPreviewSchema.properties!.offset = {
+  ...count,
+  description: 'Número de filas anteriores en el padrón ordenado del acta',
+};
+reportPreviewSchema.properties!.acta = {
+  ...object({
+    headerRows: { ...count, minimum: 1 },
+    columnWidths: array(pixels),
+    rows: array(
+      object({
+        index: { ...count, minimum: 1 },
+        height: pixels,
+        cells: array(
+          object({
+            column: { ...count, minimum: 1 },
+            rowSpan: { ...count, minimum: 1 },
+            colSpan: { ...count, minimum: 1 },
+            text,
+            style: actCellStyleSchema,
+          }),
+        ),
+      }),
+    ),
+    images: array(
+      object({
+        src: text,
+        x: pixels,
+        y: pixels,
+        width: pixels,
+        height: pixels,
+      }),
+    ),
+  }),
+  description: 'Hoja preparada del acta, con la nómina de la página consultada',
+};
 export const reportHistorySchema = pageSchema(
   object({
     id: text,

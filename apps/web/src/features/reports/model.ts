@@ -22,6 +22,45 @@ export type ReportRow = {
   resumenAsistencia: AttendanceSummaryData;
   resultado: StoredResult | null;
 };
+export type ActPreviewCell = {
+  column: number;
+  rowSpan: number;
+  colSpan: number;
+  text: string;
+  style: {
+    color?: string;
+    backgroundColor?: string;
+    fontFamily?: "Arial" | "Arial Narrow";
+    fontSize?: number;
+    fontWeight?: number;
+    fontStyle?: "italic";
+    textDecoration?: "underline";
+    textAlign?: "left" | "center" | "right";
+    verticalAlign?: "top" | "middle" | "bottom";
+    rotate?: boolean;
+    borderTop?: string;
+    borderRight?: string;
+    borderBottom?: string;
+    borderLeft?: string;
+  };
+};
+export type ActPreviewRow = {
+  index: number;
+  height: number;
+  cells: ActPreviewCell[];
+};
+export type ActPreviewSheet = {
+  headerRows: number;
+  columnWidths: number[];
+  rows: ActPreviewRow[];
+  images: {
+    src: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }[];
+};
 export type ReportPreview = {
   grupo: SessionGroup;
   tipo: ReportType;
@@ -55,6 +94,8 @@ export type ReportPreview = {
   }[];
   componentes: { id: string; nombre: string; pesoPct: string }[];
   items: ReportRow[];
+  offset?: number;
+  acta?: ActPreviewSheet;
   nextCursor: string | null;
   anexo: {
     idioma: string;

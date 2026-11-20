@@ -13,6 +13,10 @@ desde grupos, calificaciones y acta. La vista conserva periodo, idioma, nivel,
 grupo, turno y sección. La página de 20 intentos no limita la descarga: los
 conteos y el archivo incluyen el grupo completo. Revisar los pendientes y la
 confirmación antes de **Generar XLSX**. El historial identifica cada generación.
+En el acta, **Ver vista previa** lleva a la hoja preparada para el XLSX, con
+los logotipos, los estilos, las celdas combinadas y los bloques de la plantilla.
+El padrón se consulta por páginas, en orden alfabético y con numeración continua.
+Las columnas A/D/R muestran el resultado confirmado en el cierre vigente.
 
 | Reporte | Usuarios | Idiomas | Contenido |
 | --- | --- | --- | --- |
@@ -75,9 +79,11 @@ pnpm b19:plantillas
 ```
 
 La matriz y el resumen son diseños propuestos a partir de los campos observados
-en B10. Las dos actas son versiones derivadas y anonimizadas del diseño de front/1,
-recuperadas a petición del equipo el 19 de noviembre de 2026. Los seis formatos
-conservan su identificación de borrador y la aprobación institucional pendiente.
+en B10. Las actas se generan exclusivamente a partir de
+`acta-ugel-en-v1-limpia.xlsx` y `acta-ugel-pt-v1-limpia.xlsx`, derivados
+anonimizados de front/1. La versión de exportación `ACTA-UGEL-…-v2` registra
+la huella de la plantilla limpia. Los seis formatos se identifican como
+borradores de aprobación pendiente.
 La matriz admite los
 indicadores configurados y todas las filas permitidas, preserva encabezado e
 identidad al desplazarse y agrega un conteo del padrón completo. El resumen tiene
@@ -122,8 +128,8 @@ OpenAPI **0.19.0**. Base `/api/v1/reportes/grupos/{grupoId}`:
 | POST | `/exportaciones`, `{tipo, revision}` | XLSX binario y registro transaccional |
 | GET | `/exportaciones`, `after` y `limit` | Historial autorizado de metadatos |
 
-Solo se aceptan `MATRIZ_NOTAS` y `RESUMEN_PARTICIPANTES`. No hay modo oficial ni
-endpoint de aprobación. Los códigos de idioma soportados son EN/PT y DEMO-EN/PT;
+Se aceptan `MATRIZ_NOTAS`, `RESUMEN_PARTICIPANTES` y `ACTA_DEMOSTRACION`. Los
+códigos de idioma soportados son EN/PT y DEMO-EN/PT;
 no se adivina el idioma a partir del nombre. Otro código necesita un mapeo revisado.
 El POST exige sesión, Origin y CSRF, devuelve Content-Disposition seguro,
 `X-Exportacion-Id` y `Cache-Control: no-store`. El cliente comparte el mismo

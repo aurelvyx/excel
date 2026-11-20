@@ -456,12 +456,74 @@ describe('B19 navegador React → API → PostgreSQL → XLSX de demostración',
         name: 'Nómina del acta de evaluación de demostración',
         exact: true,
       });
-      expect(await table.getByRole('row').count()).toBe(21);
-      await contains(table, 'Pendiente de confirmación');
+      await page
+        .getByRole('button', { name: 'Ver vista previa', exact: true })
+        .click();
+      const heading = page.getByRole('heading', {
+        name: 'Vista previa · acta de evaluación de demostración',
+      });
+      expect(
+        await heading.evaluate((element) => document.activeElement === element),
+      ).toBe(true);
+      expect(await table.locator('thead tr').count()).toBe(16);
+      expect(await table.locator('col').count()).toBe(29);
+      const mergedHeading = table.locator(
+        'tr[data-index="14"] [data-column="3"]',
+      );
+      expect(await mergedHeading.getAttribute('rowspan')).toBe('3');
+      expect(await mergedHeading.getAttribute('colspan')).toBe('7');
+      const logos = page.locator('.report-act-sheet img');
+      await expect
+        .poll(() =>
+          logos.evaluateAll(
+            (images) =>
+              images.filter(
+                (image) => (image as HTMLImageElement).naturalWidth > 0,
+              ).length,
+          ),
+        )
+        .toBe(2);
+      await contains(table, 'Resultado pendiente de confirmación');
       await fact(totals(), 'Intentos matriculados', '41');
+      const paper = page.locator('.report-act-scroll');
+      await expect
+        .poll(() =>
+          paper.evaluate(
+            (element) => element.scrollWidth - element.clientWidth,
+          ),
+        )
+        .toBeLessThanOrEqual(2);
+      await paper.screenshot({
+        path: `${artifacts}acta-hoja-${language}.png`,
+        style: '.next-topbar, .topbar { visibility: hidden !important; }',
+      });
+      const firstPageStudent = await table
+        .locator('tr[data-index="17"] [data-column="3"]')
+        .textContent();
+      await page
+        .getByRole('region', { name: 'Vista previa del reporte', exact: true })
+        .getByRole('button', { name: 'Siguiente', exact: true })
+        .click();
+      const nextPageRow = table.getByRole('row').filter({
+        has: page.getByRole('cell', { name: '21', exact: true }),
+      });
+      await nextPageRow.waitFor();
+      const nextPageStudent = await nextPageRow
+        .getByRole('cell')
+        .nth(2)
+        .textContent();
+      expect(
+        await source.query('SELECT id FROM exportaciones WHERE grupo_id=$1', [
+          f.group.id,
+        ]),
+      ).toEqual([]);
       const { book, file } = await exportBook(f.group);
       expect(file.suggestedFilename()).toContain('ACTA_DEMOSTRACION');
       const sheet = book.getWorksheet('Acta Evaluación')!;
+      expect(await mergedHeading.textContent()).toBe(sheet.getCell('C14').text);
+      expect(sheet.getCell('C17').text).toBe(firstPageStudent);
+      expect(sheet.getCell('A37').value).toBe(21);
+      expect(sheet.getCell('C37').text).toBe(nextPageStudent);
       expect(sheet.getCell('C57').text.length).toBeGreaterThan(0);
       expect(sheet.getCell('Q59').text).toContain('Fecha de generación');
       expect(sheet.getCell('B66').text).toBe('Administración');
@@ -469,6 +531,21 @@ describe('B19 navegador React → API → PostgreSQL → XLSX de demostración',
       expect(sheet.getCell('Y13').value).toBeNull();
       expect(sheet.getCell('A2').text).toContain('BORRADOR');
       await screenshot(`acta-recuperada-${language}`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page
+        .getByRole('button', { name: 'Tamaño real', exact: true })
+        .click();
+      expect(
+        await paper.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      ).toBe(true);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      await page.setViewportSize({ width: 1440, height: 1000 });
     }
   }, 60000);
 

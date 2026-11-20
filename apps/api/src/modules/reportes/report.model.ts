@@ -2,6 +2,7 @@ import type { AcademicGroup } from '../asistencia/academic-context.js';
 import type { AttendanceSummary } from '../asistencia/attendance-calculation.policy.js';
 import type { GradeSummary } from '../evaluacion/grade-calculation.service.js';
 import type { StoredResult } from '../evaluacion/act.repository.js';
+import type { ActSheetPreview } from './report-act-preview.js';
 
 export const reportTypes = [
   'MATRIZ_NOTAS',
@@ -73,4 +74,8 @@ export type ReportSnapshot = {
   items: ReportRow[];
   anexo: ReportAnnex;
 };
-export type ReportPage = ReportSnapshot & { nextCursor: string | null };
+export type ReportPage = ReportSnapshot & {
+  nextCursor: string | null;
+  offset?: number;
+  acta?: ActSheetPreview;
+};

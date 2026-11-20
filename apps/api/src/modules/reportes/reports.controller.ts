@@ -56,7 +56,8 @@ export class ReportsController {
   })
   @ApiOkResponse({ schema: reportPreviewSchema })
   @ApiConflictResponse({
-    description: 'Código de idioma sin plantilla de demostración',
+    description:
+      'Código de idioma sin plantilla de demostración o página del acta obsoleta',
   })
   preview(
     @Req() req: AuthRequest,
@@ -122,7 +123,7 @@ export class ReportsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiOperation({
     summary:
-      'Consultar metadatos de generación; docente solo matriz de sus grupos, sin descarga histórica de binarios',
+      'Consultar metadatos de generación. El docente accede a matrices y actas de sus grupos asignados',
   })
   @ApiOkResponse({ schema: reportHistorySchema })
   history(

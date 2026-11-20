@@ -37,6 +37,10 @@ playwright/.cache/
 *.dump
 *.bak
 
+# Actas fuente de uso local con datos de muestra. Versionar sus copias limpias.
+/apps/api/templates/reportes/acta-ugel-en-v1.xlsx
+/apps/api/templates/reportes/acta-ugel-pt-v1.xlsx
+
 # Configuraciones locales de IDE y sistema operativo
 .vscode/
 .idea/

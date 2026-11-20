@@ -215,6 +215,7 @@ try {
     import assert from 'node:assert/strict';
     import {existsSync,readFileSync} from 'node:fs';
     import {createHash} from 'node:crypto';
+    import {ReportWorkbookService} from './dist/modules/reportes/report-workbook.service.js';
     import pg from 'pg';
     const client = new pg.Client({host:process.env.DB_HOST,port:5432,database:process.env.DB_NAME,user:process.env.DB_USER,password:process.env.DB_PASSWORD});
     await client.connect();
@@ -237,7 +238,15 @@ try {
       assert.equal(existsSync('/app/node_modules/@nestjs/cli'),false);
       const registry=JSON.parse(readFileSync('/app/templates/reportes/registro.json','utf8'));
       assert.equal(registry.plantillas.length,6);
-      for(const template of registry.plantillas) assert.equal(createHash('sha256').update(readFileSync('/app/templates/reportes/'+template.archivo)).digest('hex'),template.sha256);
+      const workbooks=new ReportWorkbookService();
+      for(const template of registry.plantillas) {
+        if (template.tipo==='ACTA_DEMOSTRACION') {
+          assert.ok(template.archivo.endsWith('-limpia.xlsx'));
+          assert.equal(existsSync('/app/templates/reportes/'+template.archivo.replace('-limpia.xlsx','.xlsx')),false);
+        }
+        assert.equal(createHash('sha256').update(readFileSync('/app/templates/reportes/'+template.archivo)).digest('hex'),template.sha256);
+        assert.equal((await workbooks.template(template.tipo,template.idioma)).sha256,template.sha256);
+      }
       console.log('Rol API sin DDL; auditoría protegida; imagen con dependencias de producción y seis plantillas íntegras.');
     } finally {await client.end();}
   `;
@@ -246,7 +255,7 @@ try {
     "El rol de API carece de DDL/privilegios administrativos y no puede desactivar la auditoría.",
   );
   checks.push(
-    "La imagen de API contiene las seis plantillas con sus hashes, sin .env ni código o herramientas de desarrollo.",
+    "La imagen de API contiene las seis plantillas con sus hashes y las copias de actas sin datos, sin los originales privados, archivos .env ni herramientas de desarrollo.",
   );
   checks.push(
     "La auditoría conserva la IP depurada por el proxy e ignora cabeceras de IP falsificadas por el cliente.",

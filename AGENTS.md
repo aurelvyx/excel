@@ -192,6 +192,12 @@ grupo y los resultados confirmados proceden del cierre B18. Las equivalencias
 institucionales y el destinatario externo conservan su estado pendiente.
 Detalle y límites del formato en `docs/PR21-integracion.md`.
 
+El equipo confirmó que `acta-ugel-en-v1-limpia.xlsx` y
+`acta-ugel-pt-v1-limpia.xlsx` son las únicas plantillas de ejecución en
+`apps/api/templates/reportes/`. La vista previa deriva la cuadrícula, las celdas
+combinadas, los estilos y los logotipos de la misma hoja que prepara el XLSX.
+Se mantiene el estado BORRADOR hasta la aprobación institucional documentada.
+
 Consultar siempre la documentación de la versión instalada en el repositorio al ejecutar comandos o elegir una API concreta:
 
 - [NestJS: autorización](https://docs.nestjs.com/security/authorization) y [validación](https://docs.nestjs.com/application/validation).

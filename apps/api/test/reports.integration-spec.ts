@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { DataSource } from 'typeorm';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
@@ -292,8 +293,15 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
     ['EN', '12.40', 'U17'],
     ['PT', '12.50', 'T17'],
   ] as const)(
-    'exporta el diseño recuperado %s con permisos, proyección decimal y resultado confirmado de B18',
+    'exporta el acta limpia %s con permisos, proyección decimal y resultado confirmado de B18',
     async (language, grade, flag) => {
+      const cleanTemplate = await readFile(
+        new URL(
+          `../templates/reportes/acta-ugel-${language.toLowerCase()}-v1-limpia.xlsx`,
+          import.meta.url,
+        ),
+      );
+      const cleanHash = createHash('sha256').update(cleanTemplate).digest('hex');
       const data = await dataset(language, grade);
       const initial = await preview(
         data.group,
@@ -301,6 +309,11 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
         coordinator,
       );
       expect(initial.puedeExportar).toBe(true);
+      expect(initial.plantilla).toMatchObject({
+        id: `ACTA-UGEL-${language}-v2`,
+        version: 2,
+        sha256: cleanHash,
+      });
       expect(initial.componentes).toHaveLength(1);
       expect(
         initial.items[0]!.notasComponentes[initial.componentes[0]!.id],
@@ -335,12 +348,68 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
       expect(secondSheet.getCell('Y13').value).toBe(grade === '12.50' ? 1 : 0);
       expect(secondSheet.getCell('Y14').value).toBe(grade === '12.40' ? 1 : 0);
       const before = await evidence(data.group);
+      expect(before.exports).toHaveLength(3);
+      for (const row of before.exports)
+        expect(row).toMatchObject({
+          plantilla_id: initial.plantilla.id,
+          plantilla_version: 2,
+          plantilla_sha256: cleanHash,
+        });
       await expect(
         checkMigrationReversal(source, new ActaDemostracion1790208017000()),
       ).rejects.toMatchObject({ driverError: { code: '23514' } });
       expect(await evidence(data.group)).toEqual(before);
     },
   );
+
+  it('pagina el padrón del acta en el mismo orden que el XLSX, incluso si los identificadores no aumentan', async () => {
+    const { group, student } = await dataset();
+    const middle = await fixture.student();
+    const last = await fixture.student();
+    const middleEnrollment = await fixture.enroll(group, middle);
+    const lastEnrollment = await fixture.enroll(group, last);
+    for (const [person, surname] of [
+      [student, 'Zeta'],
+      [middle, 'Mendoza'],
+      [last, 'Álvarez'],
+    ] as const)
+      await source.query(
+        'UPDATE personas SET apellido_paterno=$1 WHERE id=$2',
+        [surname, person.persona_id],
+      );
+    const first = await preview(
+      group,
+      'ACTA_DEMOSTRACION',
+      teacher,
+      '&limit=1',
+    );
+    const second = await preview(
+      group,
+      'ACTA_DEMOSTRACION',
+      teacher,
+      `&after=${first.nextCursor}`,
+    );
+    expect(first.offset).toBe(0);
+    expect(first.nextCursor).toBe(lastEnrollment.id);
+    expect(second.offset).toBe(1);
+    expect(second.items[0]!.matriculaId).toBe(middleEnrollment.id);
+    expect(second.nextCursor).toBeNull();
+    expect(second.revision).toBe(first.revision);
+    const downloaded = await exported(group, first, teacher).expect(201);
+    const { worksheets } = await workbook(downloaded);
+    const [act] = worksheets;
+    const ordered = [...first.items, ...second.items];
+    expect(ordered).toHaveLength(3);
+    for (const [index, row] of ordered.entries()) {
+      expect(act!.getCell(`A${17 + index}`).value).toBe(index + 1);
+      expect(act!.getCell(`C${17 + index}`).value).toBe(row.estudiante);
+    }
+    await call(
+      'get',
+      `${path(group)}?tipo=ACTA_DEMOSTRACION&after=999999999999999999`,
+      teacher,
+    ).expect(409);
+  });
 
   it('lee el grupo completo con revisión independiente de página y no registra exportaciones', async () => {
     const data = await dataset();

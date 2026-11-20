@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { FileSpreadsheet } from "lucide-react";
 import { ApiError, apiFile } from "../../shared/api";
 import { FormDialog } from "../../shared/FormDialog";
@@ -65,6 +65,7 @@ export function ReportsPage({
   const { data, loading, error, reload } = useApiQuery<ReportPreview>(
     `${endpoint}?${search}`,
   );
+  const previewTitle = useRef<HTMLHeadingElement>(null);
   return (
     <section className="academic-container reports-workspace">
       <a className="back-link" href="#/reportes">
@@ -120,12 +121,34 @@ export function ReportsPage({
             BORRADOR · Formato de demostración. La aprobación institucional de
             las plantillas y los destinatarios de los anexos sigue pendiente.
           </p>
+          <Button
+            disabled={loading || !!error || !data}
+            onClick={() => {
+              previewTitle.current?.focus({ preventScroll: true });
+              previewTitle.current?.scrollIntoView({ block: "start" });
+            }}
+          >
+            Ver vista previa
+          </Button>
         </div>
       </div>
       {loading ? (
         <Loading>Cargando vista previa…</Loading>
       ) : error ? (
-        <Feedback onRetry={reload}>{error}</Feedback>
+        <>
+          <Feedback onRetry={reload}>{error}</Feedback>
+          {after && (
+            <Button
+              onClick={() =>
+                navigate(
+                  `/reportes/grupos/${groupId}?${new URLSearchParams({ tipo: type })}`,
+                )
+              }
+            >
+              Volver a la primera página
+            </Button>
+          )}
+        </>
       ) : (
         data && (
           <ReportsLoaded
@@ -134,6 +157,7 @@ export function ReportsPage({
             after={after}
             endpoint={endpoint}
             reload={reload}
+            previewTitle={previewTitle}
           />
         )
       )}
@@ -146,11 +170,13 @@ function ReportsLoaded({
   after,
   endpoint,
   reload,
+  previewTitle,
 }: {
   data: ReportPreview;
   after: string;
   endpoint: string;
   reload: () => void;
+  previewTitle: RefObject<HTMLHeadingElement | null>;
 }) {
   const [dialog, setDialog] = useState(false);
   const [review, setReview] = useState(false);
@@ -306,11 +332,13 @@ function ReportsLoaded({
           La exportación no está disponible. Revisa los pendientes del reporte.
         </p>
       )}
-      <h2>Vista previa · {reportNames[data.tipo].toLowerCase()}</h2>
+      <h2 className="report-preview-heading" ref={previewTitle} tabIndex={-1}>
+        Vista previa · {reportNames[data.tipo].toLowerCase()}
+      </h2>
       <p className="muted">
-        Las notas pendientes se muestran como «Pendiente» y quedan vacías en
-        XLSX. La nota calculada puede estar pendiente de confirmación; la
-        condición solo aparece con un resultado confirmado.
+        {data.tipo === "ACTA_DEMOSTRACION"
+          ? "Las notas pendientes quedan en blanco. Las marcas A, D y R corresponden a resultados confirmados."
+          : "Las notas pendientes se muestran como «Pendiente» y quedan vacías en XLSX. La nota calculada puede estar pendiente de confirmación; la condición solo aparece con un resultado confirmado."}
       </p>
       <section className="panel" aria-label="Vista previa del reporte">
         <ReportPreviewTable data={data} />

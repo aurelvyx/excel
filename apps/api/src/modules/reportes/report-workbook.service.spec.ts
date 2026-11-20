@@ -195,6 +195,16 @@ describe('B19 adaptador XLSX — RF49/RF51–53 / CU19', () => {
       expect(sheet.getCell('K59').value).toBeNull();
       expect(sheet.getCell('S59').value).toBeNull();
       expect(sheet.getCell('Y13').value).toBeNull();
+      expect(sheet.getCell('J9').value).toBeNull();
+      expect(sheet.getCell('P13').value).toBeNull();
+      expect(sheet.model.merges).toContain('G1:O1');
+      expect(sheet.model.merges).toContain('A2:AC2');
+      expect(sheet.model.merges).toContain('C14:I16');
+      expect(sheet.getImages()).toHaveLength(2);
+      expect(sheet.workbook.model.media).toHaveLength(2);
+      expect(sheet.workbook.definedNames.model).toHaveLength(0);
+      expect(sheet.workbook.creator).toBe('Centro de Idiomas Excel');
+      expect(sheet.workbook.lastPrinted).toBeUndefined();
     },
   );
 
@@ -241,7 +251,7 @@ describe('B19 adaptador XLSX — RF49/RF51–53 / CU19', () => {
       expect(data.plantilla).toMatchObject({
         tipo,
         idioma,
-        version: 1,
+        version: tipo === 'ACTA_DEMOSTRACION' ? 2 : 1,
         estado: 'PROPUESTA',
       });
       expect(data.plantilla.sha256).toMatch(/^[a-f0-9]{64}$/);
