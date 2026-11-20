@@ -11,11 +11,12 @@ import { Facts } from "../../shared/ui/Facts";
 import { useState, type FormEvent } from "react";
 import { api, text, type Page, type Row } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
-import { RegisterStudent } from "./RegisterStudent";
 import { useAuth } from "../auth/session";
 import { RecordForm } from "../configuration/RecordForm";
 import { studentResource } from "./model";
 import { StudentHistory } from "./StudentHistory";
+import { RegisterStudent } from "./RegisterStudent";
+import "./registration.css";
 
 export function StudentsPage({
   id,
@@ -31,14 +32,19 @@ export function StudentsPage({
   const [success, notify] = useState("");
   const [editing, edit] = useState(false);
   const [creating, create] = useState(false);
+  const after = query.get("after") ?? "";
   const serialized = query.toString();
+  const pageQuery = new URLSearchParams(serialized);
+  pageQuery.set("limit", "20");
+  if (after) pageQuery.set("after", after);
+  else pageQuery.delete("after");
   const {
     data: loaded,
     loading,
     error,
     reload,
   } = useApiQuery<Row | Page>(
-    id ? `estudiantes/${id}` : `estudiantes?limit=20&${serialized}`,
+    id ? `estudiantes/${id}` : `estudiantes?${pageQuery}`,
   );
   const student = id ? (loaded as Row | undefined) : undefined;
   const data =
@@ -105,7 +111,9 @@ export function StudentsPage({
               </Button>
               <Button
                 disabled={loading || !serialized}
-                onClick={() => navigate("/estudiantes")}
+                onClick={() => {
+                  navigate("/estudiantes");
+                }}
               >
                 Limpiar filtros
               </Button>
@@ -115,7 +123,7 @@ export function StudentsPage({
           loadingLabel="Cargando estudiantes…"
           error={error}
           onRetry={reload}
-          empty={!data.items.length}
+          empty={!loading && !error && !data.items.length}
           emptyDescription={
             serialized
               ? "Prueba con otros filtros."
@@ -123,11 +131,66 @@ export function StudentsPage({
                 ? "Registra el primer estudiante para comenzar."
                 : "Todavía no hay registros disponibles para tu cuenta."
           }
-          pagination={
+          pagination={null}
+        >
+          <div className="student-results" aria-busy={loading}>
+            {loading && (
+              <p className="student-results-status" role="status">
+                Cargando esta página…
+              </p>
+            )}
+            {error && <Feedback onRetry={reload}>{error}</Feedback>}
+            <DataTable
+              caption="Estudiantes registrados"
+              rows={data.items}
+              rowKey={(row) => row.id}
+              columns={[
+                {
+                  key: "codigo",
+                  header: "Código",
+                  cell: (row) => text(row, "codigo_estudiante"),
+                },
+                {
+                  key: "estudiante",
+                  header: "Estudiante",
+                  cell: (row) =>
+                    `${text(row, "nombres")} ${text(row, "apellido_paterno")} ${text(row, "apellido_materno")}`,
+                },
+                {
+                  key: "documento",
+                  header: "Documento",
+                  cell: (row) =>
+                    `${text(row, "tipo_documento")} ${text(row, "numero_documento")}`,
+                },
+                {
+                  key: "estado",
+                  header: "Estado",
+                  cell: (row) => (
+                    <StatusBadge inactive={!row.activo}>
+                      {row.activo ? "Activo" : "Inactivo"}
+                    </StatusBadge>
+                  ),
+                },
+                {
+                  key: "consulta",
+                  header: "Acciones",
+                  className: "row-actions",
+                  cell: (row) => (
+                    <a
+                      className="link-button"
+                      href={`#/estudiantes/${row.id}?${serialized}`}
+                    >
+                      Ver ficha e historial
+                    </a>
+                  ),
+                },
+              ]}
+            />
             <Pagination
-              after={query.get("after")}
+              after={after}
               nextCursor={data.nextCursor}
               count={data.items.length}
+              disabled={loading}
               onChange={(cursor) => {
                 const next = new URLSearchParams(serialized);
                 if (cursor) next.set("after", cursor);
@@ -135,54 +198,7 @@ export function StudentsPage({
                 navigate(`/estudiantes?${next}`);
               }}
             />
-          }
-        >
-          <DataTable
-            caption="Estudiantes registrados"
-            rows={data.items}
-            rowKey={(row) => row.id}
-            columns={[
-              {
-                key: "codigo",
-                header: "Código",
-                cell: (row) => text(row, "codigo_estudiante"),
-              },
-              {
-                key: "estudiante",
-                header: "Estudiante",
-                cell: (row) =>
-                  `${text(row, "nombres")} ${text(row, "apellido_paterno")} ${text(row, "apellido_materno")}`,
-              },
-              {
-                key: "documento",
-                header: "Documento",
-                cell: (row) =>
-                  `${text(row, "tipo_documento")} ${text(row, "numero_documento")}`,
-              },
-              {
-                key: "estado",
-                header: "Estado",
-                cell: (row) => (
-                  <StatusBadge inactive={!row.activo}>
-                    {row.activo ? "Activo" : "Inactivo"}
-                  </StatusBadge>
-                ),
-              },
-              {
-                key: "consulta",
-                header: "Acciones",
-                className: "row-actions",
-                cell: (row) => (
-                  <a
-                    className="link-button"
-                    href={`#/estudiantes/${row.id}?${serialized}`}
-                  >
-                    Ver ficha e historial
-                  </a>
-                ),
-              },
-            ]}
-          />
+          </div>
         </ListPanel>
       ) : (
         <>
@@ -196,7 +212,7 @@ export function StudentsPage({
           ) : id && student ? (
             <>
               <section className="panel student-profile">
-                <header className="page-heading">
+                <header className="page-heading student-profile-heading">
                   <div>
                     <h2>
                       {text(student, "persona.nombres")}{" "}
@@ -230,27 +246,29 @@ export function StudentsPage({
                     </div>
                   )}
                 </header>
-                <Facts
-                  emptyLabel="Sin registrar"
-                  items={[
-                    [
-                      "Documento",
-                      `${text(student, "persona.tipoDocumento")} ${text(student, "persona.numeroDocumento")}`,
-                    ],
-                    ["Registro", text(student, "fecha_registro")],
-                    ...(canEdit
-                      ? ([
-                          ["Teléfono", text(student, "persona.telefono")],
-                          ["Correo", text(student, "persona.correo")],
-                          ["Dirección", text(student, "persona.direccion")],
-                          [
-                            "Nacimiento",
-                            text(student, "persona.fechaNacimiento"),
-                          ],
-                        ] as const)
-                      : []),
-                  ]}
-                />
+                <div className="student-profile-facts">
+                  <Facts
+                    emptyLabel="Sin registrar"
+                    items={[
+                      [
+                        "Documento",
+                        `${text(student, "persona.tipoDocumento")} ${text(student, "persona.numeroDocumento")}`,
+                      ],
+                      ["Registro", text(student, "fecha_registro")],
+                      ...(canEdit
+                        ? ([
+                            ["Teléfono", text(student, "persona.telefono")],
+                            ["Correo", text(student, "persona.correo")],
+                            ["Dirección", text(student, "persona.direccion")],
+                            [
+                              "Nacimiento",
+                              text(student, "persona.fechaNacimiento"),
+                            ],
+                          ] as const)
+                        : []),
+                    ]}
+                  />
+                </div>
               </section>
               <StudentHistory id={id} canResume={canEdit} />
             </>

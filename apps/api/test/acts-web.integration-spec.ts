@@ -706,15 +706,14 @@ describe('B18 navegador React → API → PostgreSQL', () => {
       name: 'Detalle e historial del intento',
       exact: true,
     });
+    const attendanceHistory = detail.getByRole('table', {
+      name: 'Asistencias del intento',
+      exact: true,
+    });
+    await attendanceHistory.waitFor();
     await contains(detail, 'Rectificación sintética de asistencia');
     await contains(detail, 'Corrección de asistencia');
-    await contains(
-      detail.getByRole('table', {
-        name: 'Asistencias del intento',
-        exact: true,
-      }),
-      'Corrección sintética de marca',
-    );
+    await contains(attendanceHistory, 'Corrección sintética de marca');
     await screenshot('acta-historial-correccion');
   });
 

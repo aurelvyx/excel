@@ -190,9 +190,10 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     decision: 'VALIDADO' | 'RECHAZADO' = 'VALIDADO',
     note?: string,
   ) {
-    const row = page
-      .getByRole('row')
-      .filter({ has: page.getByRole('cell', { name: number, exact: true }) });
+    const row = page.getByRole('article', {
+      name: `Voucher ${number}`,
+      exact: true,
+    });
     await row.getByRole('button', { name: 'Revisar voucher' }).click();
     await page.getByLabel('Decisión', { exact: true }).selectOption(decision);
     if (note) await page.getByLabel('Observación', { exact: true }).fill(note);
@@ -283,6 +284,9 @@ describe('B09 navegador React → API → PostgreSQL', () => {
     });
     expect(enrollment.validado_at).toBeInstanceOf(Date);
     await page.getByRole('link', { name: 'Ver ficha del estudiante' }).click();
+    await page
+      .getByRole('button', { name: 'Tabla de intentos', exact: true })
+      .click();
     await page
       .getByRole('cell', { name: enrollment.codigo, exact: false })
       .waitFor();
@@ -683,7 +687,7 @@ describe('B09 navegador React → API → PostgreSQL', () => {
           .getByRole('link', { name: 'Matrículas', exact: true })
           .count(),
       ).toBe(0);
-      await page.goto(`${origin}/#/matriculas`);
+      await page.goto(`${origin}/#/matriculas/nueva`);
       await page
         .getByRole('heading', { name: 'Página no disponible' })
         .waitFor();
@@ -692,4 +696,28 @@ describe('B09 navegador React → API → PostgreSQL', () => {
       ).toBe(403);
     },
   );
+
+  it('abre el asistente modal desde gestión y permite cerrarlo con teclado sin crear una solicitud', async () => {
+    await login('secretaria');
+    const before = await source.query(
+      'SELECT count(*)::int AS cantidad FROM matriculas',
+    );
+    await page.goto(`${origin}/#/matriculas`);
+    await page
+      .getByRole('link', { name: 'Matricular estudiante', exact: true })
+      .click();
+    const modal = page.getByRole('dialog', {
+      name: 'Proceso de matrícula',
+      exact: true,
+    });
+    await modal
+      .getByRole('heading', { name: 'Seleccionar estudiante', exact: true })
+      .waitFor();
+    await page.keyboard.press('Escape');
+    await modal.waitFor({ state: 'hidden' });
+    await page.waitForURL('**/#/matriculas');
+    expect(
+      await source.query('SELECT count(*)::int AS cantidad FROM matriculas'),
+    ).toEqual(before);
+  });
 });

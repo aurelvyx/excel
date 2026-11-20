@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
+import { FileSpreadsheet } from "lucide-react";
 import { ApiError, apiFile } from "../../shared/api";
 import { FormDialog } from "../../shared/FormDialog";
 import { navigate } from "../../shared/navigation";
@@ -13,7 +14,9 @@ import { useAuth } from "../auth/session";
 import { GroupContext } from "../attendance/GroupContext";
 import { ReportHistory } from "./ReportHistory";
 import { ReportPreviewTable } from "./ReportPreviewTable";
-import { reportNames, type ReportPreview } from "./model";
+import { reportNames, type ReportPreview, type ReportType } from "./model";
+import "../academic/academic.css";
+import "./reports.css";
 
 function Totals({ data }: { data: ReportPreview }) {
   return (
@@ -62,42 +65,90 @@ export function ReportsPage({
   const { data, loading, error, reload } = useApiQuery<ReportPreview>(
     `${endpoint}?${search}`,
   );
+  const previewTitle = useRef<HTMLHeadingElement>(null);
   return (
-    <section>
+    <section className="academic-container reports-workspace">
       <a className="back-link" href="#/reportes">
         ← Volver a reportes
       </a>
-      <PageHeading
-        eyebrow="Reportes · Borradores de demostración"
-        title="Reportes del grupo"
-        description="Revisa los datos y genera una matriz de notas o un resumen de participantes en XLSX."
-      />
-      <div className="panel panel-content">
-        <SelectField
-          label="Tipo de reporte"
-          id="report-type"
-          value={type}
-          disabled={loading}
-          onChange={(event) =>
-            navigate(`/reportes/grupos/${groupId}?tipo=${event.target.value}`)
-          }
-        >
-          <option value="MATRIZ_NOTAS">Matriz de notas</option>
-          {canSummary && (
-            <option value="RESUMEN_PARTICIPANTES">
-              Resumen de participantes
+      <div className="academic-card report-hero">
+        <span className="academic-badge badge-green">
+          <FileSpreadsheet size={14} /> Formatos XLSX · Borrador
+        </span>
+        <PageHeading
+          eyebrow="Reportes · Borradores de demostración"
+          title="Reportes del grupo"
+          description="Previsualiza el acta de evaluación, la matriz detallada de notas y el resumen de participantes de inglés o portugués."
+        />
+        <div className="panel panel-content">
+          <SelectField
+            label="Tipo de reporte"
+            id="report-type"
+            value={type}
+            disabled={loading}
+            onChange={(event) =>
+              navigate(`/reportes/grupos/${groupId}?tipo=${event.target.value}`)
+            }
+          >
+            <option value="MATRIZ_NOTAS">Matriz de notas</option>
+            <option value="ACTA_DEMOSTRACION">
+              Acta de evaluación de demostración
             </option>
-          )}
-        </SelectField>
-        <p className="notice">
-          BORRADOR · Formato de demostración. La aprobación institucional de las
-          plantillas y los destinatarios de los anexos sigue pendiente.
-        </p>
+            {canSummary && (
+              <option value="RESUMEN_PARTICIPANTES">
+                Resumen de participantes
+              </option>
+            )}
+          </SelectField>
+          <div className="report-format-tabs" aria-label="Formatos disponibles">
+            {(Object.keys(reportNames) as ReportType[])
+              .filter((key) => canSummary || key !== "RESUMEN_PARTICIPANTES")
+              .map((key) => (
+                <Button
+                  key={key}
+                  className={`academic-btn-action ${type === key ? "btn-action-primary" : "btn-action-secondary"}`}
+                  disabled={loading}
+                  aria-pressed={type === key}
+                  onClick={() =>
+                    navigate(`/reportes/grupos/${groupId}?tipo=${key}`)
+                  }
+                >
+                  {reportNames[key]}
+                </Button>
+              ))}
+          </div>
+          <p className="notice">
+            BORRADOR · Formato de demostración. La aprobación institucional de
+            las plantillas y los destinatarios de los anexos sigue pendiente.
+          </p>
+          <Button
+            disabled={loading || !!error || !data}
+            onClick={() => {
+              previewTitle.current?.focus({ preventScroll: true });
+              previewTitle.current?.scrollIntoView({ block: "start" });
+            }}
+          >
+            Ver vista previa
+          </Button>
+        </div>
       </div>
       {loading ? (
         <Loading>Cargando vista previa…</Loading>
       ) : error ? (
-        <Feedback onRetry={reload}>{error}</Feedback>
+        <>
+          <Feedback onRetry={reload}>{error}</Feedback>
+          {after && (
+            <Button
+              onClick={() =>
+                navigate(
+                  `/reportes/grupos/${groupId}?${new URLSearchParams({ tipo: type })}`,
+                )
+              }
+            >
+              Volver a la primera página
+            </Button>
+          )}
+        </>
       ) : (
         data && (
           <ReportsLoaded
@@ -106,6 +157,7 @@ export function ReportsPage({
             after={after}
             endpoint={endpoint}
             reload={reload}
+            previewTitle={previewTitle}
           />
         )
       )}
@@ -118,11 +170,13 @@ function ReportsLoaded({
   after,
   endpoint,
   reload,
+  previewTitle,
 }: {
   data: ReportPreview;
   after: string;
   endpoint: string;
   reload: () => void;
+  previewTitle: RefObject<HTMLHeadingElement | null>;
 }) {
   const [dialog, setDialog] = useState(false);
   const [review, setReview] = useState(false);
@@ -278,15 +332,17 @@ function ReportsLoaded({
           La exportación no está disponible. Revisa los pendientes del reporte.
         </p>
       )}
-      <h2>Vista previa · {reportNames[data.tipo].toLowerCase()}</h2>
+      <h2 className="report-preview-heading" ref={previewTitle} tabIndex={-1}>
+        Vista previa · {reportNames[data.tipo].toLowerCase()}
+      </h2>
       <p className="muted">
-        Las notas pendientes se muestran como «Pendiente» y quedan vacías en
-        XLSX. La nota calculada puede estar pendiente de confirmación; la
-        condición solo aparece con un resultado confirmado.
+        {data.tipo === "ACTA_DEMOSTRACION"
+          ? "Las notas pendientes quedan en blanco. Las marcas A, D y R corresponden a resultados confirmados."
+          : "Las notas pendientes se muestran como «Pendiente» y quedan vacías en XLSX. La nota calculada puede estar pendiente de confirmación; la condición solo aparece con un resultado confirmado."}
       </p>
       <section className="panel" aria-label="Vista previa del reporte">
         <ReportPreviewTable data={data} />
-        {data.tipo === "MATRIZ_NOTAS" && (
+        {data.tipo !== "RESUMEN_PARTICIPANTES" && (
           <Pagination
             after={after}
             count={data.items.length}

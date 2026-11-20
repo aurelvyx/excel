@@ -9,7 +9,8 @@ import { DataSource, type EntityManager } from 'typeorm';
 import { authorize } from '../auth/authorization.js';
 import type { Identity } from '../auth/access.js';
 import { AuditService } from '../control/audit.service.js';
-import { validId } from '../../common/validation.js';
+import { page, validId } from '../../common/validation.js';
+import { queryText, containsPattern } from '../../common/query-text.js';
 import { loadAttendanceClosure } from '../asistencia/academic-closure.js';
 import type { EnrollmentDto, ActivationDto } from './enrollments.dto.js';
 import {
@@ -19,6 +20,12 @@ import {
   type Availability,
 } from './enrollment.policy.js';
 export const enrollmentRoles = ['ADMIN', 'SECRETARIA'] as const;
+/** Coordinación consulta la nómina; solo ADMIN y SECRETARIA modifican. */
+export const enrollmentReaders = [
+  'ADMIN',
+  'SECRETARIA',
+  'COORDINADOR',
+] as const;
 type Enrollment = Record<string, unknown> & {
   id: string;
   estudiante_id: string;
@@ -112,6 +119,88 @@ export class EnrollmentsService {
     return this.source.transaction(async (manager) => {
       await authorize(manager, actor, enrollmentRoles);
       return this.view(manager, id);
+    });
+  }
+  /** Grupos de un periodo con ocupación, para elegir el salón a consultar. */
+  async listGroups(actor: Identity, query: Record<string, unknown>) {
+    const { after, limit } = page(query, ['periodoId', 'q']);
+    const periodId = queryText(query, 'periodoId', 18, true)!;
+    validId(periodId);
+    const search = queryText(query, 'q', 120);
+    return this.source.transaction(async (manager) => {
+      await authorize(manager, actor, enrollmentReaders);
+      const values: unknown[] = [after, periodId];
+      let filter = '';
+      if (search) {
+        values.push(containsPattern(search));
+        filter = ` AND concat_ws(' ',g.codigo,i.nombre,n.nombre,t.nombre,s.nombre) ILIKE $${values.length}`;
+      }
+      values.push(limit + 1);
+      const rows = (await manager.query(
+        `SELECT g.id::text AS id,g.codigo,g.estado,g.capacidad,g.nivel_id::text AS nivel_id,i.nombre AS idioma,n.nombre AS nivel,t.nombre AS turno,
+        t.hora_inicio::text AS hora_inicio,t.hora_fin::text AS hora_fin,s.nombre AS seccion,
+        (SELECT count(*)::int FROM matriculas m WHERE m.grupo_id=g.id AND m.estado IN ('ACTIVA','CERRADA')) AS matriculados,
+        (SELECT count(*)::int FROM matriculas m WHERE m.grupo_id=g.id AND m.estado='PENDIENTE') AS pendientes
+        FROM grupos g JOIN niveles n ON n.id=g.nivel_id JOIN idiomas i ON i.id=n.idioma_id
+        JOIN turnos t ON t.id=g.turno_id JOIN secciones s ON s.id=g.seccion_id
+        WHERE g.id>$1::bigint AND g.periodo_id=$2::bigint${filter} ORDER BY g.id LIMIT $${values.length}`,
+        values,
+      )) as { id: string }[];
+      const items = rows.slice(0, limit);
+      return {
+        items,
+        nextCursor: rows.length > limit ? items.at(-1)!.id : null,
+      };
+    });
+  }
+  /**
+   * Nómina de un grupo. La edad se calcula en el servidor para que ningún lector
+   * necesite la fecha de nacimiento.
+   */
+  async roster(actor: Identity, query: Record<string, unknown>) {
+    const { after, limit } = page(query, ['grupoId', 'q']);
+    const groupId = queryText(query, 'grupoId', 18, true)!;
+    validId(groupId);
+    const search = queryText(query, 'q', 120);
+    return this.source.transaction(async (manager) => {
+      const roles = await authorize(manager, actor, enrollmentReaders);
+      const canReadVouchers = enrollmentRoles.some((role) =>
+        roles.includes(role),
+      );
+      const [group] = (await manager.query(
+        `SELECT g.id::text AS id,g.codigo,g.estado,g.capacidad,g.periodo_id::text AS periodo_id,g.nivel_id::text AS nivel_id,
+        p.nombre AS periodo,p.estado AS periodo_estado,i.nombre AS idioma,n.nombre AS nivel,t.nombre AS turno,s.nombre AS seccion,
+        (SELECT count(*)::int FROM matriculas m WHERE m.grupo_id=g.id AND m.estado IN ('ACTIVA','CERRADA')) AS matriculados
+        FROM grupos g JOIN periodos_academicos p ON p.id=g.periodo_id JOIN niveles n ON n.id=g.nivel_id
+        JOIN idiomas i ON i.id=n.idioma_id JOIN turnos t ON t.id=g.turno_id JOIN secciones s ON s.id=g.seccion_id
+        WHERE g.id=$1::bigint`,
+        [groupId],
+      )) as Record<string, unknown>[];
+      if (!group) throw new NotFoundException('Grupo no encontrado');
+      const values: unknown[] = [after, groupId, canReadVouchers];
+      let filter = '';
+      if (search) {
+        values.push(containsPattern(search));
+        filter = ` AND (m.codigo ILIKE $${values.length} OR p.numero_documento ILIKE $${values.length} OR concat_ws(' ',p.nombres,p.apellido_paterno,p.apellido_materno) ILIKE $${values.length} OR concat_ws(' ',p.apellido_paterno,p.apellido_materno,p.nombres) ILIKE $${values.length})`;
+      }
+      values.push(limit + 1);
+      const rows = (await manager.query(
+        `SELECT m.id::text AS id,m.codigo,m.estado,m.numero_intento,m.fecha_matricula::text AS fecha_matricula,
+        e.id::text AS estudiante_id,e.codigo_estudiante,p.tipo_documento,p.numero_documento,p.nombres,p.apellido_paterno,p.apellido_materno,
+        CASE WHEN p.fecha_nacimiento IS NULL THEN NULL
+          ELSE date_part('year',age((CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date,p.fecha_nacimiento))::int END AS edad,
+        v.numero AS voucher_numero,v.importe::text AS voucher_importe
+        FROM matriculas m JOIN estudiantes e ON e.id=m.estudiante_id JOIN personas p ON p.id=e.persona_id
+        LEFT JOIN vouchers v ON v.id=m.voucher_id AND $3::boolean
+        WHERE m.id>$1::bigint AND m.grupo_id=$2::bigint${filter} ORDER BY m.id LIMIT $${values.length}`,
+        values,
+      )) as { id: string }[];
+      const items = rows.slice(0, limit);
+      return {
+        grupo: group,
+        items,
+        nextCursor: rows.length > limit ? items.at(-1)!.id : null,
+      };
     });
   }
   async create(actor: Identity, dto: EnrollmentDto, ip?: string) {

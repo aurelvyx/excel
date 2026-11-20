@@ -15,15 +15,17 @@ import {
 export function SessionForm({
   group,
   endpoint,
+  initialDate = "",
   onClose,
   onSaved,
 }: {
   group: SessionGroup;
   endpoint: string;
+  initialDate?: string;
   onClose: () => void;
   onSaved: (count: number) => void;
 }) {
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(initialDate);
   const [dates, setDates] = useState<string[]>([]);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -114,7 +116,12 @@ export function SessionForm({
   }
   return (
     <Dialog title="Programar sesiones" onClose={onClose} busy={busy}>
-      <form ref={form} onSubmit={submit} noValidate>
+      <form
+        ref={form}
+        onSubmit={submit}
+        noValidate
+        className="workspace-session-form"
+      >
         <p className="muted">
           Grupo {group.codigo} · {group.contexto.periodo} ·{" "}
           {group.contexto.idioma} · {group.contexto.nivel}. Fechas permitidas:{" "}
@@ -142,7 +149,11 @@ export function SessionForm({
                 ["Cantidad de sesiones", dates.length],
               ]}
             />
-            <ul className="session-dates" aria-label="Fechas por confirmar" tabIndex={0}>
+            <ul
+              className="session-dates"
+              aria-label="Fechas por confirmar"
+              tabIndex={0}
+            >
               {dates.map((value) => (
                 <li key={value}>{sessionDate(value)}</li>
               ))}
@@ -178,7 +189,11 @@ export function SessionForm({
               {dates.length} fechas añadidas
             </p>
             {!!dates.length && (
-              <ul className="session-dates" aria-label="Fechas añadidas" tabIndex={0}>
+              <ul
+                className="session-dates"
+                aria-label="Fechas añadidas"
+                tabIndex={0}
+              >
                 {dates.map((value) => (
                   <li key={value}>
                     <span>{sessionDate(value)}</span>

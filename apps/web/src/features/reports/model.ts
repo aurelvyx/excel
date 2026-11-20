@@ -2,10 +2,12 @@ import type { SessionGroup, AttendanceSummaryData } from "../attendance/model";
 import type { GradeSummaryData } from "../evaluation/grades-model";
 import type { StoredResult } from "../evaluation/acts-model";
 
-export type ReportType = "MATRIZ_NOTAS" | "RESUMEN_PARTICIPANTES";
+export type ReportType =
+  "MATRIZ_NOTAS" | "RESUMEN_PARTICIPANTES" | "ACTA_DEMOSTRACION";
 export const reportNames: Record<ReportType, string> = {
   MATRIZ_NOTAS: "Matriz de notas",
   RESUMEN_PARTICIPANTES: "Resumen de participantes",
+  ACTA_DEMOSTRACION: "Acta de evaluación de demostración",
 };
 export type ReportRow = {
   matriculaId: string;
@@ -15,9 +17,49 @@ export type ReportRow = {
   tipoDocumento: string;
   documento: string;
   notas: Record<string, string | null>;
+  notasComponentes: Record<string, string | null>;
   resumenNotas: GradeSummaryData;
   resumenAsistencia: AttendanceSummaryData;
   resultado: StoredResult | null;
+};
+export type ActPreviewCell = {
+  column: number;
+  rowSpan: number;
+  colSpan: number;
+  text: string;
+  style: {
+    color?: string;
+    backgroundColor?: string;
+    fontFamily?: "Arial" | "Arial Narrow";
+    fontSize?: number;
+    fontWeight?: number;
+    fontStyle?: "italic";
+    textDecoration?: "underline";
+    textAlign?: "left" | "center" | "right";
+    verticalAlign?: "top" | "middle" | "bottom";
+    rotate?: boolean;
+    borderTop?: string;
+    borderRight?: string;
+    borderBottom?: string;
+    borderLeft?: string;
+  };
+};
+export type ActPreviewRow = {
+  index: number;
+  height: number;
+  cells: ActPreviewCell[];
+};
+export type ActPreviewSheet = {
+  headerRows: number;
+  columnWidths: number[];
+  rows: ActPreviewRow[];
+  images: {
+    src: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }[];
 };
 export type ReportPreview = {
   grupo: SessionGroup;
@@ -43,13 +85,17 @@ export type ReportPreview = {
   };
   indicadores: {
     id: string;
+    evaluacionId: string;
     evaluacion: string;
     codigo: string;
     descripcion: string;
     pesoEvaluacion: string;
     pesoIndicador: string;
   }[];
+  componentes: { id: string; nombre: string; pesoPct: string }[];
   items: ReportRow[];
+  offset?: number;
+  acta?: ActPreviewSheet;
   nextCursor: string | null;
   anexo: {
     idioma: string;

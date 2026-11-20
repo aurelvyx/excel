@@ -451,6 +451,78 @@ describe('B08 matrícula HTTP y PostgreSQL', () => {
       .expect(400);
     await call('get', 'matriculas/no-id').expect(400);
   });
+  it('pagina la nómina por grupo y reserva el voucher a administración y secretaría', async () => {
+    const [group] = await source.query(
+      `INSERT INTO grupos(periodo_id,nivel_id,turno_id,seccion_id,codigo,capacidad,estado)
+       SELECT periodo_id,nivel_id,turno_id,seccion_id,'B08-NOMINA',4,'ACTIVO'
+       FROM grupos WHERE id=$1 RETURNING id,periodo_id`,
+      [groupId],
+    );
+    const owner = await student();
+    const active = await create(owner, group.id);
+    const paid = await voucher(owner);
+    await activation(active.id, paid.id).expect(200);
+    const pending = await create(await student(), group.id);
+    const coordinator = await login('coordinador');
+    const secretary = await login('secretaria');
+    const teacher = await login('docente');
+    const path = `matriculas?grupoId=${group.id}`;
+
+    const groups = (
+      await call(
+        'get',
+        `matriculas/grupos?periodoId=${group.periodo_id}&q=B08-NOMINA`,
+        coordinator,
+      ).expect(200)
+    ).body;
+    expect(groups.items).toEqual([
+      expect.objectContaining({ id: group.id, matriculados: 1, pendientes: 1 }),
+    ]);
+    expect(groups.nextCursor).toBeNull();
+    const first = (
+      await call('get', `${path}&limit=1`, coordinator).expect(200)
+    ).body;
+    expect(first.grupo).toMatchObject({ id: group.id, matriculados: 1 });
+    expect(first.items).toEqual([
+      expect.objectContaining({
+        id: active.id,
+        voucher_numero: null,
+        voucher_importe: null,
+      }),
+    ]);
+    expect(first.nextCursor).toBe(active.id);
+    const next = (
+      await call(
+        'get',
+        `${path}&limit=1&after=${first.nextCursor}`,
+        coordinator,
+      ).expect(200)
+    ).body;
+    expect(next.items.map((item: { id: string }) => item.id)).toEqual([
+      pending.id,
+    ]);
+    expect(next.nextCursor).toBeNull();
+    for (const reader of [admin, secretary]) {
+      const paidPage = (
+        await call('get', `${path}&q=${active.codigo}`, reader).expect(200)
+      ).body;
+      expect(paidPage.items).toEqual([
+        expect.objectContaining({
+          id: active.id,
+          voucher_numero: paid.numero,
+          voucher_importe: '100.50',
+        }),
+      ]);
+    }
+    await call('get', path, teacher).expect(403);
+    await call('get', 'matriculas?grupoId=abc', coordinator).expect(400);
+    await call('patch', `matriculas/${pending.id}/grupo`)
+      .send({ grupoId: groupId, motivo: 'Prueba sintética B08' })
+      .expect(404);
+    const saved = (await call('get', `matriculas/${pending.id}`).expect(200))
+      .body;
+    expect(saved.grupo_id).toBe(group.id);
+  });
   it('conserva versión del intento ante nueva configuración y expone OpenAPI', async () => {
     const owner = await student();
     const row = await create(owner);
@@ -469,5 +541,10 @@ describe('B08 matrícula HTTP y PostgreSQL', () => {
       await request(app.getHttpServer()).get('/api/openapi.json').expect(200)
     ).body;
     expect(spec.paths['/api/v1/matriculas/{id}/activar'].patch).toBeDefined();
+    expect(spec.paths['/api/v1/matriculas'].get.responses['200']).toBeDefined();
+    expect(
+      spec.paths['/api/v1/matriculas/grupos'].get.responses['200'],
+    ).toBeDefined();
+    expect(spec.paths['/api/v1/matriculas/{id}/grupo']).toBeUndefined();
   });
 });

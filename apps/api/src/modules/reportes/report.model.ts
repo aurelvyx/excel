@@ -2,8 +2,13 @@ import type { AcademicGroup } from '../asistencia/academic-context.js';
 import type { AttendanceSummary } from '../asistencia/attendance-calculation.policy.js';
 import type { GradeSummary } from '../evaluacion/grade-calculation.service.js';
 import type { StoredResult } from '../evaluacion/act.repository.js';
+import type { ActSheetPreview } from './report-act-preview.js';
 
-export const reportTypes = ['MATRIZ_NOTAS', 'RESUMEN_PARTICIPANTES'] as const;
+export const reportTypes = [
+  'MATRIZ_NOTAS',
+  'RESUMEN_PARTICIPANTES',
+  'ACTA_DEMOSTRACION',
+] as const;
 export type ReportType = (typeof reportTypes)[number];
 export type ReportLanguage = 'EN' | 'PT';
 export type ReportTemplateInfo = {
@@ -16,12 +21,14 @@ export type ReportTemplateInfo = {
 };
 export type ReportIndicator = {
   id: string;
+  evaluacionId: string;
   evaluacion: string;
   codigo: string;
   descripcion: string;
   pesoEvaluacion: string;
   pesoIndicador: string;
 };
+export type ReportComponent = { id: string; nombre: string; pesoPct: string };
 export type ReportRow = {
   matriculaId: string;
   codigo: string;
@@ -30,6 +37,7 @@ export type ReportRow = {
   tipoDocumento: string;
   documento: string;
   notas: Record<string, string | null>;
+  notasComponentes: Record<string, string | null>;
   resumenNotas: GradeSummary;
   resumenAsistencia: AttendanceSummary;
   resultado: StoredResult | null;
@@ -62,7 +70,12 @@ export type ReportSnapshot = {
   advertencias: string[];
   resumen: ReportTotals;
   indicadores: ReportIndicator[];
+  componentes: ReportComponent[];
   items: ReportRow[];
   anexo: ReportAnnex;
 };
-export type ReportPage = ReportSnapshot & { nextCursor: string | null };
+export type ReportPage = ReportSnapshot & {
+  nextCursor: string | null;
+  offset?: number;
+  acta?: ActSheetPreview;
+};

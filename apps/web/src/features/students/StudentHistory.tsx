@@ -4,6 +4,9 @@ import { Pagination } from "../../shared/ui/Pagination";
 import { DataTable } from "../../shared/ui/DataTable";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { Button } from "../../shared/ui/Button";
+import { StatusBadge } from "../../shared/ui/StatusBadge";
+import { AttendanceWeekGrid } from "./AttendanceWeekGrid";
+import type { SessionMark } from "./attendance-grid";
 import { useState } from "react";
 import { api, errorText, text, type Page, type Row } from "../../shared/api";
 import { Dialog } from "../../shared/Dialog";
@@ -69,6 +72,7 @@ export function StudentHistory({
   const [actionError, fail] = useState("");
   const [detail, setDetail] = useState<HistoryRow | null>(null);
   const [opening, open] = useState(false);
+  const [view, setView] = useState<"cards" | "table">("cards");
   const query = new URLSearchParams({ limit: "20" });
   if (nivel) query.set("nivelId", nivel);
   if (periodo) query.set("periodoId", periodo);
@@ -157,95 +161,190 @@ export function StudentHistory({
       ) : (
         !error && (
           <>
-            <DataTable
-              caption="Intentos académicos"
-              rows={data.items}
-              rowKey={(row) => row.id}
-              emptyMessage="No hay intentos registrados para esta consulta."
-              columns={[
-                {
-                  key: "intento",
-                  header: "Intento",
-                  cell: (row) => `Intento ${text(row, "numero_intento")}`,
-                },
-                {
-                  key: "nivel",
-                  header: "Idioma y nivel",
-                  cell: (row) =>
-                    `${text(row, "idioma")} · ${text(row, "nivel")}`,
-                },
-                {
-                  key: "grupo",
-                  header: "Periodo y grupo",
-                  cell: (row) => (
-                    <>
-                      {text(row, "periodo")} · {text(row, "grupo")}
-                      <br />
-                      {text(row, "turno")} · {text(row, "seccion")}
-                    </>
-                  ),
-                },
-                {
-                  key: "matricula",
-                  header: "Matrícula",
-                  cell: (row) => (
-                    <>
-                      {text(row, "codigo")}
-                      <br />
-                      {text(row, "estado")}
-                    </>
-                  ),
-                },
-                {
-                  key: "asistencia",
-                  header: "Resumen de asistencia",
-                  className: "attendance-calculation",
-                  cell: (row) => (
-                    <AttendanceSummary
-                      summary={row.resumenAsistencia}
-                      label={`Resumen de asistencia del intento ${text(row, "numero_intento")}`}
-                      compact
-                    />
-                  ),
-                },
-                {
-                  key: "notas",
-                  header: "Notas guardadas del intento",
-                  className: "attendance-calculation",
-                  cell: (row) =>
-                    row.resumenNotas ? (
-                      <GradeSummary
-                        summary={row.resumenNotas}
-                        label={`Resumen de notas del intento ${text(row, "numero_intento")}`}
-                        stale={false}
-                      />
-                    ) : (
-                      "Pendiente de consulta"
+            <div
+              className="history-view-actions"
+              aria-label="Vista del historial"
+            >
+              <Button
+                aria-pressed={view === "cards"}
+                onClick={() => setView("cards")}
+              >
+                Tarjetas
+              </Button>
+              <Button
+                aria-pressed={view === "table"}
+                onClick={() => setView("table")}
+              >
+                Tabla de intentos
+              </Button>
+            </div>
+            {view === "cards" ? (
+              data.items.length ? (
+                <ol
+                  className="enrollment-list"
+                  aria-label="Intentos académicos"
+                >
+                  {data.items.map((row) => (
+                    <li className="enrollment-card" key={row.id}>
+                      <header>
+                        <div>
+                          <p className="eyebrow">
+                            {text(row, "periodo")} · Intento{" "}
+                            {text(row, "numero_intento")}
+                          </p>
+                          <h3>
+                            {text(row, "idioma")} · {text(row, "nivel")}
+                          </h3>
+                          <p className="muted">
+                            Grupo {text(row, "grupo")} · {text(row, "turno")} ·
+                            Sección {text(row, "seccion")}
+                          </p>
+                          <p>Matrícula {text(row, "codigo")}</p>
+                        </div>
+                        <StatusBadge inactive={row.estado !== "ACTIVA"}>
+                          {(
+                            {
+                              PENDIENTE: "Pendiente de voucher",
+                              ACTIVA: "Activa",
+                              CERRADA: "Cerrada",
+                              ANULADA: "Anulada",
+                            } as Record<string, string>
+                          )[String(row.estado)] ?? text(row, "estado")}
+                        </StatusBadge>
+                      </header>
+                      <div className="history-card-summary">
+                        <AttendanceSummary
+                          summary={row.resumenAsistencia}
+                          label={`Resumen de asistencia del intento ${text(row, "numero_intento")}`}
+                          compact
+                        />
+                        {row.resumenNotas && (
+                          <GradeSummary
+                            summary={row.resumenNotas}
+                            label={`Resumen de notas del intento ${text(row, "numero_intento")}`}
+                            stale={false}
+                          />
+                        )}
+                      </div>
+                      <Result row={row} />
+                      <div className="actions">
+                        <Button
+                          disabled={opening}
+                          onClick={() => void show(row)}
+                        >
+                          Consultar intento {text(row, "numero_intento")}
+                        </Button>
+                        {canResume && row.estado === "PENDIENTE" && (
+                          <a
+                            className="button primary"
+                            href={`#/matriculas/${row.id}`}
+                          >
+                            Retomar solicitud
+                          </a>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="muted">
+                  No hay intentos registrados para esta consulta.
+                </p>
+              )
+            ) : (
+              <DataTable
+                caption="Intentos académicos"
+                rows={data.items}
+                rowKey={(row) => row.id}
+                emptyMessage="No hay intentos registrados para esta consulta."
+                columns={[
+                  {
+                    key: "intento",
+                    header: "Intento",
+                    cell: (row) => `Intento ${text(row, "numero_intento")}`,
+                  },
+                  {
+                    key: "nivel",
+                    header: "Idioma y nivel",
+                    cell: (row) =>
+                      `${text(row, "idioma")} · ${text(row, "nivel")}`,
+                  },
+                  {
+                    key: "grupo",
+                    header: "Periodo y grupo",
+                    cell: (row) => (
+                      <>
+                        {text(row, "periodo")} · {text(row, "grupo")}
+                        <br />
+                        {text(row, "turno")} · {text(row, "seccion")}
+                      </>
                     ),
-                },
-                {
-                  key: "resultado",
-                  header: "Resultado",
-                  cell: (row) => <Result row={row} />,
-                },
-                {
-                  key: "detalle",
-                  header: "Detalle",
-                  cell: (row) => (
-                    <>
-                      <Button disabled={opening} onClick={() => void show(row)}>
-                        Consultar intento {text(row, "numero_intento")}
-                      </Button>
-                      {canResume && row.estado === "PENDIENTE" && (
-                        <a className="button" href={`#/matriculas/${row.id}`}>
-                          Retomar solicitud
-                        </a>
-                      )}
-                    </>
-                  ),
-                },
-              ]}
-            />
+                  },
+                  {
+                    key: "matricula",
+                    header: "Matrícula",
+                    cell: (row) => (
+                      <>
+                        {text(row, "codigo")}
+                        <br />
+                        {text(row, "estado")}
+                      </>
+                    ),
+                  },
+                  {
+                    key: "asistencia",
+                    header: "Resumen de asistencia",
+                    className: "attendance-calculation",
+                    cell: (row) => (
+                      <AttendanceSummary
+                        summary={row.resumenAsistencia}
+                        label={`Resumen de asistencia del intento ${text(row, "numero_intento")}`}
+                        compact
+                      />
+                    ),
+                  },
+                  {
+                    key: "notas",
+                    header: "Notas guardadas del intento",
+                    className: "attendance-calculation",
+                    cell: (row) =>
+                      row.resumenNotas ? (
+                        <GradeSummary
+                          summary={row.resumenNotas}
+                          label={`Resumen de notas del intento ${text(row, "numero_intento")}`}
+                          stale={false}
+                        />
+                      ) : (
+                        "Pendiente de consulta"
+                      ),
+                  },
+                  {
+                    key: "resultado",
+                    header: "Resultado",
+                    cell: (row) => <Result row={row} />,
+                  },
+                  {
+                    key: "detalle",
+                    header: "Detalle",
+                    cell: (row) => (
+                      <>
+                        <Button
+                          disabled={opening}
+                          onClick={() => void show(row)}
+                        >
+                          Consultar intento {text(row, "numero_intento")}
+                        </Button>
+                        {canResume && row.estado === "PENDIENTE" && (
+                          <a className="button" href={`#/matriculas/${row.id}`}>
+                            Retomar solicitud
+                          </a>
+                        )}
+                      </>
+                    ),
+                  },
+                ]}
+              />
+            )}
             <Pagination
               after={after}
               nextCursor={data.nextCursor}
@@ -279,6 +378,13 @@ export function StudentHistory({
             P: presente · F: falta · T: tardanza · J: justificación. Las marcas
             originales no representan por sí solas el cálculo de inasistencia.
           </p>
+          <AttendanceWeekGrid
+            marks={(detail.asistencias as Row[]).map((row): SessionMark => ({
+              fecha: text(row, "fecha").slice(0, 10),
+              codigo: text(row, "codigo") || null,
+              estado: text(row, "estado"),
+            }))}
+          />
           <DataTable
             caption="Asistencia registrada"
             rows={detail.asistencias as Row[]}

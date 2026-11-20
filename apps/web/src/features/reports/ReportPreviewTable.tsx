@@ -1,11 +1,19 @@
 import { academicConditionLabels } from "../../shared/academic-result";
 import { StudentIdentity } from "../../shared/ui/AcademicCells";
 import { DataTable } from "../../shared/ui/DataTable";
+import { Feedback } from "../../shared/ui/Feedback";
 import { sessionDate } from "../attendance/model";
 import { displayedGrade } from "../evaluation/grade-capture";
+import { ActReportPreview } from "./ActReportPreview";
 import type { ReportPreview } from "./model";
 
 export function ReportPreviewTable({ data }: { data: ReportPreview }) {
+  if (data.tipo === "ACTA_DEMOSTRACION")
+    return data.acta ? (
+      <ActReportPreview sheet={data.acta} />
+    ) : (
+      <Feedback>No se pudo mostrar la hoja del acta.</Feedback>
+    );
   if (data.tipo === "RESUMEN_PARTICIPANTES")
     return (
       <DataTable

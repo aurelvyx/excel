@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { ConflictException, Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
+import { actSheetLayout, populateDemonstrationAct } from './report-acta.js';
+import { buildActPreview } from './report-act-preview.js';
 import type {
   ReportLanguage,
   ReportSnapshot,
@@ -35,8 +37,10 @@ export class ReportWorkbookService {
     );
     if (
       !entry ||
+      manifest.version !== 1 ||
       entry.estado !== 'PROPUESTA' ||
-      entry.version !== 1 ||
+      !Number.isSafeInteger(entry.version) ||
+      entry.version < 1 ||
       !/^[a-z0-9-]+\.xlsx$/.test(entry.archivo)
     )
       throw new ConflictException(
@@ -63,15 +67,7 @@ export class ReportWorkbookService {
       sha256: entry.sha256,
     };
   }
-  async render(snapshot: ReportSnapshot): Promise<Buffer> {
-    if (
-      !snapshot.items.length ||
-      snapshot.items.length > reportLimits.filas ||
-      snapshot.indicadores.length > reportLimits.indicadores
-    )
-      throw new ConflictException(
-        'El reporte excede el límite de filas o indicadores, o no contiene matrículas',
-      );
+  private async populatedWorkbook(snapshot: ReportSnapshot, offset = 0) {
     const { entry, data } = await this.source(
       snapshot.tipo,
       snapshot.plantilla.idioma,
@@ -89,7 +85,11 @@ export class ReportWorkbookService {
       );
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(Uint8Array.from(data).buffer);
-    if (book.worksheets.length !== 1 || book.worksheets[0]!.name !== entry.hoja)
+    if (
+      book.worksheets.length !== 1 ||
+      book.worksheets[0]!.name !== entry.hoja ||
+      book.worksheets[0]!.state !== 'visible'
+    )
       throw new ConflictException(
         'La estructura de plantilla no coincide con su versión',
       );
@@ -101,7 +101,35 @@ export class ReportWorkbookService {
     sheet.getCell('A2').value =
       'BORRADOR. Formato de demostración pendiente de aprobación institucional.';
     if (snapshot.tipo === 'MATRIZ_NOTAS') this.matrix(sheet, entry, snapshot);
-    else this.summary(sheet, snapshot);
+    else if (snapshot.tipo === 'RESUMEN_PARTICIPANTES')
+      this.summary(sheet, snapshot);
+    else populateDemonstrationAct(sheet, snapshot, offset);
+    return { book, sheet };
+  }
+
+  async previewAct(snapshot: ReportSnapshot, offset: number) {
+    const { book, sheet } = await this.populatedWorkbook(snapshot, offset);
+    return buildActPreview(book, sheet, snapshot.items.length);
+  }
+
+  async render(snapshot: ReportSnapshot): Promise<Buffer> {
+    if (
+      !snapshot.items.length ||
+      snapshot.items.length > reportLimits.filas ||
+      snapshot.indicadores.length > reportLimits.indicadores
+    )
+      throw new ConflictException(
+        'El reporte excede el límite de filas o indicadores, o no contiene matrículas',
+      );
+    if (
+      snapshot.tipo === 'ACTA_DEMOSTRACION' &&
+      (!snapshot.componentes.length ||
+        snapshot.componentes.length > actSheetLayout.components)
+    )
+      throw new ConflictException(
+        'El formato de acta admite de uno a ocho componentes aprobados',
+      );
+    const { book } = await this.populatedWorkbook(snapshot);
     return Buffer.from(await book.xlsx.writeBuffer());
   }
   private matrix(
