@@ -508,6 +508,72 @@ describe('B12 navegador React → API → PostgreSQL', () => {
     expect(await persisted(f.session)).toEqual([]);
   });
 
+  it('abre el control de asistencia del salón en la sesión del día y conserva el regreso a la matriz mensual', async () => {
+    const f = await matrix(2);
+    await fixture.session(f.group, 'PROGRAMADA', fixture.tomorrow);
+    await login('docente');
+    await page.goto(`${origin}/#/salones/${f.group.id}?tab=asistencia`);
+    const session = page.getByLabel('Sesión de clase del salón');
+    await session.waitFor();
+    expect(await session.inputValue()).toBe(f.session.id);
+    const search = page.getByLabel('Buscar estudiante en esta página');
+    await search.fill(f.students[0]!.documento);
+    await page.getByText('1 de 2 estudiantes', { exact: true }).waitFor();
+    await page
+      .getByRole('button', { name: 'Marcar presentes', exact: true })
+      .click();
+    await search.fill('');
+    expect(await mark(f.students[0]!).inputValue()).toBe('P');
+    expect(await mark(f.students[1]!).inputValue()).toBe('');
+
+    const matrixButton = page.getByRole('button', {
+      name: 'Matriz mensual',
+      exact: true,
+    });
+    const discard = page.getByRole('dialog', { name: 'Descartar cambios' });
+    await page
+      .getByRole('button', { name: 'Revisar justificaciones', exact: true })
+      .click();
+    await discard.getByRole('button', { name: 'Seguir editando' }).click();
+    expect(await mark(f.students[0]!).inputValue()).toBe('P');
+    await matrixButton.click();
+    await discard.getByRole('button', { name: 'Seguir editando' }).click();
+    expect(await mark(f.students[0]!).inputValue()).toBe('P');
+    await save();
+    await page.getByText('Asistencia guardada.', { exact: true }).waitFor();
+    await page
+      .getByRole('button', { name: 'Guardar asistencia', exact: true })
+      .waitFor();
+    await matrixButton.click();
+
+    await page
+      .getByLabel('Buscar estudiante', { exact: true })
+      .fill(f.students[1]!.documento);
+    await page.getByText('1 de 2 estudiantes', { exact: true }).waitFor();
+    const region = page.getByRole('region', {
+      name: 'Matriz de asistencia por fecha',
+    });
+    expect(await region.getByRole('rowheader').allTextContents()).toEqual([
+      expect.stringContaining(f.students[1]!.nombre),
+    ]);
+    await region.getByRole('link', { name: / · Realizada$/ }).click();
+    await page
+      .getByRole('heading', { name: 'Registro de asistencia', exact: true })
+      .waitFor();
+    await page
+      .getByRole('link', { name: '← Volver a la matriz', exact: true })
+      .click();
+    expect(new URL(page.url()).hash).toBe(
+      `#/salones/${f.group.id}?tab=asistencia&vista=matriz&mes=${f.session.fecha.slice(0, 7)}`,
+    );
+    expect(await page.getByLabel('Mes del periodo').inputValue()).toBe(
+      f.session.fecha.slice(0, 7),
+    );
+    expect(await persisted(f.session)).toMatchObject([
+      { matricula_id: f.enrollments[0]!.id, codigo: 'P' },
+    ]);
+  });
+
   it('la celda mensual permite editar con revisión, conserva la captura ante conflicto y exige descarte al recargar', async () => {
     const f = await matrix(2);
     await login('docente');

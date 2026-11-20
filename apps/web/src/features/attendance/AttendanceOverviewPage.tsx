@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../../shared/api";
+import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { Button } from "../../shared/ui/Button";
 import { Feedback, Loading } from "../../shared/ui/Feedback";
@@ -8,21 +9,26 @@ import { PageHeading } from "../../shared/ui/PageHeading";
 import { GroupContext } from "./GroupContext";
 import { safeAttendanceReturnTo, withAttendanceReturn } from "./navigation";
 import { AttendanceCellDetailDialog } from "./AttendanceCellDetailDialog";
+import { AttendanceStudentSearch } from "./AttendanceStudentSearch";
+import { loadAllSessions } from "./sessions-query";
 import {
   attendanceCodes,
+  filterAttendanceStudents,
   sessionDate,
+  sessionStates,
   type AttendanceCode,
   type AttendancePageData,
   type AttendanceRow,
   type ClassSession,
   type SessionsPageData,
 } from "./model";
+import "./attendance.css";
 
 type MatrixData = {
   group: SessionsPageData["grupo"];
   sessions: ClassSession[];
   students: AttendanceRow[];
-  marks: Map<string, AttendanceCode>;
+  marks: Map<string, AttendanceCode | null>;
 };
 
 const monthNames = [
@@ -72,54 +78,56 @@ function monthLabel(key: string) {
   return `${monthNames[(month ?? 1) - 1]} ${year}`;
 }
 
-async function pages<T extends { items: unknown[]; nextCursor: string | null }>(
-  endpoint: string,
-  signal: AbortSignal,
-) {
-  const firstPage = await api<T>(`${endpoint}?limit=100`, { signal });
-  const items = [...firstPage.items] as T["items"];
+async function loadSessionRows(endpoint: string, signal: AbortSignal) {
+  const firstPage = await api<AttendancePageData>(`${endpoint}?limit=100`, {
+    signal,
+  });
+  const items = [...firstPage.items];
   let after = firstPage.nextCursor;
   while (after) {
     const search = new URLSearchParams({ limit: "100", after });
-    const page = await api<T>(`${endpoint}?${search}`, { signal });
+    const page = await api<AttendancePageData>(`${endpoint}?${search}`, {
+      signal,
+    });
     items.push(...page.items);
     after = page.nextCursor;
   }
-  return { firstPage, items };
+  return items;
 }
 
 async function loadMatrix(
   endpoint: string,
   signal: AbortSignal,
 ): Promise<MatrixData> {
-  const { firstPage, items } = await pages<SessionsPageData>(endpoint, signal);
-  const sessions = items.sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const marks = new Map<string, AttendanceCode>();
+  const { grupo: group, items: sessions } = await loadAllSessions(
+    endpoint,
+    signal,
+  );
+  const marks = new Map<string, AttendanceCode | null>();
   const students = new Map<string, AttendanceRow>();
   let cursor = 0;
   const workers = Array.from(
     { length: Math.min(5, sessions.length) },
     async () => {
       while (cursor < sessions.length) {
-        const session = sessions[cursor++];
-        const { items: rows } = await pages<AttendancePageData>(
-          `${endpoint}/${session!.id}/asistencias`,
+        const session = sessions[cursor++]!;
+        const rows = await loadSessionRows(
+          `${endpoint}/${session.id}/asistencias`,
           signal,
         );
         for (const row of rows) {
           students.set(row.matricula_id, row);
-          if (row.asistencia)
-            marks.set(
-              `${row.matricula_id}:${session!.id}`,
-              row.asistencia.codigo,
-            );
+          marks.set(
+            `${row.matricula_id}:${session.id}`,
+            row.asistencia?.codigo ?? null,
+          );
         }
       }
     },
   );
   await Promise.all(workers);
   return {
-    group: firstPage.grupo,
+    group,
     sessions,
     students: [...students.values()].sort((a, b) =>
       a.estudiante.localeCompare(b.estudiante, "es"),
@@ -131,17 +139,20 @@ async function loadMatrix(
 export function AttendanceOverviewPage({
   groupId,
   query,
+  workspacePath,
   onChanged,
 }: {
   groupId: string;
   query: URLSearchParams;
+  workspacePath?: (month: string) => string;
   onChanged?: () => void;
 }) {
   const { data, loading, error, reload } = useApiQuery(
     `asistencia/grupos/${groupId}/sesiones`,
     loadMatrix,
   );
-  const [selectedMonth, selectMonth] = useState(query.get("mes") ?? "");
+  const selectedMonth = query.get("mes") ?? "";
+  const [studentSearch, searchStudents] = useState("");
   const [selectedCell, selectCell] = useState<{
     student: AttendanceRow;
     session: ClassSession;
@@ -168,7 +179,7 @@ export function AttendanceOverviewPage({
   if (error || !data)
     return (
       <section>
-        <a href={`#${backHref}`}>← {backLabel}</a>
+        {!workspacePath && <a href={`#${backHref}`}>← {backLabel}</a>}
         <PageHeading
           eyebrow="Asistencia"
           title="Matriz del grupo"
@@ -191,20 +202,37 @@ export function AttendanceOverviewPage({
   const monthSessions = data.sessions.filter(
     (session) => session.fecha.slice(0, 7) === activeMonth,
   );
-  const matrixQuery = new URLSearchParams(query);
-  matrixQuery.set("mes", activeMonth);
-  const matrixPath = `/asistencia/grupos/${groupId}/matriz?${matrixQuery}`;
+  const monthStudents = data.students.filter((student) =>
+    monthSessions.some((session) =>
+      data.marks.has(`${student.matricula_id}:${session.id}`),
+    ),
+  );
+  const visibleStudents = filterAttendanceStudents(
+    monthStudents,
+    studentSearch,
+  );
+  function matrixPath(month: string) {
+    if (workspacePath) return workspacePath(month);
+    const params = new URLSearchParams(query);
+    params.set("mes", month);
+    return `/asistencia/grupos/${groupId}/matriz?${params}`;
+  }
+  const sessionPath = (id: string) =>
+    withAttendanceReturn(
+      `/asistencia/grupos/${groupId}/sesiones/${id}`,
+      matrixPath(activeMonth),
+    );
 
   return (
     <section>
-      <a href={`#${backHref}`}>← {backLabel}</a>
+      {!workspacePath && <a href={`#${backHref}`}>← {backLabel}</a>}
       <PageHeading
         eyebrow="Asistencia"
         title="Matriz de asistencia"
         description="Elige un mes para consultar las marcas. Cada celda da acceso al registro de su sesión."
         action={<Button onClick={reload}>Actualizar matriz</Button>}
       />
-      <GroupContext group={data.group} />
+      {!workspacePath && <GroupContext group={data.group} />}
       <section
         className="attendance-month-panel"
         aria-label="Mes de asistencia"
@@ -212,7 +240,7 @@ export function AttendanceOverviewPage({
         <SelectField
           label="Mes del periodo"
           value={activeMonth}
-          onChange={(event) => selectMonth(event.target.value)}
+          onChange={(event) => navigate(matrixPath(event.target.value))}
           disabled={!months.length}
         >
           {months.map((month) => (
@@ -227,6 +255,14 @@ export function AttendanceOverviewPage({
           <span>{activeMonth ? monthLabel(activeMonth) : "este periodo"}</span>
         </p>
       </section>
+      {!!monthStudents.length && (
+        <AttendanceStudentSearch
+          search={studentSearch}
+          onSearch={searchStudents}
+          visible={visibleStudents.length}
+          total={monthStudents.length}
+        />
+      )}
       <div className="attendance-legend" aria-label="Leyenda de asistencia">
         {(["P", "F", "T", "J"] as const).map((code) => (
           <span className={`attendance-legend-item mark-${code}`} key={code}>
@@ -239,14 +275,18 @@ export function AttendanceOverviewPage({
       </div>
       {!data.sessions.length ? (
         <p className="readonly">Este grupo todavía no tiene sesiones.</p>
-      ) : !data.students.length ? (
-        <p className="readonly">
-          Este grupo todavía no tiene matrículas activas.
-        </p>
       ) : !monthSessions.length ? (
         <p className="readonly">
           No hay sesiones programadas para{" "}
           {activeMonth ? monthLabel(activeMonth) : "este mes"}.
+        </p>
+      ) : !monthStudents.length ? (
+        <p className="readonly">
+          No hay matrículas disponibles en las sesiones de este mes.
+        </p>
+      ) : !visibleStudents.length ? (
+        <p className="readonly">
+          No se encontraron estudiantes con esa búsqueda.
         </p>
       ) : (
         <div
@@ -261,7 +301,7 @@ export function AttendanceOverviewPage({
                 <th className="attendance-grid-student" scope="col">
                   N.º · Estudiante
                 </th>
-                {monthSessions.map((session, index) => (
+                {monthSessions.map((session) => (
                   <th
                     className="attendance-grid-date"
                     scope="col"
@@ -271,18 +311,26 @@ export function AttendanceOverviewPage({
                       title={`Asistencia del ${sessionDate(session.fecha)}`}
                     >
                       <span>
-                        {session.estado === "CANCELADA"
-                          ? "Cancelada"
-                          : sessionDate(session.fecha)}
+                        <a
+                          href={`#${sessionPath(session.id)}`}
+                          aria-label={`${sessionDate(session.fecha)} · ${sessionStates[session.estado]}`}
+                        >
+                          {sessionDate(session.fecha)}
+                        </a>
                       </span>
-                      <small>{index + 1}</small>
+                      <small
+                        aria-hidden="true"
+                        title={sessionStates[session.estado]}
+                      >
+                        {sessionStates[session.estado].charAt(0)}
+                      </small>
                     </span>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {data.students.map((student, index) => (
+              {visibleStudents.map((student, index) => (
                 <tr key={student.matricula_id}>
                   <th className="attendance-grid-student" scope="row">
                     <span className="attendance-grid-number">{index + 1}</span>
@@ -297,17 +345,27 @@ export function AttendanceOverviewPage({
                     );
                     return (
                       <td key={session.id}>
-                        <button
-                          type="button"
-                          className={`attendance-grid-cell ${code ? `mark-${code}` : "mark-empty"}`}
-                          onClick={() =>
-                            selectCell({ student, session, code: code ?? null })
-                          }
-                          aria-label={`${student.estudiante}, ${sessionDate(session.fecha)}: ${code ? attendanceCodes[code] : "sin registrar"}. Ver detalle`}
-                          title={`${student.estudiante} · ${sessionDate(session.fecha)} · ${code ? attendanceCodes[code] : "Sin registrar"}`}
-                        >
-                          {code ?? "·"}
-                        </button>
+                        {code === undefined ? (
+                          <span title="Matrícula fuera del padrón de la sesión">
+                            —
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className={`attendance-grid-cell ${code ? `mark-${code}` : "mark-empty"}`}
+                            onClick={() =>
+                              selectCell({
+                                student,
+                                session,
+                                code: code ?? null,
+                              })
+                            }
+                            aria-label={`${student.estudiante}, ${sessionDate(session.fecha)}: ${code ? attendanceCodes[code] : "sin registrar"}. Ver detalle`}
+                            title={`${student.estudiante} · ${sessionDate(session.fecha)} · ${code ? attendanceCodes[code] : "Sin registrar"}`}
+                          >
+                            {code ?? "·"}
+                          </button>
+                        )}
                       </td>
                     );
                   })}
@@ -318,8 +376,8 @@ export function AttendanceOverviewPage({
         </div>
       )}
       <p className="attendance-grid-note">
-        Las celdas sin marca están pendientes de registro. Las fechas canceladas
-        se muestran como referencia.
+        El punto indica una marca pendiente y el guion, una matrícula fuera del
+        padrón de esa sesión.
       </p>
       {selectedCell && (
         <AttendanceCellDetailDialog
@@ -328,10 +386,7 @@ export function AttendanceOverviewPage({
           student={selectedCell.student}
           session={selectedCell.session}
           currentCode={selectedCell.code}
-          sessionPath={withAttendanceReturn(
-            `/asistencia/grupos/${groupId}/sesiones/${selectedCell.session.id}`,
-            matrixPath,
-          )}
+          sessionPath={sessionPath(selectedCell.session.id)}
           onClose={() => selectCell(null)}
           onSaved={() => {
             selectCell(null);

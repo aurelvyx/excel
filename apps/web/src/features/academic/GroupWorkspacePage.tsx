@@ -5,6 +5,7 @@ import {
   FileText,
   GraduationCap,
   Lock,
+  Plus,
   Users,
 } from "lucide-react";
 import type { Access } from "../../app/access";
@@ -16,25 +17,34 @@ import { PageHeading } from "../../shared/ui/PageHeading";
 import { SessionsPage } from "../attendance/SessionsPage";
 import { loadAllSessions } from "../attendance/sessions-query";
 import { AttendancePage } from "../attendance/AttendancePage";
-import { sessionDate, sessionStates } from "../attendance/model";
+import {
+  currentClassDate,
+  sessionDate,
+  sessionStates,
+  sessionTime,
+} from "../attendance/model";
 import { SelectField } from "../../shared/ui/Field";
 import { navigate } from "../../shared/navigation";
+import { requestPageExit } from "../../shared/useUnsavedChanges";
 import { GroupRoster } from "../enrollments/GroupRoster";
 import { GradesPage } from "../evaluation/GradesPage";
 import type { ActView } from "../evaluation/acts-model";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { Button } from "../../shared/ui/Button";
 import { AttendanceOverviewPage } from "../attendance/AttendanceOverviewPage";
+import { SessionForm } from "../attendance/SessionForm";
 import { AttendanceClosureModal } from "./components/AttendanceClosureModal";
 import { JustificationsDrawer } from "./components/JustificationsDrawer";
 import { WorkspaceSummary } from "./components/WorkspaceSummary";
 import "./academic.css";
+import "../attendance/attendance.css";
 
 const tabs = [
   { key: "asistencia", label: "Control de asistencia", Icon: Calendar },
   { key: "calificaciones", label: "Calificaciones", Icon: GraduationCap },
   { key: "nomina", label: "Alumnos matriculados", Icon: Users },
 ] as const;
+type AttendanceTool = "justificaciones" | "cierre" | "programar";
 
 /** Navega por el salón sin duplicar la captura, los permisos o el cálculo. */
 export function GroupWorkspacePage({
@@ -47,34 +57,76 @@ export function GroupWorkspacePage({
   access: Access;
 }) {
   const group = useApiQuery<Row>(`oferta/grupos/${groupId}`);
-  const sessions = useApiQuery(
-    `asistencia/grupos/${groupId}/sesiones`,
-    loadAllSessions,
-  );
+  const sessionsEndpoint = `asistencia/grupos/${groupId}/sesiones`;
+  const sessions = useApiQuery(sessionsEndpoint, loadAllSessions);
   const act = useApiQuery<ActView>(`evaluacion/grupos/${groupId}/acta?limit=1`);
-  const [view, setView] = useState<"sesiones" | "matriz">("sesiones");
-  const [panel, setPanel] = useState<"justificaciones" | "cierre" | null>(null);
+  const [panel, setPanel] = useState<AttendanceTool | null>(null);
+  const [sessionNotice, notifySessions] = useState("");
+  const [captureRevision, refreshCapture] = useState(0);
   const path = `/salones/${groupId}`;
   const available = tabs.filter((tab) => tab.key !== "nomina" || access.reader);
   const active =
     available.find((tab) => tab.key === query.get("tab")) ?? tabs[0];
-  const selectedSession = query.get("sesion") ?? "";
+  const view = query.get("vista");
+  const month = query.get("mes");
+  const sessionItems = sessions.data?.items ?? [];
+  const currentSessions = sessionItems.filter(
+    (item) => item.estado !== "CANCELADA",
+  );
+  const today = currentClassDate();
+  const suggestedSession =
+    currentSessions.find((item) => item.fecha === today) ??
+    currentSessions.at(-1) ??
+    sessionItems.at(-1);
+  const selectedSession =
+    query.get("sesion") ??
+    (view === "matriz" || view === "sesiones"
+      ? ""
+      : (suggestedSession?.id ?? ""));
+  function attendancePath({
+    session,
+    vista,
+    mes = month,
+    after,
+  }: {
+    session?: string;
+    vista?: "sesiones" | "matriz";
+    mes?: string | null;
+    after?: string;
+  }) {
+    const params = new URLSearchParams({ tab: "asistencia" });
+    if (session) params.set("sesion", session);
+    if (vista) params.set("vista", vista);
+    if (mes) params.set("mes", mes);
+    if (after) params.set("after", after);
+    return `${path}?${params}`;
+  }
   const tabPath = (after: string) => {
+    if (active.key === "asistencia")
+      return selectedSession
+        ? attendancePath({ session: selectedSession, after })
+        : attendancePath({ vista: "sesiones", after });
     const params = new URLSearchParams({ tab: active.key });
-    if (selectedSession && active.key === "asistencia")
-      params.set("sesion", selectedSession);
     if (after) params.set("after", after);
     return `${path}?${params}`;
   };
-  const sessionPath = (id: string) =>
-    `${path}?${new URLSearchParams({ tab: "asistencia", sesion: id })}`;
+  const sessionPath = (id: string) => attendancePath({ session: id });
   function attendanceChanged() {
     act.reload();
     sessions.reload();
   }
   function closePanel() {
+    if (panel === "cierre") sessions.reload();
+    refreshCapture((revision) => revision + 1);
     setPanel(null);
     act.reload();
+  }
+  function openSessionTool(tool: AttendanceTool) {
+    requestPageExit(() => {
+      if (tool === "programar") notifySessions("");
+      refreshCapture((revision) => revision + 1);
+      setPanel(tool);
+    });
   }
 
   return (
@@ -194,87 +246,109 @@ export function GroupWorkspacePage({
           </nav>
           {active.key === "asistencia" && (
             <>
-              {sessions.data?.items.length ? (
-                <SelectField
-                  label="Sesión de clase del salón"
-                  value={selectedSession}
-                  onChange={(event) =>
-                    navigate(
-                      event.target.value
-                        ? sessionPath(event.target.value)
-                        : `${path}?tab=asistencia`,
-                    )
-                  }
-                >
-                  <option value="">Ver calendario y programación</option>
-                  {sessions.data.items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {sessionDate(item.fecha)} · {sessionStates[item.estado]}
-                    </option>
-                  ))}
-                </SelectField>
-              ) : null}
-              <div
-                className="workspace-tools"
+              <section
+                className="academic-card attendance-workspace-tools"
                 aria-label="Herramientas de asistencia del salón"
               >
-                <Button
-                  onClick={() => {
-                    setView("sesiones");
-                    if (selectedSession) navigate(`${path}?tab=asistencia`);
-                  }}
-                  aria-pressed={!selectedSession && view === "sesiones"}
-                >
-                  <Calendar size={15} aria-hidden="true" /> Calendario de
-                  sesiones
-                </Button>
-                <Button
-                  onClick={() => {
-                    setView("matriz");
-                    if (selectedSession) navigate(`${path}?tab=asistencia`);
-                  }}
-                  aria-pressed={!selectedSession && view === "matriz"}
-                >
-                  <Users size={15} aria-hidden="true" /> Matriz mensual
-                </Button>
-                <Button onClick={() => setPanel("justificaciones")}>
-                  <FileText size={15} aria-hidden="true" /> Revisar
-                  justificaciones
-                </Button>
-                <Button onClick={() => setPanel("cierre")}>
-                  <Lock size={15} aria-hidden="true" /> Revisar cierre de
-                  asistencia
-                </Button>
-              </div>
+                <div className="attendance-workspace-actions">
+                  {sessionItems.length ? (
+                    <SelectField
+                      label="Sesión de clase del salón"
+                      value={selectedSession}
+                      onChange={(event) =>
+                        navigate(
+                          event.target.value
+                            ? sessionPath(event.target.value)
+                            : attendancePath({ vista: "sesiones" }),
+                        )
+                      }
+                    >
+                      <option value="">Selecciona una fecha de clase</option>
+                      {sessionItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {sessionDate(item.fecha)} ·{" "}
+                          {sessionTime(item.hora_inicio, item.hora_fin)} ·{" "}
+                          {sessionStates[item.estado]}
+                        </option>
+                      ))}
+                    </SelectField>
+                  ) : sessions.loading ? (
+                    <Loading>Cargando fechas de clase…</Loading>
+                  ) : sessions.error ? (
+                    <Feedback onRetry={sessions.reload}>
+                      {sessions.error}
+                    </Feedback>
+                  ) : (
+                    <p>El salón todavía no tiene fechas de clase.</p>
+                  )}
+                  {sessions.data?.puedeProgramar && (
+                    <Button onClick={() => openSessionTool("programar")}>
+                      <Plus size={15} aria-hidden="true" /> Nueva fecha de clase
+                    </Button>
+                  )}
+                </div>
+                <div className="attendance-workspace-actions">
+                  <Button
+                    aria-pressed={!selectedSession && view !== "matriz"}
+                    onClick={() =>
+                      navigate(attendancePath({ vista: "sesiones" }))
+                    }
+                  >
+                    <Calendar size={15} aria-hidden="true" /> Calendario de
+                    sesiones
+                  </Button>
+                  <Button
+                    aria-pressed={!selectedSession && view === "matriz"}
+                    onClick={() =>
+                      navigate(attendancePath({ vista: "matriz" }))
+                    }
+                  >
+                    <Users size={15} aria-hidden="true" /> Matriz mensual
+                  </Button>
+                  <Button onClick={() => openSessionTool("justificaciones")}>
+                    <FileText size={15} aria-hidden="true" /> Revisar
+                    justificaciones
+                  </Button>
+                  <Button onClick={() => openSessionTool("cierre")}>
+                    <Lock size={15} aria-hidden="true" /> Revisar cierre de
+                    asistencia
+                  </Button>
+                </div>
+              </section>
+              <Feedback tone="success">{sessionNotice}</Feedback>
               {selectedSession ? (
                 <AttendancePage
+                  key={`${selectedSession}:${captureRevision}`}
                   groupId={groupId}
                   sessionId={selectedSession}
                   query={
                     new URLSearchParams({
                       ...Object.fromEntries(query),
-                      retorno: `${path}?tab=asistencia`,
+                      retorno: attendancePath({ vista: "sesiones" }),
                     })
                   }
                   workspacePath={tabPath}
                   onChanged={attendanceChanged}
                 />
-              ) : view === "sesiones" ? (
+              ) : view === "matriz" ? (
+                <AttendanceOverviewPage
+                  key={groupId}
+                  groupId={groupId}
+                  query={query}
+                  workspacePath={(mes) =>
+                    attendancePath({ vista: "matriz", mes })
+                  }
+                  onChanged={attendanceChanged}
+                />
+              ) : !sessions.loading || view === "sesiones" ? (
                 <SessionsPage
                   id={groupId}
                   query={query}
                   workspacePath={tabPath}
                   workspaceSessionPath={sessionPath}
+                  onChanged={sessions.reload}
                 />
-              ) : (
-                <AttendanceOverviewPage
-                  groupId={groupId}
-                  query={
-                    new URLSearchParams({ retorno: `${path}?tab=asistencia` })
-                  }
-                  onChanged={attendanceChanged}
-                />
-              )}
+              ) : null}
             </>
           )}
           {active.key === "calificaciones" && (
@@ -299,6 +373,22 @@ export function GroupWorkspacePage({
           )}
           {panel === "cierre" && (
             <AttendanceClosureModal groupId={groupId} onClose={closePanel} />
+          )}
+          {panel === "programar" && sessions.data?.puedeProgramar && (
+            <SessionForm
+              group={sessions.data.grupo}
+              endpoint={sessionsEndpoint}
+              onClose={() => setPanel(null)}
+              onSaved={(count) => {
+                setPanel(null);
+                notifySessions(
+                  count === 1
+                    ? "Se programó 1 sesión."
+                    : `Se programaron ${count} sesiones.`,
+                );
+                sessions.reload();
+              }}
+            />
           )}
         </>
       )}

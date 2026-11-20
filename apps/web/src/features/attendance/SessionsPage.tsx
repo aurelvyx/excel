@@ -26,11 +26,13 @@ export function SessionsPage({
   query,
   workspacePath,
   workspaceSessionPath,
+  onChanged,
 }: {
   id: string;
   query: URLSearchParams;
   workspacePath?: (cursor: string) => string;
   workspaceSessionPath?: (sessionId: string) => string;
+  onChanged?: () => void;
 }) {
   const { session } = useAuth();
   const admin = session.user.roles.includes("ADMIN");
@@ -249,6 +251,7 @@ export function SessionsPage({
             );
             if (after) navigate(paginationPath(""));
             else reload();
+            onChanged?.();
           }}
         />
       )}

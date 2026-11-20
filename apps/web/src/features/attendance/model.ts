@@ -141,6 +141,33 @@ export function sessionTime(start: string | null, end: string | null) {
     : "Sin horario";
 }
 
+export function currentClassDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function normalized(value: string) {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("es");
+}
+
+export function filterAttendanceStudents(
+  students: AttendanceRow[],
+  search: string,
+) {
+  const terms = normalized(search).split(/\s+/).filter(Boolean);
+  if (!terms.length) return students;
+  return students.filter((student) => {
+    const identity = normalized(
+      `${student.estudiante} ${student.numero_documento} ${student.codigo_matricula}`,
+    );
+    return terms.every((term) => identity.includes(term));
+  });
+}
+
 export function academicTime(value: string | null) {
   return value
     ? new Intl.DateTimeFormat("es-PE", {

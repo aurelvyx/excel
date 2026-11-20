@@ -12,7 +12,6 @@ import { InputField, SelectField } from "../../shared/ui/Field";
 import { ListPanel } from "../../shared/ui/ListPanel";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
-import { StatusBadge } from "../../shared/ui/StatusBadge";
 import {
   EnrollmentAttempt,
   StudentIdentity,
@@ -23,12 +22,14 @@ import { WorkspaceSummary } from "../academic/components/WorkspaceSummary";
 import { AttendanceSummary } from "./AttendanceSummary";
 import { AttendanceCorrectionDialog } from "./AttendanceCorrectionDialog";
 import { AttendanceHistoryDialog } from "./AttendanceHistoryDialog";
+import { AttendanceStudentSearch } from "./AttendanceStudentSearch";
 import {
   justificationStates,
   type JustificationState,
 } from "./justification-model";
 import {
   attendanceCodes,
+  filterAttendanceStudents,
   sessionDate,
   sessionStates,
   sessionTime,
@@ -37,6 +38,7 @@ import {
   type AttendanceRow,
   type SavedAttendance,
 } from "./model";
+import "./attendance.css";
 
 export function AttendancePage({
   groupId,
@@ -54,11 +56,11 @@ export function AttendancePage({
   const after = query.get("after") ?? "";
   const path = `/asistencia/grupos/${groupId}/sesiones/${sessionId}`;
   const returnTo = safeAttendanceReturnTo(query.get("retorno"), groupId);
-  const returnLabel = returnTo?.startsWith(
-    `/asistencia/grupos/${groupId}/matriz`,
-  )
-    ? "Volver a la matriz"
-    : "Volver a sesiones";
+  const returnLabel =
+    returnTo?.startsWith(`/asistencia/grupos/${groupId}/matriz`) ||
+    new URLSearchParams(returnTo?.split("?")[1]).get("vista") === "matriz"
+      ? "Volver a la matriz"
+      : "Volver a sesiones";
   const endpoint = `asistencia/grupos/${groupId}/sesiones/${sessionId}/asistencias`;
   const search = new URLSearchParams({ limit: "20" });
   if (after) search.set("after", after);
@@ -140,6 +142,8 @@ function AttendanceMatrix({
 }) {
   const [snapshot, setSnapshot] = useState(initial);
   const rows = snapshot.items;
+  const [studentSearch, searchStudents] = useState("");
+  const visibleRows = filterAttendanceStudents(rows, studentSearch);
   const session = snapshot.sesion;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [issues, setIssues] = useState<Record<string, string>>({});
@@ -173,7 +177,7 @@ function AttendanceMatrix({
     });
   }
   function markPresent() {
-    for (const row of rows)
+    for (const row of visibleRows)
       if (canEdit && row.editable && !row.justificacionId)
         change(row, { codigo: "P" });
   }
@@ -230,6 +234,12 @@ function AttendanceMatrix({
     }
     setIssues(next);
     if (Object.keys(next).length) {
+      if (
+        changes.some(
+          (row) => next[row.matricula_id] && !visibleRows.includes(row),
+        )
+      )
+        searchStudents("");
       setTimeout(
         () =>
           document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
@@ -360,28 +370,56 @@ function AttendanceMatrix({
         loadingLabel="Cargando asistencia…"
         error=""
         onRetry={reload}
-        empty={!rows.length}
-        emptyDescription="No hay matrículas disponibles para esta sesión en esta página."
+        empty={!visibleRows.length}
+        emptyDescription={
+          rows.length
+            ? "No se encontraron estudiantes con esa búsqueda en esta página."
+            : "No hay matrículas disponibles para esta sesión en esta página."
+        }
         filters={
-          <CaptureToolbar
-            changes={changedRows}
-            busy={busy}
-            reloadLabel="Recargar asistencia"
-            onReload={() => guard.request(reload)}
-          >
-            {canEdit && (
-              <Button
-                disabled={
-                  busy ||
-                  conflict ||
-                  !rows.some((row) => row.editable && !row.justificacionId)
-                }
-                onClick={markPresent}
-              >
-                Marcar presentes
-              </Button>
+          <>
+            {!!rows.length && (
+              <AttendanceStudentSearch
+                search={studentSearch}
+                onSearch={searchStudents}
+                visible={visibleRows.length}
+                total={rows.length}
+                paginated
+              />
             )}
-          </CaptureToolbar>
+            <CaptureToolbar
+              changes={changedRows}
+              busy={busy}
+              reloadLabel="Recargar asistencia"
+              onReload={() => guard.request(reload)}
+            >
+              {canEdit && (
+                <>
+                  <Button
+                    disabled={
+                      busy ||
+                      conflict ||
+                      !visibleRows.some(
+                        (row) => row.editable && !row.justificacionId,
+                      )
+                    }
+                    onClick={markPresent}
+                  >
+                    Marcar presentes
+                  </Button>
+                  <Button
+                    variant="primary"
+                    disabled={!dirty || conflict}
+                    busy={busy}
+                    busyLabel="Guardando asistencia…"
+                    onClick={() => void save()}
+                  >
+                    Guardar asistencia
+                  </Button>
+                </>
+              )}
+            </CaptureToolbar>
+          </>
         }
         pagination={
           <Pagination
@@ -406,7 +444,7 @@ function AttendanceMatrix({
       >
         <DataTable
           caption="Asistencia de la sesión"
-          rows={rows}
+          rows={visibleRows}
           rowKey={(row) => row.matricula_id}
           columns={[
             {
@@ -441,6 +479,7 @@ function AttendanceMatrix({
                     label={`Asistencia de ${row.estudiante}`}
                     id={`attendance-${row.matricula_id}`}
                     value={(drafts[row.matricula_id] ?? recorded(row)).codigo}
+                    className={`attendance-mark-select mark-${(drafts[row.matricula_id] ?? recorded(row)).codigo}`}
                     disabled={busy || conflict || !!row.justificacionId}
                     hint={
                       row.justificacionId
@@ -464,11 +503,13 @@ function AttendanceMatrix({
                     ))}
                   </SelectField>
                 ) : (
-                  <StatusBadge inactive={!row.asistencia}>
+                  <span
+                    className={`attendance-code mark-${row.asistencia?.codigo ?? "empty"}`}
+                  >
                     {row.asistencia
                       ? `${row.asistencia.codigo} · ${attendanceCodes[row.asistencia.codigo]}`
                       : "Pendiente"}
-                  </StatusBadge>
+                  </span>
                 ),
             },
             {
@@ -566,19 +607,6 @@ function AttendanceMatrix({
           ]}
         />
       </ListPanel>
-      {canEdit && (
-        <footer className="actions">
-          <Button
-            variant="primary"
-            disabled={!dirty || conflict}
-            busy={busy}
-            busyLabel="Guardando asistencia…"
-            onClick={() => void save()}
-          >
-            Guardar asistencia
-          </Button>
-        </footer>
-      )}
       {guard.confirmation}
       {correcting && snapshot.grupo.cierre_asistencia && (
         <AttendanceCorrectionDialog

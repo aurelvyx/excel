@@ -3,6 +3,7 @@ import { Button } from "../../shared/ui/Button";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { WorkspaceSummary } from "../academic/components/WorkspaceSummary";
 import {
+  currentClassDate,
   sessionDate,
   sessionTime,
   sessionStates,
@@ -42,12 +43,7 @@ export function SessionCalendar({
   onCreate: (date: string) => void;
   sessionHref: (id: string) => string;
 }) {
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Lima",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  const today = currentClassDate();
   const available = [
     ...new Set(items.map((item) => item.fecha.slice(0, 7))),
   ].sort();
