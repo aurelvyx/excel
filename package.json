@@ -32,6 +32,7 @@
     "b19:plantillas": "node infra/scripts/report-templates.mjs",
     "b20:mediciones": "node infra/scripts/pilot-measurements.mjs",
     "db:migrate": "pnpm --filter api migration:run",
+    "db:fresh": "pnpm --filter api migration:fresh",
     "db:revert": "pnpm --filter api migration:revert",
     "db:status": "pnpm --filter api migration:show",
     "db:seed:demo": "pnpm --filter api seed:demo",
@@ -45,6 +46,7 @@
     "test:e2e": "pnpm --filter api test:e2e",
     "db:up": "docker compose --env-file infra/.env -f infra/compose.yaml up -d --wait --wait-timeout 120",
     "db:down": "docker compose --env-file infra/.env -f infra/compose.yaml down",
+    "db:restart": "docker compose --env-file infra/.env -f infra/compose.yaml restart postgres && pnpm db:up",
     "db:logs": "docker compose --env-file infra/.env -f infra/compose.yaml logs -f postgres",
     "db:config": "docker compose --env-file infra/.env -f infra/compose.yaml config --quiet"
   }

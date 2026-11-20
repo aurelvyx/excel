@@ -4,12 +4,15 @@ export type PracticeGroup = {
   id: string;
   nivel_id: string;
   teacher: Identity;
+  horaInicio: string;
+  horaFin: string;
 };
 
 export type PracticeContext = {
   batch: string;
   today: string;
   sessionDates: string[];
+  paymentDates: string[];
   admin: Identity;
   secretary: Identity;
   groups: PracticeGroup[];

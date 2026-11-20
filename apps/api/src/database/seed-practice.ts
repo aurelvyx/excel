@@ -1,7 +1,8 @@
 import { pathToFileURL } from 'node:url';
-import { DataSource, type EntityManager } from 'typeorm';
+import type { DataSource } from 'typeorm';
 import { createDataSource } from './configuracion/data-source.js';
 import { loadEnvironment } from './configuracion/environment.js';
+import { transactionalSource } from './configuracion/transactional-source.js';
 import { AuditService } from '../modules/control/audit.service.js';
 import { type Identity, type Role } from '../modules/auth/access.js';
 import { digest, hashPassword, newToken } from '../modules/auth/security.js';
@@ -12,6 +13,12 @@ import { StudentsService } from '../modules/personas/students.service.js';
 import { TeachersService } from '../modules/personas/teachers.service.js';
 import { seedPracticeAcademics } from './practice/academics.js';
 import {
+  practiceLanguages,
+  practicePerson,
+  practiceSection,
+  practiceShifts,
+} from './practice/fixtures.js';
+import {
   parsePracticeOptions,
   practiceSeedHelp,
   validatePracticeOptions,
@@ -21,7 +28,10 @@ import type { PracticeGroup, PracticeSummary } from './practice/model.js';
 
 export type { PracticeSummary } from './practice/model.js';
 
-function validateEnvironment(options: PracticeOptions, password: string) {
+export function validatePracticeEnvironment(
+  options: PracticeOptions,
+  password: string,
+): void {
   validatePracticeOptions(options);
   if (
     process.env.NODE_ENV === 'production' ||
@@ -39,17 +49,6 @@ function validateEnvironment(options: PracticeOptions, password: string) {
     throw new Error(
       'Defina DEMO_SEED_PASSWORD con una contraseña de 12 a 128 caracteres',
     );
-}
-
-/** Todos los servicios comparten la transacción del lote, incluidos sus savepoints. */
-function transactionalSource(
-  source: DataSource,
-  manager: EntityManager,
-): DataSource {
-  const scoped = Object.create(source) as DataSource;
-  Object.defineProperty(scoped, 'manager', { value: manager });
-  scoped.query = manager.query.bind(manager);
-  return scoped;
 }
 
 async function seedActor(
@@ -114,13 +113,25 @@ async function populate(
   const teachersService = new TeachersService(source, audit);
   const prefix = `DEMO-${options.batch.toUpperCase()}`;
   const [dates] = (await source.query(
-    `SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date::text AS today,
-     ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date-$1::int-1)::text AS start,
-     ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date+90)::text AS finish,
-     ARRAY(SELECT ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date-n)::text
-       FROM generate_series($1::int-1,0,-1) n) AS sessions`,
+    `WITH clock AS (
+       SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date AS today
+     ), classes AS (
+       SELECT today-n AS date FROM clock,generate_series(0,$1::int*2) n
+       WHERE extract(isodow FROM today-n)<=5 ORDER BY date DESC LIMIT $1
+     ), first_class AS (SELECT min(date) AS date FROM classes)
+     SELECT today::text, (first_class.date-7)::text AS start, (today+90)::text AS finish,
+       ARRAY(SELECT date::text FROM classes ORDER BY date) AS sessions,
+       ARRAY(SELECT (first_class.date-n)::text FROM generate_series(1,5) n) AS payments
+     FROM clock, first_class`,
     [options.sessions],
-  )) as { today: string; start: string; finish: string; sessions: string[] }[];
+  )) as {
+    today: string;
+    start: string;
+    finish: string;
+    sessions: string[];
+    payments: string[];
+  }[];
+  const year = Number(dates!.today.slice(0, 4));
 
   // Cuenta técnica sin contraseña conocida. Solo existe para las validaciones
   // de los servicios y queda inactiva al confirmar la carga.
@@ -154,27 +165,45 @@ async function populate(
 
   const period = await offer.save(admin, 'periodos', {
     codigo: prefix,
-    nombre: `Pruebas manuales ${options.batch} · SINTÉTICO`,
+    nombre: `Ciclo de práctica ${year} · ${options.batch} · SINTÉTICO`,
     fechaInicio: dates!.start,
     fechaFin: dates!.finish,
     matriculaInicio: dates!.start,
     matriculaFin: dates!.finish,
     estado: 'ABIERTO',
   });
-  const shift = await offer.save(admin, 'turnos', {
-    nombre: `${prefix} mañana`,
-    horaInicio: '09:00',
-    horaFin: '11:00',
-  });
-  const section = await offer.save(admin, 'secciones', {
-    codigo: prefix,
-    nombre: `Sección ${options.batch} sintética`,
-  });
-  const levels: { id: string }[] = [];
-  for (const [code, name] of [
-    ['EN', 'Inglés'],
-    ['PT', 'Portugués'],
-  ]) {
+  const shifts: {
+    id: string;
+    code: string;
+    horaInicio: string;
+    horaFin: string;
+  }[] = [];
+  for (const { code, name, horaInicio, horaFin } of practiceShifts.slice(
+    0,
+    options.groups,
+  )) {
+    const shift = await offer.save(admin, 'turnos', {
+      nombre: `${name} · ${prefix}`,
+      horaInicio,
+      horaFin,
+    });
+    shifts.push({ id: shift.id, code, horaInicio, horaFin });
+  }
+  const sections: { id: string; label: string }[] = [];
+  for (
+    let index = 0;
+    index < Math.ceil(options.groups / practiceLanguages.length);
+    index++
+  ) {
+    const label = practiceSection(index);
+    const section = await offer.save(admin, 'secciones', {
+      codigo: `D-${options.batch.toUpperCase()}-${label}`,
+      nombre: `Sección ${label} · ${prefix}`,
+    });
+    sections.push({ id: section.id, label });
+  }
+  const levels: { id: string; code: string; name: string }[] = [];
+  for (const { code, name, units } of practiceLanguages) {
     const [existing] = (await source.query(
       'SELECT id,activo FROM idiomas WHERE codigo=$1',
       [`DEMO-${code}`],
@@ -196,33 +225,40 @@ async function populate(
     const level = await offer.save(admin, 'niveles', {
       idiomaId: language.id,
       codigo: prefix,
-      nombre: `Nivel ${options.batch} · SINTÉTICO`,
+      nombre: `Básico 1 · ${prefix}`,
       orden: order!.next,
     });
-    levels.push(level);
-    for (let index = 1; index <= 2; index++)
+    levels.push({ id: level.id, code, name });
+    for (const [index, unit] of units.entries())
       await offer.save(admin, 'unidades', {
         nivelId: level.id,
-        codigo: `SYN-UD${index}`,
-        nombre: `Unidad sintética ${index}`,
+        codigo: `SYN-UD${index + 1}`,
+        nombre: unit,
         horasTeoricas: 2,
         horasPracticas: 2,
-        orden: index,
+        orden: index + 1,
       });
   }
   const teachers: { id: string; actor: Identity }[] = [];
   for (let index = 1; index <= options.teachers; index++) {
     const sequence = String(index).padStart(3, '0');
+    const code = `${prefix}-D${sequence}`;
+    const teachingLanguages = new Set<string>();
+    for (
+      let group = index - 1;
+      group < options.groups;
+      group += options.teachers
+    )
+      teachingLanguages.add(levels[group % levels.length]!.name);
     const teacher = await teachersService.create(admin, {
-      codigoDocente: `${prefix}-D${sequence}`,
-      especialidad: 'Inglés y portugués · dato sintético',
-      persona: {
-        tipoDocumento: 'SINTETICO',
-        numeroDocumento: `${prefix}-D${sequence}`,
-        nombres: `Docente ${sequence}`,
-        apellidoPaterno: 'Sintético',
-        apellidoMaterno: options.batch,
-      },
+      codigoDocente: code,
+      especialidad: [...teachingLanguages].join(' / '),
+      persona: practicePerson(
+        options.students + index - 1,
+        year,
+        'docente',
+        code,
+      ),
     });
     const actor = await account(
       `docente${sequence}`,
@@ -234,12 +270,22 @@ async function populate(
   const groups: PracticeGroup[] = [];
   for (let index = 0; index < options.groups; index++) {
     const teacher = teachers[index % teachers.length]!;
+    const languageIndex = index % levels.length;
+    const sectionIndex = Math.floor(index / levels.length);
+    const level = levels[languageIndex]!;
+    const {
+      id: shiftId,
+      code: shiftCode,
+      horaInicio,
+      horaFin,
+    } = shifts[(sectionIndex + languageIndex) % shifts.length]!;
+    const section = sections[sectionIndex]!;
     const group = await offer.save(admin, 'grupos', {
       periodoId: period.id,
-      nivelId: levels[index % levels.length]!.id,
-      turnoId: shift.id,
+      nivelId: level.id,
+      turnoId: shiftId,
       seccionId: section.id,
-      codigo: `${prefix}-G${String(index + 1).padStart(3, '0')}`,
+      codigo: `${prefix}-${level.code}-${shiftCode}-${section.label}`,
       capacidad: Math.ceil(options.students / options.groups) + 5,
       estado: 'ACTIVO',
     });
@@ -251,26 +297,20 @@ async function populate(
     });
     groups.push({
       id: group.id,
-      nivel_id: String(group.nivel_id),
+      nivel_id: level.id,
       teacher: teacher.actor,
+      horaInicio,
+      horaFin,
     });
   }
   const students: { id: string }[] = [];
   for (let index = 1; index <= options.students; index++) {
-    const sequence = String(index).padStart(5, '0');
+    const code = `${prefix}-E${String(index).padStart(5, '0')}`;
     students.push(
       await studentsService.create(secretary, {
-        codigoEstudiante: `${prefix}-E${sequence}`,
+        codigoEstudiante: code,
         fechaRegistro: dates!.start,
-        persona: {
-          tipoDocumento: 'SINTETICO',
-          numeroDocumento: `${prefix}-E${sequence}`,
-          nombres: `Estudiante ${sequence}`,
-          apellidoPaterno: 'Sintético',
-          apellidoMaterno: options.batch,
-          fechaNacimiento: `${2000 + (index % 9)}-01-15`,
-          correo: `estudiante${sequence}.${options.batch}@example.invalid`,
-        },
+        persona: practicePerson(index - 1, year, 'estudiante', code),
       }),
     );
   }
@@ -278,6 +318,7 @@ async function populate(
     batch: options.batch,
     today: dates!.today,
     sessionDates: dates!.sessions,
+    paymentDates: dates!.payments,
     admin,
     secretary,
     groups,
@@ -335,7 +376,7 @@ export async function seedPractice(
   options: PracticeOptions,
   password: string,
 ): Promise<PracticeSummary> {
-  validateEnvironment(options, password);
+  validatePracticeEnvironment(options, password);
   return source.transaction(async (manager) => {
     await manager.query('SELECT pg_advisory_xact_lock(20260924,50)');
     const [previous] = (await manager.query(
@@ -375,7 +416,7 @@ if (
       const options = parsePracticeOptions(args);
       const password = process.env.DEMO_SEED_PASSWORD ?? '';
       delete process.env.DEMO_SEED_PASSWORD;
-      validateEnvironment(options, password);
+      validatePracticeEnvironment(options, password);
       source = createDataSource();
       await source.initialize();
       const summary = await seedPractice(source, options, password);

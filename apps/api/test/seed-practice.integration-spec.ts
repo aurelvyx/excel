@@ -158,6 +158,44 @@ describe('Carga configurable sobre PostgreSQL real', () => {
       await source.query('SELECT DISTINCT codigo FROM idiomas ORDER BY codigo'),
     ).toEqual([{ codigo: 'DEMO-EN' }, { codigo: 'DEMO-PT' }]);
     expect(
+      await source.query(`SELECT count(*)::int AS people,
+        count(DISTINCT (nombres,apellido_paterno,apellido_materno))::int AS distinct_names,
+        count(*) FILTER (WHERE tipo_documento='SINTETICO' AND correo LIKE '%@example.invalid'
+          AND nombres !~ '[0-9]' AND fecha_nacimiento <= CURRENT_DATE - INTERVAL '18 years')::int AS synthetic
+        FROM personas WHERE numero_documento LIKE 'DEMO-ENSAYO-%'`),
+    ).toEqual([{ people: 46, distinct_names: 46, synthetic: 46 }]);
+    expect(
+      await source.query(`SELECT g.codigo,n.nombre AS level,s.nombre AS section,
+        to_char(t.hora_inicio,'HH24:MI') AS starts_at
+        FROM grupos g JOIN niveles n ON n.id=g.nivel_id
+        JOIN secciones s ON s.id=g.seccion_id JOIN turnos t ON t.id=g.turno_id
+        WHERE g.codigo LIKE 'DEMO-ENSAYO-%' ORDER BY g.codigo`),
+    ).toEqual([
+      {
+        codigo: 'DEMO-ENSAYO-EN-M-A',
+        level: 'Básico 1 · DEMO-ENSAYO',
+        section: 'Sección A · DEMO-ENSAYO',
+        starts_at: '09:00',
+      },
+      {
+        codigo: 'DEMO-ENSAYO-PT-T-A',
+        level: 'Básico 1 · DEMO-ENSAYO',
+        section: 'Sección A · DEMO-ENSAYO',
+        starts_at: '15:00',
+      },
+    ]);
+    expect(
+      await source.query(`SELECT s.id FROM sesiones_clase s
+        JOIN grupos g ON g.id=s.grupo_id JOIN turnos t ON t.id=g.turno_id
+        WHERE extract(isodow FROM s.fecha)>5 OR s.hora_inicio<>t.hora_inicio OR s.hora_fin<>t.hora_fin`),
+    ).toEqual([]);
+    expect(
+      await source.query(`SELECT count(DISTINCT fecha_pago)::int AS dates,
+        count(DISTINCT importe)::int AS amounts,
+        bool_and(fecha_pago<(SELECT min(fecha) FROM sesiones_clase)) AS paid_before_class
+        FROM vouchers`),
+    ).toEqual([{ dates: 5, amounts: 3, paid_before_class: true }]);
+    expect(
       await source.query(`SELECT m.id FROM matriculas m LEFT JOIN vouchers v ON v.id=m.voucher_id
       WHERE m.estado='ACTIVA' AND (v.id IS NULL OR v.estado<>'VALIDADO' OR v.estudiante_id<>m.estudiante_id)`),
     ).toEqual([]);
@@ -192,6 +230,16 @@ describe('Carga configurable sobre PostgreSQL real', () => {
     expect(
       (await source.query('SELECT id FROM calificaciones WHERE nota=0')).length,
     ).toBeGreaterThan(0);
+    expect(
+      await source.query(`SELECT e.codigo_estudiante,round(avg(c.nota),2)::text AS average
+        FROM calificaciones c JOIN matriculas m ON m.id=c.matricula_id
+        JOIN estudiantes e ON e.id=m.estudiante_id
+        WHERE e.codigo_estudiante IN ('DEMO-ENSAYO-E00001','DEMO-ENSAYO-E00003')
+        GROUP BY e.codigo_estudiante ORDER BY e.codigo_estudiante`),
+    ).toEqual([
+      { codigo_estudiante: 'DEMO-ENSAYO-E00001', average: '12.40' },
+      { codigo_estudiante: 'DEMO-ENSAYO-E00003', average: '12.50' },
+    ]);
     expect(
       (
         await source.query(`SELECT m.id FROM matriculas m

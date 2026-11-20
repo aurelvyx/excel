@@ -45,8 +45,10 @@ usa las cantidades predeterminadas y `pnpm db:seed:practice --help` muestra la a
 
 El producto de estudiantes y sesiones tiene un límite de 100000 para mantener
 acotada la carga. Las fechas se calculan respecto al día de ejecución en Lima.
-El periodo permite matrícula durante 90 días y las sesiones terminan en el día
-de la carga. Después puedes añadir sesiones y seguir usando los flujos habituales.
+El periodo abre una semana antes de la primera clase y queda abierto hasta
+90 días después de la carga. Las sesiones se reparten de lunes a viernes hasta
+el día de carga o el último viernes si ejecutas el comando el fin de semana.
+Después puedes añadir sesiones y seguir usando los flujos habituales.
 
 ## Ingresar y probar
 
@@ -63,32 +65,45 @@ Todas las cuentas nuevas usan la contraseña temporal que introdujiste. En el
 primer ingreso se exige cambiarla y después iniciar sesión con la nueva clave.
 Los docentes tienen grupos asignados para comprobar el alcance de sus permisos.
 
-Busca el periodo `DEMO-PRUEBA1`. Los estudiantes usan documento `SINTETICO`,
-códigos con el prefijo del lote y correos del dominio reservado `example.invalid`.
-Cada grupo conserva solicitudes pendientes y matrículas activadas con voucher
-validado cuando su cantidad de estudiantes permite distribuir estos escenarios.
+Busca el periodo `DEMO-PRUEBA1`. En un lote nuevo, `DEMO-PRUEBA1-EN-M-A` es
+Inglés Básico 1, turno mañana y sección A. `DEMO-PRUEBA1-PT-T-A` es Portugués
+Básico 1, turno tarde y sección A. Con las cantidades predeterminadas también
+hay turnos de noche y secciones B y C.
 
-Los escenarios académicos incluyen notas cero, 12.40, 12.50 y pendientes,
-marcas P/F/T/J, expedientes de justificación en sus distintos estados y
-asistencias pendientes. Con diez sesiones, algunos perfiles tienen 30 % exacto
-y otros superan el límite. Tres tardanzas permiten comprobar su conversión a
-una falta computable. Los perfiles se repiten dentro de cada grupo, por lo que
-grupos pequeños contienen un subconjunto de los escenarios.
+Puedes buscar a `Valeria Lucía Quispe Huamán` o su código `DEMO-PRUEBA1-E00001`.
+Docentes y estudiantes usan combinaciones ficticias de nombres y apellidos,
+documento `SINTETICO`, códigos del lote y correo del dominio reservado
+`example.invalid`. Los vouchers tienen distintas fechas previas a las clases e
+importes de ejemplo. Con suficientes estudiantes, cada grupo incluye solicitudes
+pendientes, vouchers rechazados y matrículas activadas con voucher validado.
 
-Los niveles y planes de evaluación propios del lote se identifican como
-**SINTÉTICOS**. Usan dos componentes de 50 % con dos indicadores de 50 % cada uno,
-exclusivamente para ejercitar el cálculo. La referencia de aprobación del plan
-registra expresamente el propósito de prueba. Las actas quedan abiertas para
-que pruebes el cierre desde administración. Los reportes EN/PT mantienen la
-identificación **BORRADOR** de B19.
+Los escenarios académicos incluyen notas cero, promedios de 12.40 y 12.50 y
+notas pendientes, marcas P/F/T/J, justificaciones en distintos estados y
+asistencias pendientes. Los perfiles se repiten dentro de cada grupo, por lo que
+grupos pequeños contienen un subconjunto de los escenarios. Con seis grupos y
+diez sesiones, puedes probar estos casos en `DEMO-PRUEBA1-EN-M-A`.
+
+| Estudiante | Caso |
+| --- | --- |
+| `DEMO-PRUEBA1-E00001` | Promedio de 12.40 y asistencia completa. |
+| `DEMO-PRUEBA1-E00007` | Promedio de 12.50 y 30 % exacto de inasistencias. |
+| `DEMO-PRUEBA1-E00013` | Nota cero y 40 % de inasistencias. |
+| `DEMO-PRUEBA1-E00019` | Tres tardanzas que equivalen a una falta computable. |
+
+Los niveles llevan el código del lote `DEMO` y los planes de evaluación se
+identifican como **SINTÉTICOS**. Usan Comprensión y Expresión, cada componente
+de 50 % con dos indicadores de 50 %, exclusivamente para ejercitar el cálculo.
+La referencia de aprobación del plan registra expresamente el propósito de
+prueba. Las actas quedan abiertas para que pruebes el cierre desde administración.
+Los reportes EN/PT mantienen la identificación **BORRADOR** de B19.
 
 ## Volver a ejecutar
 
 El mismo lote con las mismas cantidades devuelve su resumen inicial y conserva
 los cambios manuales, las contraseñas y los registros existentes. Cambiar las
 cantidades de un lote ya creado produce un error con la indicación de usar otro
-nombre. Para añadir más datos, repite el comando con `--batch prueba2` y las
-cantidades que necesites.
+nombre. Para ver los ejemplos actualizados si ya cargaste `prueba1`, crea un lote
+con `--batch prueba2` y las cantidades que necesites.
 
 Cada lote se confirma dentro de una transacción. Ante un error se revierten sus
 datos y auditoría, y puedes repetir el comando. Las secuencias de PostgreSQL

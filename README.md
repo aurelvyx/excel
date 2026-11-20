@@ -160,11 +160,38 @@ Todos los códigos son DEMO; la cuenta de referencia está deshabilitada y su co
 aleatoria no se conserva. No es una cuenta para iniciar sesión. No se fijan pesos de evaluación.
 
 Para ensayar la aplicación con más registros, `pnpm db:seed:practice` genera un lote
-configurable con estudiantes, cuentas por rol, grupos EN/PT, vouchers, matrículas,
-sesiones, asistencias, justificaciones y notas sintéticas. Acepta `--students`,
+configurable con nombres ficticios, cuentas por rol, salones de inglés y portugués
+por turno, vouchers, matrículas, asistencias, justificaciones y notas. Acepta `--students`,
 `--groups`, `--teachers`, `--sessions` y `--batch`. Requiere habilitación explícita
 y una contraseña temporal recibida por entorno. Uso y escenarios disponibles en
 [Datos para pruebas manuales](docs/datos-prueba.md). Ayuda con `pnpm db:seed:practice --help`.
+
+### Reiniciar la base de desarrollo
+
+`pnpm db:restart` reinicia PostgreSQL y espera a que esté listo. Conserva los datos.
+
+`pnpm db:fresh --confirm excel` **borra todos los datos de la base local de
+desarrollo**, incluidas cuentas y auditoría, y vuelve a aplicar las migraciones.
+Usa el nombre `DB_NAME` de `apps/api/.env` si cambiaste el predeterminado. El
+comando comprueba que sea el PostgreSQL de `pnpm db:up` y reconstruye el esquema
+`public`, donde están las tablas de la aplicación. Cierra las sesiones de prueba
+y la API antes de la reconstrucción para evitar escrituras simultáneas.
+
+Para reconstruir y cargar datos de práctica en la misma operación, en PowerShell:
+
+```powershell
+pnpm db:up
+$env:ALLOW_DEMO_SEED = 'true'
+$env:DEMO_SEED_PASSWORD = Read-Host 'Contraseña temporal de práctica (mínimo 12 caracteres)' -MaskInput
+try {
+  pnpm db:fresh --confirm excel --seed --batch prueba1 --students 120
+} finally {
+  Remove-Item Env:DEMO_SEED_PASSWORD, Env:ALLOW_DEMO_SEED
+}
+```
+
+La reconstrucción y la carga se confirman juntas. Consulta las opciones con
+`pnpm db:fresh --help` y verifica ambos flujos en una base desechable con `pnpm test:seed`.
 
 ## Verificación automática
 

@@ -9,7 +9,7 @@ const options = process.argv.slice(2);
 const profiles = {
   "--seed": {
     folder: "seed",
-    files: ["test/seed-practice.integration-spec.ts"],
+    files: ["test/seed-practice.integration-spec.ts", "test/database-fresh.integration-spec.ts"],
   },
   "--b10": {
     folder: "b10",

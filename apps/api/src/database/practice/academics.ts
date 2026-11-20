@@ -19,6 +19,25 @@ import type { PracticeContext, PracticeGroup } from './model.js';
 type ActiveEnrollment = { id: string; position: number };
 type JustifiedAbsence = { id: string; version: number; position: number };
 
+const evaluationComponents = [
+  {
+    name: 'Comprensión',
+    indicators: ['Comprensión oral', 'Comprensión escrita'],
+  },
+  { name: 'Expresión', indicators: ['Interacción oral', 'Producción escrita'] },
+];
+
+const gradeProfiles = [
+  ['11.80', '12.20', '12.60', '13.00'], // 12.40
+  ['12.00', '12.00', '13.00', '13.00'], // 12.50
+  ['0.00', '0.00', '0.00', '0.00'],
+  ['20.00', '20.00', '20.00', '20.00'],
+  ['15.00', '16.00', '15.50', '16.50'],
+  ['10.00', '13.00', '11.50'],
+  [],
+];
+const practiceAmounts = ['150.00', '175.50', '200.00'];
+
 /** Escenarios repetibles para prueba manual; todas las escrituras usan servicios. */
 export async function seedPracticeAcademics(
   source: DataSource,
@@ -62,18 +81,20 @@ export async function seedPracticeAcademics(
         nombre: `SINTÉTICO ${context.batch} — evaluación de práctica`,
         formula: 'PONDERADA_JERARQUICA_V1',
         estructura: {
-          evaluaciones: [1, 2].map((order) => ({
-            nombre: `Componente sintético ${order}`,
-            unidadId: null,
-            pesoPct: '50.00',
-            orden: order,
-            indicadores: [1, 2].map((indicator) => ({
-              codigo: `SYN-${order}-${indicator}`,
-              descripcion: `Indicador sintético ${indicator}`,
+          evaluaciones: evaluationComponents.map(
+            ({ name, indicators }, index) => ({
+              nombre: name,
+              unidadId: null,
               pesoPct: '50.00',
-              orden: indicator,
-            })),
-          })),
+              orden: index + 1,
+              indicadores: indicators.map((description, position) => ({
+                codigo: `SYN-${index + 1}-${position + 1}`,
+                descripcion: description,
+                pesoPct: '50.00',
+                orden: position + 1,
+              })),
+            }),
+          ),
         },
       });
       const approved = await evaluations.approve(context.admin, draft.plan.id, {
@@ -137,8 +158,8 @@ export async function seedPracticeAcademics(
     for (let start = 0; start < context.sessionDates.length; start += 100) {
       const scheduled = await sessions.schedule(group.teacher, group.id, {
         fechas: context.sessionDates.slice(start, start + 100),
-        horaInicio: '09:00',
-        horaFin: '11:00',
+        horaInicio: group.horaInicio,
+        horaFin: group.horaFin,
       });
       for (const session of scheduled.items) {
         const records: AttendanceEntryDto[] = [];
@@ -199,17 +220,14 @@ export async function seedPracticeAcademics(
        WHERE e.grupo_id=$1 ORDER BY e.orden,i.orden`,
       [group.id],
     )) as { id: string }[];
-    const values = ['12.40', '12.50', '0.00', '20.00', '15.75', '10.00'];
     const records: GradeEntryDto[] = [];
     for (const enrollment of roster) {
-      const profile = enrollment.position % 7;
-      if (profile === 6) continue;
-      for (const [index, indicator] of indicators.entries()) {
-        if (profile === 5 && index === indicators.length - 1) continue;
+      const values = gradeProfiles[enrollment.position % gradeProfiles.length]!;
+      for (const [index, value] of values.entries()) {
         records.push({
           matriculaId: enrollment.id,
-          indicadorId: indicator.id,
-          nota: values[profile]!,
+          indicadorId: indicators[index]!.id,
+          nota: value,
           version: null,
         });
       }
@@ -236,8 +254,8 @@ export async function seedPracticeAcademics(
       const voucher = await vouchers.create(context.secretary, {
         estudianteId: student.id,
         numero: `SYN-${context.batch}-V-${String(index + 1).padStart(6, '0')}`,
-        fechaPago: context.today,
-        importe: '100.50',
+        fechaPago: context.paymentDates[index % context.paymentDates.length]!,
+        importe: practiceAmounts[index % practiceAmounts.length]!,
       });
       if (position % 10 === 9) {
         if ((groupIndex + Math.floor(position / 10)) % 2 === 1)
