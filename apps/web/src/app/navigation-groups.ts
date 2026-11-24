@@ -120,17 +120,12 @@ export function navGroups(access: Access, path: string): NavGroup[] {
     ]);
   }
 
-  if (access.auditLogs || access.admin) {
+  if (access.auditLogs) {
     add("Administración y Seguridad", [
-      access.auditLogs && {
+      {
         href: "#/auditoria",
         label: "Historial de Modificaciones",
         current: starts("/auditoria"),
-      },
-      access.admin && {
-        href: "#/respaldos",
-        label: "Respaldos",
-        current: exact("/respaldos"),
       },
     ]);
   }

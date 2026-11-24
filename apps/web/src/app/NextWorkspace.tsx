@@ -24,7 +24,6 @@ export function NextWorkspace({
   roles,
   children,
   onExit,
-  onUseCurrent,
   busy,
   error,
 }: {
@@ -35,7 +34,6 @@ export function NextWorkspace({
   roles: string[];
   children: ReactNode;
   onExit: () => void;
-  onUseCurrent: () => void;
   busy: boolean;
   error: string;
 }) {
@@ -193,9 +191,6 @@ export function NextWorkspace({
                 </small>
               </span>
             </a>
-            <Button onClick={onUseCurrent} style={{ fontSize: "0.75rem" }}>
-              Modo Clásico
-            </Button>
             <Button
               disabled={busy}
               onClick={onExit}

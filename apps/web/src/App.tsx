@@ -23,9 +23,7 @@ export default function App() {
 function Workspace() {
   const { session, logout } = useAuth();
   const { path, query } = useRoute();
-  const [nextUi, setNextUi] = useState(
-    () => window.sessionStorage.getItem("excel-next-ui") !== "0" && query.get("ui") !== "antiguo",
-  );
+  const nextUi = query.get("ui") !== "antiguo";
   const roles = session.user.roles;
   const access = accessFor(roles);
   const [menuAt, toggle] = useState<string | null>(null);
@@ -49,18 +47,6 @@ function Workspace() {
       pending(false);
     }
   }
-  function switchToNext() {
-    requestPageExit(() => {
-      window.sessionStorage.setItem("excel-next-ui", "1");
-      setNextUi(true);
-    });
-  }
-  function switchToCurrent() {
-    requestPageExit(() => {
-      window.sessionStorage.setItem("excel-next-ui", "0");
-      setNextUi(false);
-    });
-  }
   if (nextUi) {
     return (
       <NextWorkspace
@@ -70,7 +56,6 @@ function Workspace() {
         userName={session.user.nombre_usuario}
         roles={roles}
         onExit={() => requestPageExit(() => void exit())}
-        onUseCurrent={switchToCurrent}
         busy={busy}
         error={error}
       >
@@ -111,9 +96,6 @@ function Workspace() {
           <span className="breadcrumb">
             Excel <span>/</span> {path === "/" ? "Inicio" : route!.title}
           </span>
-          <Button className="next-ui-switch" onClick={switchToNext}>
-            Probar nueva interfaz
-          </Button>
           <div className="account">
             <a href="#/cuenta" className="account-name">
               {session.user.nombre_usuario}
