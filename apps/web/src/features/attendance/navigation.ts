@@ -5,6 +5,7 @@ const allowedAttendanceReturnPaths = new Set([
   "/docencia/asistencias",
   "/docencia/calificaciones",
   "/matriculas",
+  "/gestion-academica",
 ]);
 
 /** Only allow known in-app destinations for the optional return context. */

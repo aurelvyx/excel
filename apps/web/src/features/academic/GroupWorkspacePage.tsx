@@ -129,12 +129,34 @@ export function GroupWorkspacePage({
     });
   }
 
+  const rawReturn = query.get("retorno");
+  const safeReturn =
+    rawReturn &&
+    rawReturn.startsWith("/gestion-academica") &&
+    !rawReturn.startsWith("//") &&
+    !/[\\\s]/.test(rawReturn)
+      ? rawReturn
+      : null;
+  const savedReturn = (() => {
+    if (safeReturn || access.teacherOnly) return safeReturn;
+    try {
+      const saved = window.sessionStorage.getItem(
+        "excel:gestion-academica:filters",
+      );
+      return saved ? `/gestion-academica?${saved}` : null;
+    } catch {
+      return null;
+    }
+  })();
+  const backHref = access.teacherOnly
+    ? "#/docencia/clases"
+    : savedReturn
+      ? `#${savedReturn}`
+      : "#/gestion-academica";
+
   return (
     <section className="academic-container">
-      <a
-        className="back-link"
-        href={access.teacherOnly ? "#/docencia/clases" : "#/gestion-academica"}
-      >
+      <a className="back-link" href={backHref}>
         ← {access.teacherOnly ? "Volver a mis clases" : "Volver a salones"}
       </a>
       <PageHeading

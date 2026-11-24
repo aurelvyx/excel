@@ -157,22 +157,27 @@ export function navGroups(access: Access, path: string): NavGroup[] {
     },
   ]);
 
-  if (access.admin) {
+  if (access.admin || access.auditLogs) {
     add("Administración", [
-      {
+      access.admin && {
         href: `#${catalogUrl(access, "docentes")}`,
         label: "Docentes",
         current: isCatalog("docentes"),
       },
-      {
+      access.admin && {
         href: `#${catalogUrl(access, "usuarios")}`,
         label: "Usuarios y roles",
         current: isCatalog("usuarios"),
       },
-      {
+      access.admin && {
         href: "#/respaldos",
         label: "Respaldos",
         current: exact("/respaldos"),
+      },
+      access.auditLogs && {
+        href: "#/auditoria",
+        label: "Historial de Modificaciones",
+        current: starts("/auditoria"),
       },
     ]);
   }

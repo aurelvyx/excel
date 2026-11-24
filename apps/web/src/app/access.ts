@@ -14,6 +14,8 @@ export interface Access {
   teacherOnly: boolean;
   /** Registra vouchers y matrículas. */
   enrollments: boolean;
+  /** Acceso al Centro de Auditoría y Modificaciones (solo ADMIN y SECRETARIA). */
+  auditLogs: boolean;
   reports: boolean;
   /** Catálogos de oferta visibles para el usuario. */
   catalogs: Resource[];
@@ -30,6 +32,7 @@ export function accessFor(roles: string[]): Access {
     reader,
     teacherOnly: has("DOCENTE") && !reader,
     enrollments: has("ADMIN", "SECRETARIA"),
+    auditLogs: has("ADMIN", "SECRETARIA"),
     reports: has("ADMIN", "COORDINADOR", "DOCENTE"),
     catalogs: Object.values(resources).filter(
       (resource) =>

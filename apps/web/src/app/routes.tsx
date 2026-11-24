@@ -27,6 +27,7 @@ import { ActsGroupsPage } from "../features/evaluation/ActsGroupsPage";
 import { TeacherClassesPage } from "../features/academic/TeacherClassesPage";
 import { GroupAccessPage } from "../features/academic/GroupAccessPages";
 import { BackupsPage } from "../features/control/BackupsPage";
+import { AuditLogsPage } from "../features/audit/AuditLogsPage";
 
 export interface RouteContext {
   path: string;
@@ -274,7 +275,15 @@ const routes: AppRoute[] = [
     pattern: re("/gestion-academica"),
     title: "Gestión Académica",
     allowed: (a) => a.reader || a.admin,
-    render: () => <AcademicManagementPage />,
+    render: (_, { query }) => <AcademicManagementPage query={query} />,
+  },
+  {
+    pattern: re(`/gestion-academica/alumnos/(${ID})/ficha`),
+    title: "Ficha Académica del Estudiante",
+    allowed: (a) => a.reader || a.admin,
+    render: ([id], { query }) => (
+      <StudentsPage id={id} query={query} academicProfileMode />
+    ),
   },
   {
     pattern: re("/matriz-curricular"),
@@ -294,6 +303,12 @@ const routes: AppRoute[] = [
         access={access}
       />
     ),
+  },
+  {
+    pattern: re("/auditoria"),
+    title: "Historial de Modificaciones y Seguridad",
+    allowed: (a) => a.auditLogs,
+    render: () => <AuditLogsPage />,
   },
 ];
 

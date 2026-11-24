@@ -9,10 +9,12 @@ import { MatriculasModule } from './modules/matriculas/matriculas.module.js';
 import { AsistenciaModule } from './modules/asistencia/asistencia.module.js';
 import { EvaluationModule } from './modules/evaluacion/evaluation.module.js';
 import { ReportsModule } from './modules/reportes/reports.module.js';
+import { ControlModule } from './modules/control/control.module.js';
 
 @Module({
   imports: [
     DatabaseModule,
+    ControlModule,
     AuthModule,
     UsersModule,
     OfferModule,

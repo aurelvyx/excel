@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
   School,
 } from "lucide-react";
+import { StatCard, StatCardGrid } from "../components/shared";
 import "./NextWorkspace.css";
 
 export function NextWorkspace({
@@ -295,222 +296,46 @@ function NextHome({ access, userName }: { access: Access; userName: string }) {
         </div>
       </div>
 
-      {/* Estadísticas en Vivo (KPI Cards) */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1rem",
-          margin: "1.75rem 0",
-        }}
-      >
-        <div
-          className="academic-card"
-          style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-        >
-          <div
-            style={{
-              width: "3rem",
-              height: "3rem",
-              borderRadius: "0.75rem",
-              backgroundColor: "#f0faf4",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <School size={24} color="#007a3d" />
-          </div>
-          <div>
-            <p
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                color: "#64748b",
-                margin: 0,
-                textTransform: "uppercase",
-              }}
-            >
-              Salones de Clase
-            </p>
-            <h3
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: 800,
-                color: "#1e293b",
-                margin: "0.2rem 0 0 0",
-              }}
-            >
-              {metrics.grupos ?? "—"}
-            </h3>
-            <span
-              style={{
-                fontSize: "0.6875rem",
-                color: "#007a3d",
-                fontWeight: 600,
-              }}
-            >
-              Grupos disponibles para tu cuenta
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="academic-card"
-          style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-        >
-          <div
-            style={{
-              width: "3rem",
-              height: "3rem",
-              borderRadius: "0.75rem",
-              backgroundColor: "#eff6ff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <GraduationCap size={24} color="#2563eb" />
-          </div>
-          <div>
-            <p
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                color: "#64748b",
-                margin: 0,
-                textTransform: "uppercase",
-              }}
-            >
-              Matrículas por grupo
-            </p>
-            <h3
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: 800,
-                color: "#1e293b",
-                margin: "0.2rem 0 0 0",
-              }}
-            >
-              {metrics.matriculados ?? "—"}
-            </h3>
-            <span
-              style={{
-                fontSize: "0.6875rem",
-                color: "#2563eb",
-                fontWeight: 600,
-              }}
-            >
-              Matrículas registradas
-            </span>
-          </div>
-        </div>
-
-        {access.reader && (
-          <div
-            className="academic-card"
-            style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-          >
-            <div
-              style={{
-                width: "3rem",
-                height: "3rem",
-                borderRadius: "0.75rem",
-                backgroundColor: "#fdf4ff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <BookOpen size={24} color="#a855f7" />
-            </div>
-            <div>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  color: "#64748b",
-                  margin: 0,
-                  textTransform: "uppercase",
-                }}
-              >
-                Niveles ofertados
-              </p>
-              <h3
-                style={{
-                  fontSize: "1.5rem",
-                  fontWeight: 800,
-                  color: "#1e293b",
-                  margin: "0.2rem 0 0 0",
-                }}
-              >
-                {metrics.programas ?? "—"}
-              </h3>
-              <span
-                style={{
-                  fontSize: "0.6875rem",
-                  color: "#a855f7",
-                  fontWeight: 600,
-                }}
-              >
-                Niveles académicos
-              </span>
-            </div>
-          </div>
-        )}
-
-        {access.admin && (
-          <div
-            className="academic-card"
-            style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-          >
-            <div
-              style={{
-                width: "3rem",
-                height: "3rem",
-                borderRadius: "0.75rem",
-                backgroundColor: "#fff7ed",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Users size={24} color="#ea580c" />
-            </div>
-            <div>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  color: "#64748b",
-                  margin: 0,
-                  textTransform: "uppercase",
-                }}
-              >
-                Plana Docente
-              </p>
-              <h3
-                style={{
-                  fontSize: "1.5rem",
-                  fontWeight: 800,
-                  color: "#1e293b",
-                  margin: "0.2rem 0 0 0",
-                }}
-              >
-                {metrics.docentes ?? "—"}
-              </h3>
-              <span
-                style={{
-                  fontSize: "0.6875rem",
-                  color: "#ea580c",
-                  fontWeight: 600,
-                }}
-              >
-                Profesores habilitados
-              </span>
-            </div>
-          </div>
-        )}
+      {/* Estadísticas en Vivo (KPI Cards Sobrias) */}
+      <div style={{ margin: "1.5rem 0" }}>
+        <StatCardGrid label="Estadísticas del periodo">
+          <StatCard
+            label="Salones de Clase"
+            value={metrics.grupos ?? "—"}
+            sublabel={
+              metrics.periodo
+                ? `En periodo ${metrics.periodo}`
+                : "Grupos disponibles para tu cuenta"
+            }
+            icon={<School size={19} strokeWidth={1.75} />}
+            tone="emerald"
+          />
+          <StatCard
+            label="Matrículas por grupo"
+            value={metrics.matriculados ?? "—"}
+            sublabel="Matrículas registradas"
+            icon={<GraduationCap size={19} strokeWidth={1.75} />}
+            tone="blue"
+          />
+          {access.reader && (
+            <StatCard
+              label="Niveles ofertados"
+              value={metrics.programas ?? "—"}
+              sublabel="Niveles académicos"
+              icon={<BookOpen size={19} strokeWidth={1.75} />}
+              tone="slate"
+            />
+          )}
+          {access.admin && (
+            <StatCard
+              label="Plana Docente"
+              value={metrics.docentes ?? "—"}
+              sublabel="Profesores habilitados"
+              icon={<Users size={19} strokeWidth={1.75} />}
+              tone="amber"
+            />
+          )}
+        </StatCardGrid>
       </div>
 
       {/* Accesos Rápidos Principales */}
@@ -580,6 +405,19 @@ function NextHome({ access, userName }: { access: Access; userName: string }) {
               Revisión académica por salón <span aria-hidden="true">→</span>
             </small>
           </a>
+
+          {access.auditLogs && (
+            <a href="#/auditoria" className="next-quick-card">
+              <span className="next-quick-index">05</span>
+              <span className="next-quick-arrow" aria-hidden="true">
+                <ArrowUpRight size={18} />
+              </span>
+              <strong>Historial de Modificaciones</strong>
+              <small>
+                Control de cambios y reversión <span aria-hidden="true">→</span>
+              </small>
+            </a>
+          )}
         </div>
       )}
 

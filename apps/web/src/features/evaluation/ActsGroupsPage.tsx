@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FileCheck,
   Search,
@@ -9,25 +9,53 @@ import {
   ArrowRight,
   BookOpen,
   Filter,
+  SlidersHorizontal,
+  CheckCircle2,
   Layers,
 } from "lucide-react";
-import { allRows, type Row } from "../../shared/api";
-import { useApiQuery } from "../../shared/useApiQuery";
+import { allRows, errorText, type Row } from "../../shared/api";
 import type { Access } from "../../app/access";
+import { GroupStatusModal } from "../academic/components/GroupStatusModal";
+import { PageHeader, StatCard, StatCardGrid } from "../../components/shared";
 import "../academic/academic.css";
 
-const emptyRows: Row[] = [];
-
 export function ActsGroupsPage({ access }: { access: Access }) {
+  const [grupos, setGrupos] = useState<Row[]>([]);
+  const [periodos, setPeriodos] = useState<Row[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("TODOS");
   const [statusFilter, setStatusFilter] = useState<"TODOS" | "ACTIVO" | "CERRADO">("TODOS");
   const [searchTerm, setSearchTerm] = useState("");
-  const groups = useApiQuery<Row[]>("oferta/grupos", allRows);
-  const periods = useApiQuery<Row[]>("oferta/periodos", allRows);
-  const grupos = groups.data ?? emptyRows;
-  const periodos = periods.data ?? emptyRows;
-  const loading = groups.loading || periods.loading;
-  const error = groups.error || periods.error;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Modal para cambiar estado del salón directamente
+  const [statusModalGroup, setStatusModalGroup] = useState<Row | null>(null);
+
+  async function loadData() {
+    setLoading(true);
+    setError("");
+    try {
+      const [grps, perds] = await Promise.all([
+        allRows("oferta/grupos"),
+        allRows("oferta/periodos"),
+      ]);
+      setGrupos(grps);
+      setPeriodos(perds);
+      const activo = perds.find((p) => p.estado === "ACTIVO" || p.estado === "PLANIFICADO");
+      if (activo?.id && selectedPeriod === "TODOS") {
+        setSelectedPeriod(String(activo.id));
+      }
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadData();
+  }, []);
 
   // Grupos filtrados
   const filteredGrupos = useMemo(() => {
@@ -65,82 +93,69 @@ export function ActsGroupsPage({ access }: { access: Access }) {
   }, [filteredGrupos]);
 
   return (
-    <div className="academic-container">
-      {/* Header Banner */}
-      <div className="academic-card" style={{ padding: "1.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-              <span className="academic-badge badge-green" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                <FileCheck size={13} /> Cierre y Auditoría
-              </span>
-              <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                {filteredGrupos.length} salones en gestión
-              </span>
-            </div>
-
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#1e293b", margin: 0 }}>
-              Actas de cierre por salón
-            </h1>
-            <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.35rem 0 0 0", maxWidth: "720px" }}>
-              Consulta calificaciones y resultados del grupo. El cierre del acta se realiza desde el detalle con permisos de administración.
-            </p>
-          </div>
-
-          {access.reports && (
-            <a
-              href="#/reportes"
-              className="academic-btn-action btn-action-secondary"
-              style={{ padding: "0.5rem 1rem", fontSize: "0.8125rem" }}
-            >
-              <BookOpen size={14} /> Reportes de demostración XLSX
+    <div className="ds-page academic-container">
+      <PageHeader
+        variant="hero"
+        icon={<FileCheck size={22} strokeWidth={1.75} />}
+        eyebrow="Cierre y Auditoría"
+        statusPill={`${filteredGrupos.length} salones en gestión`}
+        title="Actas Oficiales de Cierre de Salón"
+        description={
+          <>
+            Gestión centralizada del término de ciclo lectivo. Permite finalizar
+            y cambiar el estado del salón, auditar calificaciones finales y
+            aplicar el <strong>cierre oficial de Acta</strong> para congelar
+            notas y confirmar resultados de los estudiantes.
+          </>
+        }
+        actions={
+          access.reports ? (
+            <a href="#/reportes" className="button">
+              <BookOpen size={14} strokeWidth={1.75} />
+              Reportes y Matrices
             </a>
-          )}
+          ) : undefined
+        }
+      />
+
+      {success && (
+        <div style={{ padding: "0.75rem 1rem", backgroundColor: "#dcfce7", color: "#15803d", borderRadius: "0.625rem", border: "1px solid #bbf7d0", fontSize: "0.8125rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <CheckCircle2 size={16} />
+          <span>{success}</span>
         </div>
-      </div>
+      )}
 
       {/* KPI Stats Bar por Periodo */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
-        <div style={{ backgroundColor: "#ffffff", padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>Total de Salones</div>
-          <div style={{ fontSize: "1.375rem", fontWeight: 800, color: "#1e293b", marginTop: "0.25rem" }}>
-            {periodStats.total}
-          </div>
-          <div style={{ fontSize: "0.6875rem", color: "#94a3b8", marginTop: "0.2rem" }}>
-            Periodo: {selectedPeriod}
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: "#ffffff", padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: "0.75rem", color: "#007a3d", fontWeight: 600 }}>Salones en Curso</div>
-          <div style={{ fontSize: "1.375rem", fontWeight: 800, color: "#007a3d", marginTop: "0.25rem" }}>
-            {periodStats.activos}
-          </div>
-          <div style={{ fontSize: "0.6875rem", color: "#166534", marginTop: "0.2rem" }}>
-            Asistencias / notas abiertas
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: "#ffffff", padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>Salones Finalizados</div>
-          <div style={{ fontSize: "1.375rem", fontWeight: 800, color: "#334155", marginTop: "0.25rem" }}>
-            {periodStats.cerrados}
-          </div>
-          <div style={{ fontSize: "0.6875rem", color: "#64748b", marginTop: "0.2rem" }}>
-            Ciclo terminado
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: "#ffffff", padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: "0.75rem", color: "#1d4ed8", fontWeight: 600 }}>Alumnos Evaluados</div>
-          <div style={{ fontSize: "1.375rem", fontWeight: 800, color: "#1d4ed8", marginTop: "0.25rem" }}>
-            {periodStats.totalAlumnos}
-          </div>
-          <div style={{ fontSize: "0.6875rem", color: "#2563eb", marginTop: "0.2rem" }}>
-            Matrículas registradas
-          </div>
-        </div>
-      </div>
+      <StatCardGrid label="Resumen de actas y salones">
+        <StatCard
+          label="Total de Salones"
+          value={periodStats.total}
+          sublabel={`Periodo: ${selectedPeriod}`}
+          icon={<Layers size={18} strokeWidth={1.75} />}
+          tone="slate"
+        />
+        <StatCard
+          label="Salones en Curso"
+          value={periodStats.activos}
+          sublabel="Asistencias y notas abiertas"
+          icon={<Unlock size={18} strokeWidth={1.75} />}
+          tone="emerald"
+        />
+        <StatCard
+          label="Salones Finalizados"
+          value={periodStats.cerrados}
+          sublabel="Ciclo terminado / Acta cerrada"
+          icon={<Lock size={18} strokeWidth={1.75} />}
+          tone="slate"
+        />
+        <StatCard
+          label="Alumnos Evaluados"
+          value={periodStats.totalAlumnos}
+          sublabel="Matrículas registradas"
+          icon={<CheckCircle2 size={18} strokeWidth={1.75} />}
+          tone="blue"
+        />
+      </StatCardGrid>
 
       {/* Filter Toolbar */}
       <div className="academic-filter-bar">
@@ -158,7 +173,7 @@ export function ActsGroupsPage({ access }: { access: Access }) {
             <option value="TODOS">Todos los periodos</option>
             {periodos.map((p) => (
               <option key={String(p.id)} value={String(p.id)}>
-                {String(p.nombre || p.codigo)} {p.estado === "ABIERTO" ? "(Abierto)" : ""}
+                {String(p.nombre || p.codigo)} {p.estado === "ACTIVO" ? "(Vigente)" : ""}
               </option>
             ))}
           </select>
@@ -250,7 +265,7 @@ export function ActsGroupsPage({ access }: { access: Access }) {
                       </span>
                       <span className={`academic-badge ${isClosed ? "badge-gray" : "badge-blue"}`} style={{ fontSize: "0.6875rem" }}>
                         {isClosed ? <Lock size={11} style={{ marginRight: "3px" }} /> : <Unlock size={11} style={{ marginRight: "3px" }} />}
-                        {String(g.estado ?? "Sin estado")}
+                        {isClosed ? "SALÓN FINALIZADO" : "SALÓN ACTIVO"}
                       </span>
                     </div>
 
@@ -272,7 +287,7 @@ export function ActsGroupsPage({ access }: { access: Access }) {
                   <div style={{ fontSize: "0.75rem", color: "#475569", backgroundColor: "#f8fafc", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", marginBottom: "1rem" }}>
                     Docente: <strong>{contexto.docente_nombre || "No asignado"}</strong>
                     <div style={{ fontSize: "0.6875rem", color: "#64748b", marginTop: "2px" }}>
-                      Matriculados: <strong>{String(g.matriculados ?? "—")}</strong> / Capacidad: {String(g.capacidad ?? "—")}
+                      Matriculados: <strong>{String(g.matriculados || 0)}</strong> / Capacidad: {String(g.capacidad || 40)}
                     </div>
                   </div>
                 </div>
@@ -284,8 +299,19 @@ export function ActsGroupsPage({ access }: { access: Access }) {
                     className="academic-btn-action btn-action-primary"
                     style={{ flex: 1, justifyContent: "center", padding: "0.45rem 0.75rem" }}
                   >
-                    <FileCheck size={14} /> Revisar acta <ArrowRight size={13} />
+                    <FileCheck size={14} /> Revisar y Cerrar Acta <ArrowRight size={13} />
                   </a>
+
+                  {/* Botón para cambiar estado del salón (Activo <-> Cerrado) */}
+                  <button
+                    type="button"
+                    onClick={() => setStatusModalGroup(g)}
+                    className="academic-btn-action btn-action-secondary"
+                    title="Cambiar estado administrativo del salón (Planificado, Activo o Cerrado)"
+                    style={{ padding: "0.45rem 0.65rem" }}
+                  >
+                    <SlidersHorizontal size={13} /> Estado
+                  </button>
 
                   <a
                     href={`#/salones/${g.id}?tab=calificaciones`}
@@ -296,6 +322,14 @@ export function ActsGroupsPage({ access }: { access: Access }) {
                     Notas
                   </a>
 
+                  <a
+                    href={`#/reportes/grupos/${g.id}?tipo=ACTA_UGEL`}
+                    className="academic-btn-action btn-action-secondary"
+                    title="Generar Acta Oficial de Evaluación UGEL en Excel (.xlsx)"
+                    style={{ padding: "0.45rem 0.65rem" }}
+                  >
+                    Acta UGEL
+                  </a>
                 </div>
               </div>
             );
@@ -303,6 +337,17 @@ export function ActsGroupsPage({ access }: { access: Access }) {
         </div>
       )}
 
+      {/* Modal para cambiar estado administrativo del salón */}
+      {statusModalGroup && (
+        <GroupStatusModal
+          group={statusModalGroup}
+          onClose={() => setStatusModalGroup(null)}
+          onUpdated={async () => {
+            setSuccess(`¡Estado del salón ${statusModalGroup.codigo} actualizado!`);
+            await loadData();
+          }}
+        />
+      )}
     </div>
   );
 }

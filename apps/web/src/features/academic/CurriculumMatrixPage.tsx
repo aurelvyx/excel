@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   BookMarked,
-  Info,
   Layers,
   Target,
   Plus,
@@ -15,32 +14,22 @@ import {
   Globe,
   CheckCircle,
   FileSpreadsheet,
-  Sparkles,
+  X,
 } from "lucide-react";
 import { allRows, api, errorText, type Row } from "../../shared/api";
 import { useAuth } from "../auth/session";
 import { formulaLabel, type PlanList } from "../evaluation/model";
-import { RecordForm } from "../configuration/RecordForm";
-import { resources } from "../configuration/model";
-import { Feedback } from "../../shared/ui/Feedback";
+import { PageHeader } from "../../components/shared";
 import "./academic.css";
 
 const COMPONENT_COLORS = [
-  "#007a3d",
+  "#059669",
   "#2563eb",
-  "#7c3aed",
-  "#ea580c",
-  "#0891b2",
-  "#db2777",
+  "#0d9488",
+  "#d97706",
+  "#475569",
+  "#0284c7",
 ];
-
-function creditLabel(units: Row[]) {
-  if (units.some((unit) => unit.creditos == null)) return "Créditos pendientes";
-  const credits = units.reduce((sum, unit) => sum + Number(unit.creditos), 0);
-  return `${credits.toLocaleString("es-PE", { maximumFractionDigits: 1 })} ${
-    credits === 1 ? "crédito" : "créditos"
-  }`;
-}
 
 export function CurriculumMatrixPage() {
   const { session } = useAuth();
@@ -56,67 +45,74 @@ export function CurriculumMatrixPage() {
   const [selectedIdiomaFilter, setSelectedIdiomaFilter] = useState<string>("ALL");
   const [selectedNivelId, setSelectedNivelId] = useState<string>("");
 
-  const [loadedPlans, setLoadedPlans] = useState<{
-    levelId: string;
-    data?: PlanList;
-    error?: string;
-  }>();
-  const [planRevision, setPlanRevision] = useState(0);
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [unitEditorLevel, setUnitEditorLevel] = useState<string>();
-  const currentPlans = loadedPlans?.levelId === selectedNivelId ? loadedPlans : undefined;
-  const planList = currentPlans?.data;
-  const plansLoading = !!selectedNivelId && !currentPlans;
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [planList, setPlanList] = useState<PlanList | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
 
-  function loadInitial(preserveNivelId?: string, signal?: AbortSignal) {
-    return Promise.all([
-      allRows("oferta/idiomas", signal),
-      allRows("oferta/niveles", signal),
-      allRows("oferta/unidades", signal),
-    ])
-      .then(([idms, nivs, unds]) => {
-        if (signal?.aborted) return;
-        setIdiomas(idms);
-        setNiveles(nivs);
-        setUnidades(unds);
-        setError("");
-        if (preserveNivelId && nivs.some((n) => String(n.id) === preserveNivelId)) {
-          setSelectedNivelId(preserveNivelId);
-        } else if (nivs.length) {
-          setSelectedNivelId(String(nivs[0].id));
-        }
-      })
-      .catch((err: unknown) => {
-        if (!signal?.aborted) setError(errorText(err));
-      })
-      .finally(() => {
-        if (!signal?.aborted) setLoading(false);
-      });
+  // Quick Modal to create a Unidad Didáctica directly from Matriz Curricular
+  const [showUnitModal, setShowUnitModal] = useState(false);
+  const [unitBusy, setUnitBusy] = useState(false);
+  const [unitError, setUnitError] = useState("");
+  const [unitForm, setUnitForm] = useState({
+    codigo: "",
+    nombre: "",
+    creditos: "4",
+    horasTeoricas: "32",
+    horasPracticas: "16",
+    orden: "1",
+    activo: true,
+  });
+
+  async function loadInitial(preserveNivelId?: string) {
+    setLoading(true);
+    setError("");
+    try {
+      const [idms, nivs, unds] = await Promise.all([
+        allRows("oferta/idiomas"),
+        allRows("oferta/niveles"),
+        allRows("oferta/unidades"),
+      ]);
+      setIdiomas(idms);
+      setNiveles(nivs);
+      setUnidades(unds);
+      if (preserveNivelId && nivs.some((n) => String(n.id) === preserveNivelId)) {
+        setSelectedNivelId(preserveNivelId);
+      } else if (nivs.length) {
+        setSelectedNivelId(String(nivs[0].id));
+      }
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadPlansForLevel(levelId: string) {
+    if (!levelId) return;
+    setPlansLoading(true);
+    try {
+      const res = await api<PlanList>(`evaluacion/niveles/${levelId}/planes`);
+      setPlanList(res);
+      const preferred =
+        res.items.find((p) => p.estado === "APROBADO") || res.items[0];
+      setSelectedPlanId(preferred ? preferred.id : "");
+    } catch {
+      setPlanList(null);
+      setSelectedPlanId("");
+    } finally {
+      setPlansLoading(false);
+    }
   }
 
   useEffect(() => {
-    const controller = new AbortController();
-    void loadInitial(undefined, controller.signal);
-    return () => controller.abort();
+    void loadInitial();
   }, []);
 
   useEffect(() => {
-    if (!selectedNivelId) return;
-    const controller = new AbortController();
-    void api<PlanList>(`evaluacion/niveles/${selectedNivelId}/planes`, {
-      signal: controller.signal,
-    }).then((data) => {
-      if (controller.signal.aborted) return;
-      setLoadedPlans({ levelId: selectedNivelId, data });
-      setSelectedPlanId(
-        (data.items.find((plan) => plan.estado === "APROBADO") ?? data.items[0])?.id ?? "",
-      );
-    }).catch((reason: unknown) => {
-      if (!controller.signal.aborted)
-        setLoadedPlans({ levelId: selectedNivelId, error: errorText(reason) });
-    });
-    return () => controller.abort();
-  }, [selectedNivelId, planRevision]);
+    if (selectedNivelId) {
+      void loadPlansForLevel(selectedNivelId);
+    }
+  }, [selectedNivelId]);
 
   const filteredNiveles = niveles.filter((niv) => {
     if (selectedIdiomaFilter === "ALL") return true;
@@ -129,6 +125,7 @@ export function CurriculumMatrixPage() {
     .filter((u) => String(u.nivel_id) === String(selectedNivelId))
     .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
 
+  const totalCreditos = currentUds.reduce((sum, u) => sum + (Number(u.creditos) || 0), 0);
   const totalHorasTeoricas = currentUds.reduce((sum, u) => sum + (Number(u.horas_teoricas) || 0), 0);
   const totalHorasPracticas = currentUds.reduce((sum, u) => sum + (Number(u.horas_practicas) || 0), 0);
   const totalHoras = totalHorasTeoricas + totalHorasPracticas;
@@ -150,96 +147,92 @@ export function CurriculumMatrixPage() {
       0,
     ) ?? 0;
 
+  async function handleCreateUnit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedNivelId) return;
+    setUnitBusy(true);
+    setUnitError("");
+    try {
+      await api("oferta/unidades", {
+        method: "POST",
+        body: {
+          nivelId: Number(selectedNivelId),
+          codigo: unitForm.codigo.trim().toUpperCase(),
+          nombre: unitForm.nombre.trim(),
+          creditos: unitForm.creditos ? unitForm.creditos : null,
+          horasTeoricas: Number(unitForm.horasTeoricas) || 0,
+          horasPracticas: Number(unitForm.horasPracticas) || 0,
+          orden: Number(unitForm.orden) || currentUds.length + 1,
+          activo: unitForm.activo,
+        },
+      });
+      setShowUnitModal(false);
+      setSuccess("¡Unidad Didáctica registrada y vinculada al nivel exitosamente!");
+      await Promise.all([
+        loadInitial(selectedNivelId),
+        loadPlansForLevel(selectedNivelId),
+      ]);
+    } catch (err) {
+      setUnitError(errorText(err));
+    } finally {
+      setUnitBusy(false);
+    }
+  }
+
   function openNewUnitModal() {
-    if (admin && selectedNivelId) setUnitEditorLevel(selectedNivelId);
+    setUnitError("");
+    setSuccess("");
+    setUnitForm({
+      codigo: `UD0${currentUds.length + 1}`,
+      nombre: "",
+      creditos: "2",
+      horasTeoricas: "16",
+      horasPracticas: "16",
+      orden: String(currentUds.length + 1),
+      activo: true,
+    });
+    setShowUnitModal(true);
   }
 
   return (
-    <div className="academic-container">
-      {/* Hero Header Institucional */}
-      <div
-        className="academic-card"
-        style={{
-          padding: "1.5rem 1.75rem",
-          background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
-          borderLeft: "5px solid #007a3d",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <div style={{ maxWidth: "680px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
-              <span className="academic-badge badge-green">
-                <Sparkles size={11} style={{ marginRight: "0.25rem" }} />
-                DISEÑO CURRICULAR Y PLAN MODULAR
-              </span>
-              <span className="academic-badge badge-blue">Planes y unidades didácticas</span>
-            </div>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.35rem 0" }}>
-              Matriz Curricular y Plan Modular
-            </h2>
-            <p style={{ fontSize: "0.84rem", color: "#475569", margin: 0, lineHeight: 1.5 }}>
-              Configura la arquitectura académica de cada nivel: <strong>Unidades Didácticas (Módulos)</strong>,{" "}
-              <strong>Competencias</strong> e <strong>Indicadores de Logro ponderados</strong> que alimentan las
-              el registro docente y los resultados académicos.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: "0.5rem",
-            }}
-          >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                backgroundColor: "#ffffff",
-                border: "1px solid #bbf7d0",
-                color: "#166534",
-                padding: "0.5rem 0.85rem",
-                borderRadius: "0.75rem",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.03)",
-              }}
-            >
-              <Info size={15} color="#007a3d" />
-              <span>Solo los planes aprobados y aplicados rigen el cálculo del grupo.</span>
-            </div>
-
-            {admin && selectedNivelId && (
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={openNewUnitModal}
-                  className="academic-btn-action btn-action-secondary"
-                  style={{ backgroundColor: "#ffffff" }}
-                >
-                  <Plus size={14} color="#007a3d" /> Nueva Unidad Didáctica
-                </button>
-                <a
-                  href={`#/evaluacion/niveles/${selectedNivelId}`}
-                  className="academic-btn-action btn-action-primary"
-                >
-                  <Layers size={14} /> Gestionar Versiones de Evaluación
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="ds-page academic-container">
+      <PageHeader
+        variant="hero"
+        icon={<BookMarked size={22} strokeWidth={1.75} />}
+        eyebrow="Diseño Curricular y Plan Modular"
+        statusPill="Formato Oficial CETPRO / UGEL"
+        title="Matriz Curricular y Plan Modular"
+        description={
+          <>
+            Configura la arquitectura académica de cada nivel:{" "}
+            <strong>Unidades Didácticas (Módulos)</strong>,{" "}
+            <strong>Competencias</strong> e{" "}
+            <strong>Indicadores de Logro ponderados</strong> que alimentan las
+            planillas docentes y las Actas Oficiales UGEL.
+          </>
+        }
+        actions={
+          admin && selectedNivelId ? (
+            <>
+              <button
+                type="button"
+                onClick={openNewUnitModal}
+                className="button"
+              >
+                <Plus size={14} strokeWidth={1.75} />
+                Nueva Unidad Didáctica
+              </button>
+              <a
+                href={`#/evaluacion/niveles/${selectedNivelId}`}
+                className="button primary"
+              >
+                <Layers size={14} strokeWidth={1.75} />
+                Gestionar Versiones de Evaluación
+              </a>
+            </>
+          ) : undefined
+        }
+      />
 
       {error && (
         <div className="feedback error" style={{ padding: "0.75rem 1rem", borderRadius: "0.5rem" }}>
@@ -346,6 +339,7 @@ export function CurriculumMatrixPage() {
                 const idioma = idiomas.find((i) => String(i.id) === String(niv.idioma_id));
                 const active = String(niv.id) === String(selectedNivelId);
                 const udsForNivel = unidades.filter((u) => String(u.nivel_id) === String(niv.id));
+                const credsForNivel = udsForNivel.reduce((s, u) => s + (Number(u.creditos) || 0), 0);
 
                 return (
                   <button
@@ -423,7 +417,7 @@ export function CurriculumMatrixPage() {
                       <span>{udsForNivel.length} {udsForNivel.length === 1 ? "unidad" : "unidades"}</span>
                       <span>·</span>
                       <span style={{ fontWeight: 600, color: active ? "#007a3d" : "#475569" }}>
-                        {creditLabel(udsForNivel)}
+                        {credsForNivel} créditos
                       </span>
                     </div>
                   </button>
@@ -542,7 +536,7 @@ export function CurriculumMatrixPage() {
                     Créditos Totales (Acta)
                   </p>
                   <p style={{ fontSize: "0.95rem", fontWeight: 800, color: "#007a3d", margin: "0.15rem 0 0 0" }}>
-                    {creditLabel(currentUds)}
+                    {totalCreditos} {totalCreditos === 1 ? "crédito" : "créditos"}
                   </p>
                 </div>
               </div>
@@ -667,13 +661,6 @@ export function CurriculumMatrixPage() {
                 <div className="academic-card" style={{ padding: "2.5rem", textAlign: "center", color: "#64748b" }}>
                   Cargando versiones y estructura de evaluación…
                 </div>
-              ) : currentPlans?.error ? (
-                <Feedback onRetry={() => {
-                  setLoadedPlans(undefined);
-                  setPlanRevision((value) => value + 1);
-                }}>
-                  {currentPlans.error}
-                </Feedback>
               ) : activePlan ? (
                 <div className="academic-card" style={{ padding: "1.5rem", borderTop: "4px solid #007a3d" }}>
                   {/* Encabezado de la Versión Activa */}
@@ -708,7 +695,7 @@ export function CurriculumMatrixPage() {
                         {activePlan.nombre}
                       </h4>
                       <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
-                        Fórmula de evaluación: <strong>{formulaLabel}</strong>
+                        Fórmula oficial: <strong>{formulaLabel}</strong>
                       </p>
                     </div>
 
@@ -718,7 +705,7 @@ export function CurriculumMatrixPage() {
                         className="academic-btn-action btn-action-primary"
                       >
                         <ExternalLink size={13} />{" "}
-                        {admin && activePlan.estado === "BORRADOR" ? "Editar / Aprobar Plan" : "Ver Plan Completo"}
+                        {activePlan.estado === "BORRADOR" ? "Editar / Aprobar Plan" : "Ver Plan Completo"}
                       </a>
                     </div>
                   </div>
@@ -1010,7 +997,7 @@ export function CurriculumMatrixPage() {
                     </h4>
                     <p style={{ fontSize: "0.84rem", color: "#64748b", margin: "0 0 1.5rem 0", lineHeight: 1.5 }}>
                       Define la estructura de evaluaciones e indicadores para habilitar el registro de calificaciones en
-                      los grupos cuando el plan esté aprobado y aplicado.
+                      los salones y la generación automática del Acta Oficial UGEL.
                     </p>
 
                     {/* Pasos visuales */}
@@ -1089,7 +1076,7 @@ export function CurriculumMatrixPage() {
               )}
             </div>
 
-            {/* Columna Derecha: Unidades didácticas vinculadas */}
+            {/* Columna Derecha: Unidades Didácticas vinculadas (Módulos de Acta UGEL) */}
             <div className="academic-card" style={{ padding: "1.35rem" }}>
               <div
                 style={{
@@ -1133,7 +1120,7 @@ export function CurriculumMatrixPage() {
               </div>
 
               <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 1rem 0", lineHeight: 1.45 }}>
-                Unidades formativas vinculadas al nivel seleccionado.
+                Módulos formativos que componen este nivel y cuyas columnas verticales aparecen en el Acta Oficial UGEL.
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
@@ -1194,7 +1181,7 @@ export function CurriculumMatrixPage() {
                             borderRadius: "999px",
                           }}
                         >
-                          {creditLabel([ud])}
+                          {ud.creditos ? `${String(ud.creditos)} créditos` : "0 cr"}
                         </span>
                       </div>
 
@@ -1253,7 +1240,7 @@ export function CurriculumMatrixPage() {
                 )}
               </div>
 
-              {/* Fuente de horas y créditos */}
+              {/* Nota informativa de conexión con Acta UGEL */}
               <div
                 style={{
                   marginTop: "1rem",
@@ -1270,7 +1257,8 @@ export function CurriculumMatrixPage() {
               >
                 <CheckCircle size={15} color="#007a3d" style={{ flexShrink: 0, marginTop: "0.1rem" }} />
                 <span>
-                  Los créditos y horas se muestran a partir de los datos registrados en el catálogo.
+                  Los créditos y horas pedagógicas de estas Unidades Didácticas se autocompletan en las columnas{" "}
+                  <strong>CR</strong> y <strong>HR</strong> del formato oficial de Acta UGEL.
                 </span>
               </div>
             </div>
@@ -1278,20 +1266,161 @@ export function CurriculumMatrixPage() {
         </>
       )}
 
-      {admin && unitEditorLevel && (
-        <RecordForm
-          resource={resources.unidades!}
-          initial={{ id: "", nivel_id: unitEditorLevel }}
-          lookups={{ niveles, idiomas }}
-          onClose={() => setUnitEditorLevel(undefined)}
-          onSave={async (body) => {
-            await api(resources.unidades!.path, { method: "POST", body });
-            setUnitEditorLevel(undefined);
-            setSuccess("Unidad didáctica guardada.");
-            setLoading(true);
-            await loadInitial(unitEditorLevel);
+      {/* Modal rápido para agregar Unidad Didáctica al Nivel */}
+      {showUnitModal && currentNivel && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem",
           }}
-        />
+        >
+          <div
+            className="academic-card"
+            style={{
+              width: "100%",
+              maxWidth: "480px",
+              padding: "1.5rem",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <div>
+                <span className="academic-badge badge-green">
+                  {currentIdioma?.nombre ? `${String(currentIdioma.nombre)} — ` : ""}
+                  {String(currentNivel.nombre)}
+                </span>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", margin: "0.3rem 0 0 0" }}>
+                  Nueva Unidad Didáctica (Módulo)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUnitModal(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {unitError && (
+              <div className="feedback error" style={{ marginBottom: "0.85rem", padding: "0.6rem 0.8rem" }}>
+                <AlertCircle size={15} /> {unitError}
+              </div>
+            )}
+
+            <form onSubmit={(e) => void handleCreateUnit(e)} style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <div>
+                  <label className="label">Código (ej. UD01)</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={unitForm.codigo}
+                    onChange={(e) => setUnitForm((f) => ({ ...f, codigo: e.target.value }))}
+                    placeholder="UD01"
+                    required
+                    maxLength={20}
+                  />
+                </div>
+                <div>
+                  <label className="label">N° de Orden</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    min={1}
+                    max={20}
+                    value={unitForm.orden}
+                    onChange={(e) => setUnitForm((f) => ({ ...f, orden: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Nombre de la Unidad Didáctica / Competencia</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={unitForm.nombre}
+                  onChange={(e) => setUnitForm((f) => ({ ...f, nombre: e.target.value }))}
+                  placeholder="Ej. UD01: La continuidad en el tiempo"
+                  required
+                  maxLength={160}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+                <div>
+                  <label className="label">Créditos (CR)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min={0}
+                    className="input-field"
+                    value={unitForm.creditos}
+                    onChange={(e) => setUnitForm((f) => ({ ...f, creditos: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">Hrs Teóricas</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="input-field"
+                    value={unitForm.horasTeoricas}
+                    onChange={(e) => setUnitForm((f) => ({ ...f, horasTeoricas: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">Hrs Prácticas</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="input-field"
+                    value={unitForm.horasPracticas}
+                    onChange={(e) => setUnitForm((f) => ({ ...f, horasPracticas: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.5rem",
+                  marginTop: "0.5rem",
+                  paddingTop: "0.85rem",
+                  borderTop: "1px solid #f1f5f9",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowUnitModal(false)}
+                  className="academic-btn-action btn-action-secondary"
+                  disabled={unitBusy}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="academic-btn-action btn-action-primary"
+                  disabled={unitBusy}
+                >
+                  {unitBusy ? "Guardando…" : "Guardar Unidad Didáctica"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

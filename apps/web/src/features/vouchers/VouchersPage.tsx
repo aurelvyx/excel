@@ -9,16 +9,26 @@ import {
   Unlock,
   Eye,
   GraduationCap,
-  Sparkles,
   ArrowUpDown,
   X,
   LayoutGrid,
   List,
+  Wallet,
+  Building2,
+  Calendar,
 } from "lucide-react";
+import {
+  DataTableContainer,
+  FilterToolbar,
+  PageHeader,
+  SegmentedFilter,
+  StatCard,
+  StatCardGrid,
+  StatusBadge as SharedStatusBadge,
+} from "../../components/shared";
 import { api, errorText, text, type Row, type Page } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
-import "./vouchers.css";
 import { ListPanel } from "../../shared/ui/ListPanel";
 import { DataTable } from "../../shared/ui/DataTable";
 import { Pagination } from "../../shared/ui/Pagination";
@@ -31,16 +41,79 @@ import { voucherStates } from "./model";
 import "../academic/academic.css";
 
 type VoucherCategory =
-  "ALL" | "PENDING_REVIEW" | "UNLINKED" | "LINKED" | "VALIDATED" | "REJECTED";
+  | "ALL"
+  | "PENDING_REVIEW"
+  | "UNLINKED"
+  | "LINKED"
+  | "VALIDATED"
+  | "REJECTED";
 
 type SortMode = "DATE_DESC" | "AMOUNT_DESC" | "AMOUNT_ASC" | "STUDENT_ASC";
-const emptyVouchers: Row[] = [];
+type VoucherSectionTab = "LIST" | "REVENUE";
+
+interface RevenueSummaryRow {
+  periodo_id: string;
+  periodo_codigo: string;
+  periodo_nombre: string;
+  periodo_estado: string;
+  grupo_id: string;
+  grupo_codigo: string;
+  grupo_estado: string;
+  idioma: string;
+  nivel: string;
+  turno: string;
+  seccion: string;
+  cantidad_vouchers: number;
+  total_recaudado: string;
+}
+
+interface RevenueSummaryResponse {
+  items: RevenueSummaryRow[];
+  resumen: {
+    totalVouchers: number;
+    totalRecaudado: string;
+    totalSalones: number;
+  };
+  periodos: Array<{
+    id: string;
+    codigo: string;
+    nombre: string;
+    estado: string;
+  }>;
+  grupos: Array<{
+    id: string;
+    codigo: string;
+    periodo_id: string;
+    idioma: string;
+    nivel: string;
+    turno: string;
+    seccion: string;
+  }>;
+}
 
 export function VouchersPage({ query }: { query: URLSearchParams }) {
   const serialized = query.toString();
   const { data, loading, error, reload } = useApiQuery<Page>(
     `vouchers?limit=50&${serialized}`,
   );
+  const [sectionTab, setSectionTab] = useState<VoucherSectionTab>(
+    query.get("vista") === "recaudacion" ? "REVENUE" : "LIST",
+  );
+  const [revenuePeriodoId, setRevenuePeriodoId] = useState<string>(
+    query.get("periodoId") ?? "",
+  );
+  const [revenueGrupoId, setRevenueGrupoId] = useState<string>(
+    query.get("grupoId") ?? "",
+  );
+
+  const revenueParams = new URLSearchParams();
+  if (revenuePeriodoId) revenueParams.set("periodoId", revenuePeriodoId);
+  if (revenueGrupoId) revenueParams.set("grupoId", revenueGrupoId);
+  const revenueQueryPath = revenueParams.toString()
+    ? `vouchers/resumen-recaudacion?${revenueParams}`
+    : "vouchers/resumen-recaudacion";
+  const revenueQuery = useApiQuery<RevenueSummaryResponse>(revenueQueryPath);
+
   const [creating, create] = useState(false);
   const [student, select] = useState<Row | null>(null);
   const [detail, show] = useState<Row | null>(null);
@@ -101,7 +174,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
     navigate(`/vouchers?${next}`);
   }
 
-  const rawItems = data?.items ?? emptyVouchers;
+  const rawItems = data?.items ?? [];
 
   // Métricas y contadores por clasificación
   const stats = useMemo(() => {
@@ -172,97 +245,40 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
   }, [rawItems, category, sortMode]);
 
   return (
-    <div className="academic-container vouchers-workspace">
-      {/* Encabezado Ejecutivo de Vouchers */}
-      <div
-        className="academic-card"
-        style={{
-          padding: "1.5rem 1.75rem",
-          background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
-          borderLeft: "5px solid #007a3d",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <div style={{ maxWidth: "660px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "0.5rem",
-                marginBottom: "0.4rem",
-              }}
-            >
-              <span className="academic-badge badge-green">
-                <Sparkles size={11} style={{ marginRight: "0.25rem" }} />
-                TESORERÍA Y VALIDACIÓN DE PAGOS
-              </span>
-              <span className="academic-badge badge-blue">
-                Control de Recibos Presenciales
-              </span>
-            </div>
-            <h1
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: 800,
-                color: "#0f172a",
-                margin: "0 0 0.3rem 0",
-              }}
-            >
-              Comprobantes de Pago (Vouchers)
-            </h1>
-            <p
-              style={{
-                fontSize: "0.84rem",
-                color: "#475569",
-                margin: 0,
-                lineHeight: 1.5,
-              }}
-            >
-              Registra, clasifica y valida los comprobantes de pago presencial.
-              Clasifica rápidamente entre vouchers
-              <strong> pendientes de revisión</strong>,{" "}
-              <strong>disponibles para matricular</strong> o{" "}
-              <strong>ya vinculados</strong>.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "0.6rem",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <a
-              href="#/matriculas"
-              className="academic-btn-action btn-action-secondary"
-              style={{ backgroundColor: "#ffffff", padding: "0.55rem 0.95rem" }}
-            >
-              <GraduationCap size={15} color="#007a3d" /> Ir a Matrículas
+    <div className="ds-page academic-container">
+      <PageHeader
+        variant="hero"
+        icon={<Receipt size={22} strokeWidth={1.75} />}
+        eyebrow="Tesorería y Validación de Pagos"
+        statusPill="Control de Recibos Presenciales"
+        title="Comprobantes de Pago (Vouchers)"
+        description={
+          <>
+            Registra, clasifica y valida los comprobantes de pago presencial.
+            Identifica rápidamente entre vouchers{" "}
+            <strong>pendientes de revisión</strong>,{" "}
+            <strong>disponibles para matricular</strong> o{" "}
+            <strong>ya vinculados</strong>.
+          </>
+        }
+        actions={
+          <>
+            <a href="#/matriculas" className="button">
+              <GraduationCap size={15} strokeWidth={1.75} />
+              Ir a Matrículas
             </a>
             <button
               type="button"
-              aria-label="Registrar voucher"
+              className="primary"
               disabled={loading || opening || !!error}
               onClick={() => void start()}
-              className="academic-btn-action btn-action-primary"
-              style={{ padding: "0.55rem 1.15rem", fontSize: "0.84rem" }}
             >
-              <Plus size={16} /> Registrar Nuevo Voucher
+              <Plus size={15} strokeWidth={1.75} />
+              Registrar Nuevo Voucher
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {query.has("estudianteId") && (
         <div
@@ -278,311 +294,353 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             color: "#1e40af",
           }}
         >
-          <span>
-            📌 Mostrando únicamente los vouchers del estudiante seleccionado.
-          </span>
+          <span>Mostrando únicamente los vouchers del estudiante seleccionado.</span>
           <a href="#/vouchers" style={{ fontWeight: 700, color: "#1d4ed8" }}>
             Ver todos los vouchers →
           </a>
         </div>
       )}
 
-      <p className="muted">
-        Resumen y clasificación de los comprobantes en esta página. Usa la
-        paginación para consultar los siguientes registros.
-      </p>
-      {/* 5 Tarjetas KPI Interactivas de Clasificación */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(195px, 1fr))",
-          gap: "0.85rem",
-        }}
-      >
-        <div
+      {/* Selector de Módulo dentro de Vouchers */}
+      <div className="academic-tabs">
+        <button
+          type="button"
+          className={`academic-tab-btn ${sectionTab === "LIST" ? "active" : ""}`}
+          onClick={() => setSectionTab("LIST")}
+        >
+          <Receipt size={16} /> Comprobantes de Pago ({stats.total})
+        </button>
+        <button
+          type="button"
+          className={`academic-tab-btn ${sectionTab === "REVENUE" ? "active" : ""}`}
+          onClick={() => setSectionTab("REVENUE")}
+        >
+          <Wallet size={16} /> Recaudación por Salón y Periodo
+        </button>
+      </div>
+
+      {sectionTab === "REVENUE" ? (
+        <>
+          <FilterToolbar label="Filtros de recaudación por periodo y salón">
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Calendar size={16} color="#059669" />
+              <select
+                aria-label="Periodo Académico"
+                className="ds-select"
+                value={revenuePeriodoId}
+                onChange={(e) => {
+                  setRevenuePeriodoId(e.target.value);
+                  setRevenueGrupoId("");
+                }}
+              >
+                <option value="">Todos los periodos académicos</option>
+                {(revenueQuery.data?.periodos ?? []).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.codigo} — {p.nombre} ({p.estado})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Building2 size={16} color="#059669" />
+              <select
+                aria-label="Salón / Grupo"
+                className="ds-select"
+                value={revenueGrupoId}
+                onChange={(e) => setRevenueGrupoId(e.target.value)}
+              >
+                <option value="">Todos los salones / grupos</option>
+                {(revenueQuery.data?.grupos ?? [])
+                  .filter(
+                    (g) =>
+                      !revenuePeriodoId || g.periodo_id === revenuePeriodoId,
+                  )
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.codigo} · {g.idioma} {g.nivel} ({g.turno} · Sec. {g.seccion})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {(revenuePeriodoId || revenueGrupoId) && (
+              <button
+                type="button"
+                className="academic-btn-action btn-action-secondary"
+                onClick={() => {
+                  setRevenuePeriodoId("");
+                  setRevenueGrupoId("");
+                }}
+              >
+                <X size={14} /> Limpiar filtros
+              </button>
+            )}
+          </FilterToolbar>
+
+          <StatCardGrid label="Totales de recaudación">
+            <StatCard
+              label="Total Recaudado"
+              value={
+                revenueQuery.loading
+                  ? "…"
+                  : `S/ ${Number(revenueQuery.data?.resumen.totalRecaudado ?? 0).toFixed(2)}`
+              }
+              sublabel={
+                revenuePeriodoId
+                  ? "Total consolidado del filtro seleccionado"
+                  : "Histórico consolidado de vouchers validados"
+              }
+              icon={<Wallet size={19} strokeWidth={1.75} />}
+              tone="emerald"
+            />
+            <StatCard
+              label="Comprobantes Pagados"
+              value={
+                revenueQuery.loading
+                  ? "…"
+                  : revenueQuery.data?.resumen.totalVouchers ?? 0
+              }
+              sublabel="Vouchers validados vinculados (sin anulados)"
+              icon={<CheckCircle2 size={19} strokeWidth={1.75} />}
+              tone="blue"
+            />
+            <StatCard
+              label="Salones con Recaudación"
+              value={
+                revenueQuery.loading
+                  ? "…"
+                  : revenueQuery.data?.resumen.totalSalones ?? 0
+              }
+              sublabel="Grupos con al menos un pago validado"
+              icon={<Building2 size={19} strokeWidth={1.75} />}
+              tone="slate"
+            />
+          </StatCardGrid>
+
+          <DataTableContainer
+            loading={revenueQuery.loading}
+            loadingLabel="Calculando recaudación por salón y periodo…"
+            error={revenueQuery.error}
+            onRetry={revenueQuery.reload}
+            empty={!revenueQuery.data?.items.length}
+            emptyTitle="Sin ingresos validados para el filtro actual"
+            emptyDescription="Solo se contabilizan comprobantes en estado VALIDADO asociados a matrículas no anuladas."
+            statusLeft={
+              <span>
+                Desglose financiero por <strong>Periodo Académico</strong> y{" "}
+                <strong>Salón / Grupo</strong>
+              </span>
+            }
+            statusRight={
+              <span>
+                Total consolidado:{" "}
+                <strong>
+                  S/{" "}
+                  {Number(
+                    revenueQuery.data?.resumen.totalRecaudado ?? 0,
+                  ).toFixed(2)}
+                </strong>
+              </span>
+            }
+          >
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "0.84rem",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      backgroundColor: "#f8fafc",
+                      borderBottom: "1px solid #e2e8f0",
+                      color: "#475569",
+                      textAlign: "left",
+                    }}
+                  >
+                    <th style={{ padding: "0.8rem 1rem" }}>Periodo Académico</th>
+                    <th style={{ padding: "0.8rem 1rem" }}>Salón / Grupo</th>
+                    <th style={{ padding: "0.8rem 1rem" }}>Programa / Nivel</th>
+                    <th style={{ padding: "0.8rem 1rem" }}>Turno y Sección</th>
+                    <th style={{ padding: "0.8rem 1rem", textAlign: "center" }}>
+                      Vouchers Pagados
+                    </th>
+                    <th style={{ padding: "0.8rem 1rem", textAlign: "right" }}>
+                      Subtotal Recaudado
+                    </th>
+                    <th style={{ padding: "0.8rem 1rem", textAlign: "right" }}>
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(revenueQuery.data?.items ?? []).map((row) => (
+                    <tr
+                      key={`${row.periodo_id}-${row.grupo_id}`}
+                      style={{ borderBottom: "1px solid #f1f5f9" }}
+                    >
+                      <td style={{ padding: "0.85rem 1rem" }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                          {row.periodo_nombre}
+                        </div>
+                        <span className="ds-code-pill" style={{ marginTop: "0.2rem" }}>
+                          {row.periodo_codigo}
+                        </span>
+                      </td>
+                      <td style={{ padding: "0.85rem 1rem" }}>
+                        <span className="ds-code-pill">{row.grupo_codigo}</span>
+                        <div style={{ marginTop: "0.3rem" }}>
+                          <SharedStatusBadge
+                            inactive={row.grupo_estado === "CERRADO"}
+                          >
+                            {row.grupo_estado}
+                          </SharedStatusBadge>
+                        </div>
+                      </td>
+                      <td style={{ padding: "0.85rem 1rem" }}>
+                        <strong style={{ color: "#1e293b" }}>{row.idioma}</strong>
+                        <div style={{ fontSize: "0.78rem", color: "#475569" }}>
+                          {row.nivel}
+                        </div>
+                      </td>
+                      <td style={{ padding: "0.85rem 1rem", color: "#475569" }}>
+                        {row.turno} · Sección {row.seccion}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.85rem 1rem",
+                          textAlign: "center",
+                          fontFamily: "var(--ds-mono)",
+                          fontWeight: 700,
+                          color: "#0f172a",
+                        }}
+                      >
+                        {row.cantidad_vouchers}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.85rem 1rem",
+                          textAlign: "right",
+                          fontFamily: "var(--ds-mono)",
+                          fontWeight: 800,
+                          color: "#059669",
+                        }}
+                      >
+                        S/ {Number(row.total_recaudado).toFixed(2)}
+                      </td>
+                      <td style={{ padding: "0.85rem 1rem", textAlign: "right" }}>
+                        <a
+                          href={`#/matriculas/grupo/${row.grupo_id}`}
+                          className="academic-btn-action btn-action-secondary"
+                          style={{ padding: "0.35rem 0.7rem", fontSize: "0.74rem" }}
+                        >
+                          Ver nómina
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr
+                    style={{
+                      backgroundColor: "#f8fafc",
+                      borderTop: "2px solid #cbd5e1",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    <td colSpan={4} style={{ padding: "0.9rem 1rem", textAlign: "right" }}>
+                      TOTAL GENERAL CONSOLIDADO
+                    </td>
+                    <td
+                      style={{
+                        padding: "0.9rem 1rem",
+                        textAlign: "center",
+                        fontFamily: "var(--ds-mono)",
+                      }}
+                    >
+                      {revenueQuery.data?.resumen.totalVouchers ?? 0}
+                    </td>
+                    <td
+                      style={{
+                        padding: "0.9rem 1rem",
+                        textAlign: "right",
+                        fontFamily: "var(--ds-mono)",
+                        fontSize: "1rem",
+                        color: "#064e3b",
+                      }}
+                    >
+                      S/{" "}
+                      {Number(
+                        revenueQuery.data?.resumen.totalRecaudado ?? 0,
+                      ).toFixed(2)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </DataTableContainer>
+        </>
+      ) : (
+        <>
+      {/* 5 Tarjetas KPI Interactivas Sobrias */}
+      <StatCardGrid label="Resumen de comprobantes de pago">
+        <StatCard
+          label="Total en Vista"
+          value={loading ? "…" : stats.total}
+          sublabel={`S/ ${stats.totalAmount.toFixed(2)} acumulados`}
+          icon={<Receipt size={18} strokeWidth={1.75} />}
+          tone="emerald"
+          active={category === "ALL"}
           onClick={() => setCategory("ALL")}
-          className="academic-card"
-          style={{
-            padding: "0.95rem 1.1rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.8rem",
-            cursor: "pointer",
-            border: category === "ALL" ? "2px solid #007a3d" : undefined,
-          }}
-        >
-          <div
-            style={{
-              width: "2.6rem",
-              height: "2.6rem",
-              borderRadius: "0.7rem",
-              backgroundColor: "#f0fdf4",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Receipt size={19} color="#007a3d" />
-          </div>
-          <div>
-            <span
-              style={{
-                fontSize: "0.68rem",
-                fontWeight: 700,
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Total en Vista
-            </span>
-            <div
-              style={{
-                fontSize: "1.3rem",
-                fontWeight: 800,
-                color: "#0f172a",
-                lineHeight: 1.2,
-              }}
-            >
-              {loading ? "…" : stats.total}
-            </div>
-            <span
-              style={{ fontSize: "0.7rem", color: "#007a3d", fontWeight: 700 }}
-            >
-              S/ {stats.totalAmount.toFixed(2)} acumulados
-            </span>
-          </div>
-        </div>
-
-        <div
+        />
+        <StatCard
+          label="Por Revisar"
+          value={loading ? "…" : stats.pendingCount}
+          sublabel="Pendientes de validar"
+          icon={<Clock size={18} strokeWidth={1.75} />}
+          tone="amber"
+          active={category === "PENDING_REVIEW"}
           onClick={() =>
-            setCategory(
-              category === "PENDING_REVIEW" ? "ALL" : "PENDING_REVIEW",
-            )
+            setCategory(category === "PENDING_REVIEW" ? "ALL" : "PENDING_REVIEW")
           }
-          className="academic-card"
-          style={{
-            padding: "0.95rem 1.1rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.8rem",
-            cursor: "pointer",
-            border:
-              category === "PENDING_REVIEW" ? "2px solid #d97706" : undefined,
-          }}
-        >
-          <div
-            style={{
-              width: "2.6rem",
-              height: "2.6rem",
-              borderRadius: "0.7rem",
-              backgroundColor: "#fffbeb",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Clock size={19} color="#d97706" />
-          </div>
-          <div>
-            <span
-              style={{
-                fontSize: "0.68rem",
-                fontWeight: 700,
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Por Revisar
-            </span>
-            <div
-              style={{
-                fontSize: "1.3rem",
-                fontWeight: 800,
-                color: "#d97706",
-                lineHeight: 1.2,
-              }}
-            >
-              {loading ? "…" : stats.pendingCount}
-            </div>
-            <span
-              style={{ fontSize: "0.7rem", color: "#b45309", fontWeight: 600 }}
-            >
-              Pendientes de validar
-            </span>
-          </div>
-        </div>
-
-        <div
+        />
+        <StatCard
+          label="Libres (Sin Vincular)"
+          value={loading ? "…" : stats.unlinkedCount}
+          sublabel="Listos para matrícula"
+          icon={<Unlock size={18} strokeWidth={1.75} />}
+          tone="blue"
+          active={category === "UNLINKED"}
           onClick={() =>
             setCategory(category === "UNLINKED" ? "ALL" : "UNLINKED")
           }
-          className="academic-card"
-          style={{
-            padding: "0.95rem 1.1rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.8rem",
-            cursor: "pointer",
-            border: category === "UNLINKED" ? "2px solid #2563eb" : undefined,
-          }}
-        >
-          <div
-            style={{
-              width: "2.6rem",
-              height: "2.6rem",
-              borderRadius: "0.7rem",
-              backgroundColor: "#eff6ff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Unlock size={19} color="#2563eb" />
-          </div>
-          <div>
-            <span
-              style={{
-                fontSize: "0.68rem",
-                fontWeight: 700,
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Libres (Sin Vincular)
-            </span>
-            <div
-              style={{
-                fontSize: "1.3rem",
-                fontWeight: 800,
-                color: "#2563eb",
-                lineHeight: 1.2,
-              }}
-            >
-              {loading ? "…" : stats.unlinkedCount}
-            </div>
-            <span
-              style={{ fontSize: "0.7rem", color: "#1d4ed8", fontWeight: 600 }}
-            >
-              Sin matrícula asociada
-            </span>
-          </div>
-        </div>
-
-        <div
+        />
+        <StatCard
+          label="Vinculados"
+          value={loading ? "…" : stats.linkedCount}
+          sublabel="Asociados a matrícula"
+          icon={<Link2 size={18} strokeWidth={1.75} />}
+          tone="slate"
+          active={category === "LINKED"}
           onClick={() => setCategory(category === "LINKED" ? "ALL" : "LINKED")}
-          className="academic-card"
-          style={{
-            padding: "0.95rem 1.1rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.8rem",
-            cursor: "pointer",
-            border: category === "LINKED" ? "2px solid #7c3aed" : undefined,
-          }}
-        >
-          <div
-            style={{
-              width: "2.6rem",
-              height: "2.6rem",
-              borderRadius: "0.7rem",
-              backgroundColor: "#fdf4ff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Link2 size={19} color="#7c3aed" />
-          </div>
-          <div>
-            <span
-              style={{
-                fontSize: "0.68rem",
-                fontWeight: 700,
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Vinculados
-            </span>
-            <div
-              style={{
-                fontSize: "1.3rem",
-                fontWeight: 800,
-                color: "#7c3aed",
-                lineHeight: 1.2,
-              }}
-            >
-              {loading ? "…" : stats.linkedCount}
-            </div>
-            <span
-              style={{ fontSize: "0.7rem", color: "#6d28d9", fontWeight: 600 }}
-            >
-              Asociados a matrícula
-            </span>
-          </div>
-        </div>
-
-        <div
+        />
+        <StatCard
+          label="Validados"
+          value={loading ? "…" : stats.validatedCount}
+          sublabel={`S/ ${stats.validatedAmount.toFixed(2)} verificados`}
+          icon={<CheckCircle2 size={18} strokeWidth={1.75} />}
+          tone="emerald"
+          active={category === "VALIDATED"}
           onClick={() =>
             setCategory(category === "VALIDATED" ? "ALL" : "VALIDATED")
           }
-          className="academic-card"
-          style={{
-            padding: "0.95rem 1.1rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.8rem",
-            cursor: "pointer",
-            border: category === "VALIDATED" ? "2px solid #059669" : undefined,
-          }}
-        >
-          <div
-            style={{
-              width: "2.6rem",
-              height: "2.6rem",
-              borderRadius: "0.7rem",
-              backgroundColor: "#ecfdf5",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <CheckCircle2 size={19} color="#059669" />
-          </div>
-          <div>
-            <span
-              style={{
-                fontSize: "0.68rem",
-                fontWeight: 700,
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Validados
-            </span>
-            <div
-              style={{
-                fontSize: "1.3rem",
-                fontWeight: 800,
-                color: "#059669",
-                lineHeight: 1.2,
-              }}
-            >
-              {loading ? "…" : stats.validatedCount}
-            </div>
-            <span
-              style={{ fontSize: "0.7rem", color: "#065f46", fontWeight: 700 }}
-            >
-              S/ {stats.validatedAmount.toFixed(2)} verificados
-            </span>
-          </div>
-        </div>
-      </div>
+        />
+      </StatCardGrid>
 
       <Feedback tone="success">{success}</Feedback>
       <Feedback>{actionError}</Feedback>
@@ -602,57 +660,38 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             borderBottom: "1px solid #f1f5f9",
           }}
         >
-          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-            {[
-              { id: "ALL" as const, label: `Todos (${stats.total})` },
+          <SegmentedFilter
+            label="Clasificación de vouchers"
+            value={category}
+            onChange={(val) => setCategory(val)}
+            options={[
+              { value: "ALL", label: `Todos (${stats.total})` },
               {
-                id: "PENDING_REVIEW" as const,
-                label: `⏳ Por Revisar (${stats.pendingCount})`,
+                value: "PENDING_REVIEW",
+                label: `Por Revisar (${stats.pendingCount})`,
               },
               {
-                id: "UNLINKED" as const,
-                label: `🔓 Disponibles sin Vincular (${stats.unlinkedCount})`,
+                value: "UNLINKED",
+                label: `Disponibles sin Vincular (${stats.unlinkedCount})`,
               },
               {
-                id: "LINKED" as const,
-                label: `🔗 Vinculados a Matrícula (${stats.linkedCount})`,
+                value: "LINKED",
+                label: `Vinculados (${stats.linkedCount})`,
               },
               {
-                id: "VALIDATED" as const,
-                label: `✅ Validados (${stats.validatedCount})`,
+                value: "VALIDATED",
+                label: `Validados (${stats.validatedCount})`,
               },
               ...(stats.rejectedCount > 0
                 ? [
                     {
-                      id: "REJECTED" as const,
-                      label: `❌ Rechazados (${stats.rejectedCount})`,
+                      value: "REJECTED" as const,
+                      label: `Rechazados (${stats.rejectedCount})`,
                     },
                   ]
                 : []),
-            ].map((tab) => {
-              const active = category === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setCategory(tab.id)}
-                  style={{
-                    padding: "0.38rem 0.8rem",
-                    borderRadius: "999px",
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    border: active ? "1px solid #007a3d" : "1px solid #cbd5e1",
-                    backgroundColor: active ? "#007a3d" : "#f8fafc",
-                    color: active ? "#ffffff" : "#475569",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+            ]}
+          />
 
           {/* Alternador Tabla / Tarjetas */}
           <div style={{ display: "flex", gap: "0.35rem" }}>
@@ -686,12 +725,14 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             marginBottom: "1rem",
           }}
         >
-          <form onSubmit={search} className="voucher-search-form">
-            <div className="academic-search-input-wrapper">
+          <form
+            onSubmit={search}
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: "1 1 320px" }}
+          >
+            <div className="academic-search-input-wrapper" style={{ flex: 1 }}>
               <Search size={15} color="#94a3b8" />
               <input
                 type="text"
-                aria-label="Buscar comprobantes"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Buscar por número de voucher, nombre del estudiante, código o DNI…"
@@ -702,28 +743,15 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                   type="button"
                   onClick={() => {
                     setSearchInput("");
-                    const next = new URLSearchParams();
-                    if (query.has("estudianteId"))
-                      next.set("estudianteId", query.get("estudianteId")!);
-                    navigate(`/vouchers?${next}`);
+                    navigate("/vouchers");
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                    display: "flex",
-                  }}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
                 >
                   <X size={14} color="#94a3b8" />
                 </button>
               )}
             </div>
-            <button
-              type="submit"
-              className="academic-btn-action btn-action-primary"
-              disabled={loading}
-            >
+            <button type="submit" className="academic-btn-action btn-action-primary" disabled={loading}>
               Buscar
             </button>
             {serialized && (
@@ -741,19 +769,14 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             )}
           </form>
 
-          <div className="voucher-sort">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.75rem", color: "#475569" }}>
             <ArrowUpDown size={14} color="#64748b" />
             <span style={{ fontWeight: 700 }}>Ordenar por:</span>
             <select
-              aria-label="Ordenar comprobantes de esta página"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value as SortMode)}
               className="input-field"
-              style={{
-                padding: "0.32rem 0.65rem",
-                fontSize: "0.75rem",
-                width: "auto",
-              }}
+              style={{ padding: "0.32rem 0.65rem", fontSize: "0.75rem", width: "auto" }}
             >
               <option value="DATE_DESC">Fecha de pago (Más recientes)</option>
               <option value="AMOUNT_DESC">Mayor importe (S/)</option>
@@ -824,18 +847,9 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                   cell: (row) => {
                     const name = text(row, "estudiante");
                     const parts = name.split(" ");
-                    const initials =
-                      (
-                        (parts[0]?.[0] || "") + (parts[1]?.[0] || "")
-                      ).toUpperCase() || "E";
+                    const initials = ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "E";
                     return (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.65rem",
-                        }}
-                      >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
                         <div
                           style={{
                             width: "2rem",
@@ -855,22 +869,10 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                           {initials}
                         </div>
                         <div>
-                          <strong
-                            style={{
-                              display: "block",
-                              color: "#0f172a",
-                              fontSize: "0.84rem",
-                            }}
-                          >
+                          <strong style={{ display: "block", color: "#0f172a", fontSize: "0.84rem" }}>
                             {name}
                           </strong>
-                          <span
-                            style={{
-                              fontSize: "0.72rem",
-                              color: "#64748b",
-                              fontFamily: "monospace",
-                            }}
-                          >
+                          <span style={{ fontSize: "0.72rem", color: "#64748b", fontFamily: "monospace" }}>
                             Cód: {text(row, "codigo_estudiante")}
                           </span>
                         </div>
@@ -882,13 +884,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                   key: "fecha",
                   header: "Fecha de pago",
                   cell: (row) => (
-                    <span
-                      style={{
-                        fontSize: "0.8125rem",
-                        color: "#334155",
-                        fontWeight: 500,
-                      }}
-                    >
+                    <span style={{ fontSize: "0.8125rem", color: "#334155", fontWeight: 500 }}>
                       {text(row, "fecha_pago")}
                     </span>
                   ),
@@ -897,14 +893,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                   key: "importe",
                   header: "Importe",
                   cell: (row) => (
-                    <strong
-                      style={{
-                        fontSize: "0.9rem",
-                        fontWeight: 800,
-                        color: "#007a3d",
-                        fontFamily: "monospace",
-                      }}
-                    >
+                    <strong style={{ fontSize: "0.9rem", fontWeight: 800, color: "#007a3d", fontFamily: "monospace" }}>
                       S/ {Number(text(row, "importe") || 0).toFixed(2)}
                     </strong>
                   ),
@@ -924,14 +913,11 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                               : "badge-gray"
                         }`}
                       >
-                        <span aria-hidden="true">
-                          {st === "VALIDADO"
-                            ? "✓"
-                            : st === "PENDIENTE"
-                              ? "⏳"
-                              : "✕"}
-                        </span>{" "}
-                        <span>{voucherStates[st] ?? st}</span>
+                        {st === "VALIDADO"
+                          ? "✓ Validado"
+                          : st === "PENDIENTE"
+                            ? "⏳ Pendiente"
+                            : "✕ Rechazado"}
                       </span>
                     );
                   },
@@ -958,9 +944,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                         <Link2 size={12} /> {text(row, "matricula_codigo")}
                       </span>
                     ) : row.estado === "RECHAZADO" ? (
-                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                        No utilizable
-                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>No utilizable</span>
                     ) : (
                       <span
                         style={{
@@ -976,10 +960,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                           borderRadius: "999px",
                         }}
                       >
-                        <Unlock size={12} />{" "}
-                        {row.estado === "VALIDADO"
-                          ? "Libre para matrícula"
-                          : "Pendiente de validación"}
+                        <Unlock size={12} /> Libre para matrícula
                       </span>
                     ),
                 },
@@ -988,23 +969,11 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                   header: "Acciones",
                   className: "row-actions",
                   cell: (row) => {
-                    const isPendingReview =
-                      row.estado === "PENDIENTE" && !row.matricula_id;
-                    const canEnrollWithVoucher = Boolean(
-                      !row.matricula_id &&
-                      row.estado !== "RECHAZADO" &&
-                      row.estudiante_id,
-                    );
+                    const isPendingReview = row.estado === "PENDIENTE" && !row.matricula_id;
+                    const canEnrollWithVoucher = Boolean(!row.matricula_id && row.estado !== "RECHAZADO" && row.estudiante_id);
 
                     return (
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "0.4rem",
-                          justifyContent: "flex-end",
-                          flexWrap: "wrap",
-                        }}
-                      >
+                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
                         {canEnrollWithVoucher && (
                           <a
                             href={`#/matriculas?estudianteId=${String(row.estudiante_id)}`}
@@ -1025,21 +994,13 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                           type="button"
                           disabled={opening}
                           onClick={() => void open(row)}
-                          aria-label="Revisar voucher"
                           className={`academic-btn-action ${
-                            isPendingReview
-                              ? "btn-action-primary"
-                              : "btn-action-secondary"
+                            isPendingReview ? "btn-action-primary" : "btn-action-secondary"
                           }`}
-                          style={{
-                            padding: "0.3rem 0.7rem",
-                            fontSize: "0.73rem",
-                          }}
+                          style={{ padding: "0.3rem 0.7rem", fontSize: "0.73rem" }}
                         >
                           <Eye size={12} />{" "}
-                          {isPendingReview
-                            ? "Revisar y Validar"
-                            : "Ver Detalle"}
+                          {isPendingReview ? "Revisar y Validar" : "Ver Detalle"}
                         </button>
                       </div>
                     );
@@ -1052,8 +1013,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fill, minmax(min(100%, 295px), 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(295px, 1fr))",
                 gap: "0.85rem",
               }}
             >
@@ -1081,16 +1041,9 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                       display: "flex",
                       flexDirection: "column",
                       gap: "0.65rem",
-                      overflowWrap: "anywhere",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span
                         style={{
                           fontFamily: "monospace",
@@ -1118,24 +1071,11 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                     </div>
 
                     <div>
-                      <strong
-                        style={{
-                          display: "block",
-                          fontSize: "0.9rem",
-                          color: "#0f172a",
-                        }}
-                      >
+                      <strong style={{ display: "block", fontSize: "0.9rem", color: "#0f172a" }}>
                         {text(row, "estudiante")}
                       </strong>
-                      <span
-                        style={{
-                          fontSize: "0.73rem",
-                          color: "#64748b",
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        Cód: {text(row, "codigo_estudiante")} · Fecha:{" "}
-                        {text(row, "fecha_pago")}
+                      <span style={{ fontSize: "0.73rem", color: "#64748b", fontFamily: "monospace" }}>
+                        Cód: {text(row, "codigo_estudiante")} · Fecha: {text(row, "fecha_pago")}
                       </span>
                     </div>
 
@@ -1149,51 +1089,20 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                         borderRadius: "0.5rem",
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: "0.73rem",
-                          color: "#475569",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {isLinked
-                          ? `🔗 ${text(row, "matricula_codigo")}`
-                          : st === "VALIDADO"
-                            ? "🔓 Libre para matrícula"
-                            : st === "PENDIENTE"
-                              ? "Pendiente de validación"
-                              : "No utilizable"}
+                      <span style={{ fontSize: "0.73rem", color: "#475569", fontWeight: 600 }}>
+                        {isLinked ? `🔗 ${text(row, "matricula_codigo")}` : "🔓 Libre para matrícula"}
                       </span>
-                      <strong
-                        style={{
-                          fontSize: "1.05rem",
-                          fontWeight: 800,
-                          color: "#007a3d",
-                          fontFamily: "monospace",
-                        }}
-                      >
+                      <strong style={{ fontSize: "1.05rem", fontWeight: 800, color: "#007a3d", fontFamily: "monospace" }}>
                         S/ {Number(text(row, "importe") || 0).toFixed(2)}
                       </strong>
                     </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        gap: "0.45rem",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {Boolean(
-                        !isLinked && st !== "RECHAZADO" && row.estudiante_id,
-                      ) && (
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.45rem" }}>
+                      {Boolean(!isLinked && st !== "RECHAZADO" && row.estudiante_id) && (
                         <a
                           href={`#/matriculas?estudianteId=${String(row.estudiante_id)}`}
                           className="academic-btn-action btn-action-secondary"
-                          style={{
-                            padding: "0.35rem 0.7rem",
-                            fontSize: "0.73rem",
-                          }}
+                          style={{ padding: "0.35rem 0.7rem", fontSize: "0.73rem" }}
                         >
                           <GraduationCap size={13} /> Matricular
                         </a>
@@ -1202,20 +1111,12 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
                         type="button"
                         disabled={opening}
                         onClick={() => void open(row)}
-                        aria-label="Revisar voucher"
                         className={`academic-btn-action ${
-                          isPendingReview
-                            ? "btn-action-primary"
-                            : "btn-action-secondary"
+                          isPendingReview ? "btn-action-primary" : "btn-action-secondary"
                         }`}
-                        style={{
-                          padding: "0.35rem 0.75rem",
-                          fontSize: "0.73rem",
-                        }}
+                        style={{ padding: "0.35rem 0.75rem", fontSize: "0.73rem" }}
                       >
-                        {isPendingReview
-                          ? "⚖️ Revisar y Validar"
-                          : "👁️ Ver Detalle"}
+                        {isPendingReview ? "⚖️ Revisar y Validar" : "👁️ Ver Detalle"}
                       </button>
                     </div>
                   </div>
@@ -1225,6 +1126,8 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
           )}
         </ListPanel>
       </div>
+        </>
+      )}
 
       {creating && !student && (
         <StudentPicker onClose={() => create(false)} onSelect={select} />
@@ -1241,6 +1144,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             select(null);
             notify("Voucher registrado exitosamente, pendiente de revisión.");
             reload();
+            revenueQuery.reload();
           }}
         />
       )}
@@ -1252,6 +1156,7 @@ export function VouchersPage({ query }: { query: URLSearchParams }) {
             show(null);
             notify("Decisión de revisión del comprobante registrada.");
             reload();
+            revenueQuery.reload();
           }}
         />
       )}

@@ -1,155 +1,214 @@
-import { useMemo } from "react";
-import { FileSpreadsheet, BookOpen, FileCheck } from "lucide-react";
-import { allRows, text } from "../../shared/api";
-import { navigate } from "../../shared/navigation";
-import { useApiQuery } from "../../shared/useApiQuery";
-import { useAuth } from "../auth/session";
-import { PageHeading } from "../../shared/ui/PageHeading";
-import { InputField, SelectField } from "../../shared/ui/Field";
-import { Feedback, Loading } from "../../shared/ui/Feedback";
+import { useState, useEffect, useMemo } from "react";
+import {
+  FileSpreadsheet,
+  Search,
+  Calendar,
+  AlertCircle,
+  BookOpen,
+  FileCheck,
+  Layers,
+} from "lucide-react";
+import { allRows, errorText, type Row } from "../../shared/api";
+import { PageHeader } from "../../components/shared";
 import "../academic/academic.css";
-import "./reports.css";
 
-export function ReportsGroupsPage({ query }: { query: URLSearchParams }) {
-  const { session } = useAuth();
-  const canSummary = session.user.roles.some((role) =>
-    ["ADMIN", "COORDINADOR"].includes(role),
-  );
-  const {
-    data: groups = [],
-    loading,
-    error,
-    reload,
-  } = useApiQuery("oferta/grupos", allRows);
-  const period = query.get("periodo") ?? "TODOS";
-  const search = query.get("q") ?? "";
-  const periods = useMemo(
-    () => [
-      ...new Map(
-        groups.map((group) => [
-          String(group.periodo_id),
-          text(group, "contexto.periodo"),
-        ]),
-      ).entries(),
-    ],
-    [groups],
-  );
-  const filtered = groups.filter(
-    (group) =>
-      (period === "TODOS" || String(group.periodo_id) === period) &&
-      ["codigo", "contexto.idioma", "contexto.nivel", "contexto.periodo"]
-        .map((key) => text(group, key))
-        .join(" ")
-        .toLocaleLowerCase("es")
-        .includes(search.toLocaleLowerCase("es").trim()),
-  );
-  function filter(key: string, value: string) {
-    const next = new URLSearchParams(query);
-    if (value && value !== "TODOS") next.set(key, value);
-    else next.delete(key);
-    navigate(`/reportes?${next}`);
+export function ReportsGroupsPage({ query: _query }: { query: URLSearchParams }) {
+  const [grupos, setGrupos] = useState<Row[]>([]);
+  const [periodos, setPeriodos] = useState<Row[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("TODOS");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  async function loadData() {
+    setLoading(true);
+    setError("");
+    try {
+      const [grps, perds] = await Promise.all([
+        allRows("oferta/grupos"),
+        allRows("oferta/periodos"),
+      ]);
+      setGrupos(grps);
+      setPeriodos(perds);
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setLoading(false);
+    }
   }
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  const filteredGrupos = useMemo(() => {
+    return grupos.filter((g) => {
+      const contexto = (g.contexto as Record<string, string>) || {};
+      const matchPeriod =
+        selectedPeriod === "TODOS" ||
+        String(g.periodo_id || "") === selectedPeriod ||
+        String(contexto.periodo || "").toLowerCase() === selectedPeriod.toLowerCase();
+
+      const q = searchTerm.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        String(g.codigo || "").toLowerCase().includes(q) ||
+        String(contexto.unidad_nombre || "").toLowerCase().includes(q) ||
+        String(contexto.idioma || "").toLowerCase().includes(q) ||
+        String(contexto.nivel || "").toLowerCase().includes(q) ||
+        String(contexto.docente_nombre || "").toLowerCase().includes(q);
+
+      return matchPeriod && matchSearch;
+    });
+  }, [grupos, selectedPeriod, searchTerm]);
+
   return (
-    <section className="academic-container reports-workspace">
-      <header className="academic-card report-hero">
-        <span className="academic-badge badge-green">
-          <FileSpreadsheet size={14} /> Formatos XLSX · Demostración
-        </span>
-        <PageHeading
-          eyebrow="Borradores de demostración"
-          title="Reportes"
-          description="Selecciona un salón para previsualizar y descargar el acta de evaluación, la matriz detallada de notas o el resumen de participantes."
-        />
-        <p className="notice">
-          Las plantillas son propuestas pendientes de aprobación institucional.
-        </p>
-        <a href="#/actas" className="academic-btn-action btn-action-secondary">
-          <FileCheck size={14} /> Cierre de actas por salón
-        </a>
-      </header>
-      <form
-        className="academic-filter-bar"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <SelectField
-          label="Periodo"
-          id="report-period"
-          value={period}
-          onChange={(event) => filter("periodo", event.target.value)}
-        >
-          <option value="TODOS">Todos los periodos</option>
-          {periods.map(([id, name]) => (
-            <option key={id} value={id}>
-              {name || id}
-            </option>
-          ))}
-        </SelectField>
-        <InputField
-          label="Buscar salón"
-          id="report-group-search"
-          value={search}
-          onChange={(event) => filter("q", event.target.value)}
-          placeholder="Código, idioma, nivel o periodo"
-        />
-      </form>
+    <div className="ds-page academic-container">
+      <PageHeader
+        variant="hero"
+        icon={<FileSpreadsheet size={22} strokeWidth={1.75} />}
+        eyebrow="Formatos Oficiales UGEL / MINEDU (.xlsx)"
+        statusPill={`${filteredGrupos.length} salones disponibles`}
+        title="Centro de Emisión de Actas Oficiales UGEL y Reportes"
+        description={
+          <>
+            Selecciona un salón para visualizar y descargar el{" "}
+            <strong>
+              Acta Oficial de Evaluación UGEL (Inglés o Portugués)
+            </strong>{" "}
+            autollenada con la nómina en orden alfabético, calificaciones por
+            unidad didáctica, puntaje, promedio y resumen estadístico oficial.
+          </>
+        }
+        actions={
+          <a href="#/actas" className="button">
+            <FileCheck size={14} strokeWidth={1.75} />
+            Ir a Cierre de Actas por Salón
+          </a>
+        }
+      />
+
+      {/* Filter Bar */}
+      <div className="academic-filter-bar">
+        <div className="academic-filter-group">
+          <Calendar size={16} color="#007a3d" />
+          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            Periodo:
+          </span>
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="input-field"
+            style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", width: "auto" }}
+          >
+            <option value="TODOS">Todos los periodos</option>
+            {periodos.map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>
+                {String(p.nombre || p.codigo)} {p.estado === "ACTIVO" ? "(Vigente)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginLeft: "auto", position: "relative" }}>
+          <Search size={14} color="#94a3b8" style={{ position: "absolute", left: "0.65rem", top: "50%", transform: "translateY(-50%)" }} />
+          <input
+            type="text"
+            placeholder="Buscar por código, idioma, nivel…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-field"
+            style={{ paddingLeft: "2rem", width: "260px", fontSize: "0.8125rem" }}
+          />
+        </div>
+      </div>
+
+      {/* Lista de Salones */}
       {loading ? (
-        <Loading>Cargando grupos…</Loading>
+        <div className="academic-card" style={{ padding: "3rem", textAlign: "center", color: "#64748b" }}>
+          Cargando salones para emisión de reportes y Actas UGEL…
+        </div>
       ) : error ? (
-        <Feedback onRetry={reload}>{error}</Feedback>
-      ) : !filtered.length ? (
-        <p className="academic-card report-hero">
-          No hay grupos disponibles para los filtros seleccionados.
-        </p>
+        <div className="academic-card" style={{ padding: "1.5rem", color: "#dc2626", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      ) : filteredGrupos.length === 0 ? (
+        <div className="academic-card" style={{ padding: "3rem", textAlign: "center", color: "#94a3b8" }}>
+          <Layers size={36} color="#cbd5e1" style={{ margin: "0 auto 0.75rem auto" }} />
+          <h3 style={{ margin: 0, color: "#334155" }}>No se encontraron salones</h3>
+          <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem" }}>
+            Ajusta el filtro de periodo o el término de búsqueda.
+          </p>
+        </div>
       ) : (
-        <div className="report-group-grid">
-          {filtered.map((group) => (
-            <article key={group.id} className="academic-card report-group-card">
-              <div>
-                <span className="academic-badge badge-green">
-                  {text(group, "codigo")}
-                </span>
-                <h2>
-                  {text(group, "contexto.idioma")} ·{" "}
-                  {text(group, "contexto.nivel")}
-                </h2>
-                <p className="report-group-context">
-                  {text(group, "contexto.periodo")}
-                  <br />
-                  {text(group, "contexto.turno")} · Sección{" "}
-                  {text(group, "contexto.seccion")}
-                  <br />
-                  {text(group, "estado")}
-                </p>
-                <p className="report-group-context">
-                  Matriculados · {text(group, "matriculados") || "0"} intentos
-                </p>
-              </div>
-              <div className="report-group-actions">
-                <a
-                  href={`#/reportes/grupos/${group.id}?tipo=MATRIZ_NOTAS`}
-                  className="academic-btn-action btn-action-primary"
-                >
-                  <BookOpen size={14} /> Reportes
-                </a>
-                <a
-                  href={`#/reportes/grupos/${group.id}?tipo=ACTA_DEMOSTRACION`}
-                  className="academic-btn-action btn-action-secondary"
-                >
-                  <FileSpreadsheet size={14} /> Acta de evaluación
-                </a>
-                {canSummary && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1rem" }}>
+          {filteredGrupos.map((g) => {
+            const contexto = (g.contexto as Record<string, string>) || {};
+            const isClosed = g.estado === "CERRADO";
+
+            return (
+              <div
+                key={String(g.id)}
+                className="academic-card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  borderLeft: `4px solid ${isClosed ? "#475569" : "#007a3d"}`,
+                  padding: "1.25rem",
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                    <span className="academic-badge badge-green" style={{ fontSize: "0.75rem" }}>
+                      {String(g.codigo)}
+                    </span>
+                    <span style={{ fontSize: "0.6875rem", color: "#64748b", fontFamily: "monospace" }}>
+                      Periodo: {contexto.periodo || "—"}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#1e293b", margin: "0.35rem 0 0.2rem 0" }}>
+                    {contexto.idioma || "Idioma"} — {contexto.nivel || contexto.unidad_nombre || "Nivel"}
+                  </h3>
+
+                  <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 0.75rem 0" }}>
+                    Turno: <strong>{contexto.turno || "Sin turno"}</strong>
+                    {contexto.seccion ? ` · Sección: ${contexto.seccion}` : ""}
+                  </p>
+
+                  <div style={{ fontSize: "0.75rem", color: "#475569", backgroundColor: "#f8fafc", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", marginBottom: "1rem" }}>
+                    Docente: <strong>{contexto.docente_nombre || "Por asignar"}</strong>
+                    <div style={{ fontSize: "0.6875rem", color: "#64748b", marginTop: "2px" }}>
+                      Matriculados: <strong>{String(g.matriculados || 0)}</strong> estudiantes
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
                   <a
-                    href={`#/reportes/grupos/${group.id}?tipo=RESUMEN_PARTICIPANTES`}
-                    className="academic-btn-action btn-action-secondary"
+                    href={`#/reportes/grupos/${g.id}?tipo=ACTA_DEMOSTRACION`}
+                    className="academic-btn-action btn-action-primary"
+                    style={{ flex: 1, justifyContent: "center", padding: "0.45rem 0.75rem" }}
                   >
-                    Anexo 05
+                    <FileSpreadsheet size={14} /> Acta Oficial UGEL (.xlsx)
                   </a>
-                )}
+
+                  <a
+                    href={`#/reportes/grupos/${g.id}?tipo=MATRIZ_NOTAS`}
+                    className="academic-btn-action btn-action-secondary"
+                    style={{ padding: "0.45rem 0.75rem" }}
+                    title="Ver matriz completa de notas por indicador"
+                  >
+                    <BookOpen size={13} /> Matriz
+                  </a>
+                </div>
               </div>
-            </article>
-          ))}
+            );
+          })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

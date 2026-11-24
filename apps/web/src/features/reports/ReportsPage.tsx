@@ -10,7 +10,6 @@ import { Feedback, Loading } from "../../shared/ui/Feedback";
 import { InputField, SelectField } from "../../shared/ui/Field";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
-import { useAuth } from "../auth/session";
 import { GroupContext } from "../attendance/GroupContext";
 import { ReportHistory } from "./ReportHistory";
 import { ReportPreviewTable } from "./ReportPreviewTable";
@@ -21,7 +20,7 @@ import "./reports.css";
 function Totals({ data }: { data: ReportPreview }) {
   return (
     <section
-      className="panel panel-content"
+      className="panel panel-content reports-summary-panel"
       aria-label="Resumen del grupo completo"
     >
       <h2>Resumen del grupo completo</h2>
@@ -50,11 +49,9 @@ export function ReportsPage({
   groupId: string;
   query: URLSearchParams;
 }) {
-  const { session } = useAuth();
-  const canSummary = session.user.roles.some((role) =>
-    ["ADMIN", "COORDINADOR"].includes(role),
-  );
-  const type = query.get("tipo") ?? "MATRIZ_NOTAS";
+  const rawType = query.get("tipo");
+  const type: ReportType =
+    rawType === "ACTA_DEMOSTRACION" ? "ACTA_DEMOSTRACION" : "MATRIZ_NOTAS";
   const after = query.get("after") ?? "";
   const endpoint = `reportes/grupos/${groupId}`;
   const search = new URLSearchParams({
@@ -78,7 +75,7 @@ export function ReportsPage({
         <PageHeading
           eyebrow="Reportes · Borradores de demostración"
           title="Reportes del grupo"
-          description="Previsualiza el acta de evaluación, la matriz detallada de notas y el resumen de participantes de inglés o portugués."
+          description="Previsualiza el acta de evaluación y la matriz detallada de notas de inglés o portugués."
         />
         <div className="panel panel-content">
           <SelectField
@@ -94,16 +91,10 @@ export function ReportsPage({
             <option value="ACTA_DEMOSTRACION">
               Acta de evaluación de demostración
             </option>
-            {canSummary && (
-              <option value="RESUMEN_PARTICIPANTES">
-                Resumen de participantes
-              </option>
-            )}
           </SelectField>
           <div className="report-format-tabs" aria-label="Formatos disponibles">
-            {(Object.keys(reportNames) as ReportType[])
-              .filter((key) => canSummary || key !== "RESUMEN_PARTICIPANTES")
-              .map((key) => (
+            {(["ACTA_DEMOSTRACION", "MATRIZ_NOTAS"] as ReportType[]).map(
+              (key) => (
                 <Button
                   key={key}
                   className={`academic-btn-action ${type === key ? "btn-action-primary" : "btn-action-secondary"}`}
@@ -115,7 +106,8 @@ export function ReportsPage({
                 >
                   {reportNames[key]}
                 </Button>
-              ))}
+              ),
+            )}
           </div>
           <p className="notice">
             BORRADOR · Formato de demostración. La aprobación institucional de
