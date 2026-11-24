@@ -5,7 +5,9 @@ import { Dialog } from "../../shared/Dialog";
 import { Button } from "../../shared/ui/Button";
 import { InputField } from "../../shared/ui/Field";
 import { Feedback } from "../../shared/ui/Feedback";
+import { StatusBadge, type BadgeTone } from "../../components/shared";
 import { voucherStates } from "./model";
+import "./vouchers.css";
 
 export function VoucherDetail({
   voucher,
@@ -60,6 +62,7 @@ export function VoucherDetail({
       title={`Comprobante de Pago · ${text(voucher, "numero")}`}
       onClose={onClose}
       busy={busy}
+      className="voucher-detail-dialog"
     >
       {/* Cabecera Tipo Recibo Oficial */}
       <div
@@ -78,20 +81,20 @@ export function VoucherDetail({
               {text(voucher, "numero")}
             </span>
           </div>
-          <span
-            className={`academic-badge ${
-              st === "VALIDADO"
-                ? "badge-green"
+          <StatusBadge
+            tone={
+              (st === "VALIDADO"
+                ? "emerald"
                 : st === "PENDIENTE"
-                  ? "badge-amber"
-                  : "badge-gray"
-            }`}
+                  ? "amber"
+                  : "rose") as BadgeTone
+            }
           >
             {voucherStates[st] ?? st}
-          </span>
+          </StatusBadge>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.85rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.75rem" }}>
           <div>
             <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", display: "block" }}>
               Estudiante Titular
@@ -114,30 +117,39 @@ export function VoucherDetail({
           </div>
         </div>
 
-        <dl className="detail" style={{ margin: 0 }}>
-          {[
-            ["Fecha de pago", text(voucher, "fecha_pago")],
-            [
-              "Vínculo de matrícula",
-              text(voucher, "matricula_codigo") ? `🔗 ${text(voucher, "matricula_codigo")}` : "🔓 Sin vincular (Libre)",
-            ],
-            [
-              "Responsable de revisión",
-              text(voucher, "responsable") || "Pendiente de revisión",
-            ],
-            [
-              "Fecha de decisión",
-              voucher.validado_at
+        <dl className="voucher-detail-grid">
+          <div className="voucher-detail-item">
+            <dt className="voucher-detail-label">Fecha de pago</dt>
+            <dd className="voucher-detail-value">{text(voucher, "fecha_pago")}</dd>
+          </div>
+          <div className="voucher-detail-item">
+            <dt className="voucher-detail-label">Vínculo de matrícula</dt>
+            <dd className="voucher-detail-value">
+              {text(voucher, "matricula_codigo")
+                ? `🔗 ${text(voucher, "matricula_codigo")}`
+                : "🔓 Sin vincular (Libre)"}
+            </dd>
+          </div>
+          <div className="voucher-detail-item">
+            <dt className="voucher-detail-label">Responsable de revisión</dt>
+            <dd className="voucher-detail-value">
+              {text(voucher, "responsable") || "Pendiente de revisión"}
+            </dd>
+          </div>
+          <div className="voucher-detail-item">
+            <dt className="voucher-detail-label">Fecha de decisión</dt>
+            <dd className="voucher-detail-value">
+              {voucher.validado_at
                 ? new Date(text(voucher, "validado_at")).toLocaleString("es-PE")
-                : "Pendiente",
-            ],
-            ["Observación", text(voucher, "observacion") || "Sin observación"],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
+                : "Pendiente"}
+            </dd>
+          </div>
+          <div className="voucher-detail-item voucher-detail-full">
+            <dt className="voucher-detail-label">Observación</dt>
+            <dd className="voucher-detail-value">
+              {text(voucher, "observacion") || "Sin observación"}
+            </dd>
+          </div>
         </dl>
       </div>
 

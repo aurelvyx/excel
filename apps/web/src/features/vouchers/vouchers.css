@@ -46,3 +46,53 @@
 .vouchers-workspace .table-scroll .row-actions {
   min-width: 190px;
 }
+
+dialog.voucher-detail-dialog {
+  width: min(94vw, 620px);
+  max-width: 620px;
+  border-radius: 1rem;
+  padding: 1.35rem 1.5rem;
+}
+
+.voucher-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 1rem;
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.voucher-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.voucher-detail-full {
+  grid-column: 1 / -1;
+}
+
+.voucher-detail-label {
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin: 0;
+}
+
+.voucher-detail-value {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .voucher-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
