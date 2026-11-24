@@ -1,125 +1,238 @@
-import { useState, type FormEvent } from "react";
-import { api, errorText, text, type Row } from "../../../shared/api";
-import { Dialog } from "../../../shared/Dialog";
-import { useUnsavedChanges } from "../../../shared/useUnsavedChanges";
-import { Button } from "../../../shared/ui/Button";
-import { InputField, SelectField } from "../../../shared/ui/Field";
-import { Feedback } from "../../../shared/ui/Feedback";
+import React, { useState } from "react";
+import { X, AlertCircle, SlidersHorizontal, Unlock, Lock } from "lucide-react";
+import { api, errorText, type Row } from "../../../shared/api";
+import "../academic.css";
 
-export function GroupStatusModal({
-  group,
-  onClose,
-  onUpdated,
-}: {
+interface GroupStatusModalProps {
   group: Row;
+  isOpen: boolean;
   onClose: () => void;
-  onUpdated: () => Promise<void>;
-}) {
-  const [state, setState] = useState(text(group, "estado"));
-  const [reason, setReason] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [review, setReview] = useState(false);
-  const unsaved = useUnsavedChanges(
-    state !== text(group, "estado") || !!reason,
-    busy,
+  onSuccess: (newStatus: string) => void;
+}
+
+export const GroupStatusModal: React.FC<GroupStatusModalProps> = ({
+  group,
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
+  const currentEstado = String(group.estado || "ACTIVO");
+  const [estado, setEstado] = useState<"PLANIFICADO" | "ACTIVO" | "CERRADO">(
+    currentEstado === "CERRADO" ? "CERRADO" : currentEstado === "PLANIFICADO" ? "PLANIFICADO" : "ACTIVO"
   );
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!reason.trim()) {
-      setError("Describe el motivo del cambio.");
-      return;
-    }
-    if (state === text(group, "estado")) {
-      setError("Selecciona un estado diferente.");
-      return;
-    }
-    if (!review) {
-      setReview(true);
-      return;
-    }
-    setBusy(true);
+  const [motivo, setMotivo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!isOpen) return null;
+
+  const isReleasingForTeacher = currentEstado === "CERRADO" && estado === "ACTIVO";
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
     setError("");
     try {
       await api(`oferta/grupos/${group.id}`, {
         method: "PATCH",
-        body: { estado: state, motivo: reason.trim() },
+        body: {
+          estado,
+          motivo:
+            motivo.trim() ||
+            (isReleasingForTeacher
+              ? "Liberación administrativa de salón para ajustes docentes"
+              : `Cambio de estado administrativo a ${estado}`),
+        },
       });
-      await onUpdated();
-    } catch (cause) {
-      setError(errorText(cause));
-      setReview(false);
+      onSuccess(estado);
+      onClose();
+    } catch (err) {
+      setError(errorText(err));
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
   }
+
   return (
-    <>
-      <Dialog
-        title={`Estado del salón ${text(group, "codigo")}`}
-        onClose={() => unsaved.request(onClose)}
-        busy={busy}
-        className="academic-status-dialog"
-      >
-        <form onSubmit={submit} className="group-form-flow">
-          <p className="muted">
-            Actualiza la disponibilidad del salón. El motivo queda registrado en
-            su historial.
-          </p>
-          <SelectField
-            id="group-state"
-            label="Estado del grupo"
-            value={state}
-            disabled={busy || review}
-            onChange={(event) => {
-              setState(event.target.value);
-              setReview(false);
+    <div className="academic-modal-overlay" onClick={onClose}>
+      <div className="academic-modal" style={{ maxWidth: "500px" }} onClick={(e) => e.stopPropagation()}>
+        <div className="academic-modal-header">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+            <div style={{ padding: "0.5rem", borderRadius: "0.5rem", backgroundColor: "#f0fdf4", color: "#166534" }}>
+              <SlidersHorizontal size={18} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#1e293b", fontWeight: 700 }}>
+                Estado y Acceso Docente: {String(group.codigo)}
+              </h3>
+              <p style={{ margin: "0.2rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+                Control de apertura, bloqueo y liberación del salón para el docente
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="academic-drawer-close-btn">
+            <X size={18} />
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ margin: "1rem 1.25rem 0", padding: "0.75rem 1rem", backgroundColor: "#fee2e2", color: "#991b1b", fontSize: "0.8125rem", borderRadius: "0.5rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <AlertCircle size={16} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
+          <div style={{ marginBottom: "1.25rem" }}>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+              Seleccionar Nuevo Estado del Salón
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+              <button
+                type="button"
+                onClick={() => setEstado("PLANIFICADO")}
+                style={{
+                  padding: "0.625rem 0.5rem",
+                  borderRadius: "0.5rem",
+                  border: `2px solid ${estado === "PLANIFICADO" ? "#0284c7" : "#e2e8f0"}`,
+                  backgroundColor: estado === "PLANIFICADO" ? "#f0f9ff" : "#ffffff",
+                  color: estado === "PLANIFICADO" ? "#0369a1" : "#475569",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  cursor: "pointer",
+                  textAlign: "center",
+                }}
+              >
+                Planificado
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEstado("ACTIVO")}
+                style={{
+                  padding: "0.625rem 0.5rem",
+                  borderRadius: "0.5rem",
+                  border: `2px solid ${estado === "ACTIVO" ? "#007a3d" : "#e2e8f0"}`,
+                  backgroundColor: estado === "ACTIVO" ? "#f0fdf4" : "#ffffff",
+                  color: estado === "ACTIVO" ? "#166534" : "#475569",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.25rem",
+                }}
+              >
+                <Unlock size={13} /> {currentEstado === "CERRADO" ? "Liberar (Activo)" : "Activo"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEstado("CERRADO")}
+                style={{
+                  padding: "0.625rem 0.5rem",
+                  borderRadius: "0.5rem",
+                  border: `2px solid ${estado === "CERRADO" ? "#dc2626" : "#e2e8f0"}`,
+                  backgroundColor: estado === "CERRADO" ? "#fef2f2" : "#ffffff",
+                  color: estado === "CERRADO" ? "#991b1b" : "#475569",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.25rem",
+                }}
+              >
+                <Lock size={13} /> Cerrado
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: "0.75rem 0.9rem",
+              backgroundColor: isReleasingForTeacher
+                ? "#f0fdf4"
+                : estado === "CERRADO"
+                  ? "#fef2f2"
+                  : "#f8fafc",
+              borderRadius: "0.5rem",
+              border: `1px solid ${
+                isReleasingForTeacher
+                  ? "#bbf7d0"
+                  : estado === "CERRADO"
+                    ? "#fecaca"
+                    : "#e2e8f0"
+              }`,
+              marginBottom: "1.25rem",
+              fontSize: "0.75rem",
+              color: "#475569",
             }}
           >
-            <option value="PLANIFICADO">Planificado</option>
-            <option value="ACTIVO">Activo</option>
-            <option value="CERRADO">Cerrado</option>
-          </SelectField>
-          <InputField
-            id="group-state-reason"
-            label="Motivo del cambio"
-            value={reason}
-            required
-            maxLength={500}
-            disabled={busy || review}
-            onChange={(event) => {
-              setReason(event.target.value);
-              setReview(false);
-            }}
-          />
-          {review && (
-            <Feedback tone="notice">
-              Confirma el cambio de {text(group, "estado")} a {state}.{" "}
-              {state === "CERRADO" &&
-                "El salón quedará disponible para consulta de su historial académico."}
-            </Feedback>
-          )}
-          <Feedback>{error}</Feedback>
-          <footer className="actions">
-            <Button
-              disabled={busy}
-              onClick={
-                review ? () => setReview(false) : () => unsaved.request(onClose)
+            {isReleasingForTeacher ? (
+              <span style={{ color: "#166534" }}>
+                🔓 <strong>Liberación Temporal para el Docente:</strong> Al pasar el salón de <strong>CERRADO</strong> a <strong>ACTIVO</strong>, el docente asignado volverá a tener acceso al salón para registrar asistencias o calificaciones pendientes (siempre que el Acta aún no haya sido sellada).
+              </span>
+            ) : estado === "CERRADO" ? (
+              <span style={{ color: "#b91c1c" }}>
+                🔒 <strong>Salón Cerrado (Bloqueado para Docente):</strong> El docente ya no tendrá acceso a este salón desde su portal a menos que un Administrador lo libere nuevamente.
+              </span>
+            ) : estado === "ACTIVO" ? (
+              <span>
+                ✓ <strong>Salón Activo:</strong> Habilitado para el docente asignado. Permite registrar asistencias y calificaciones dentro del periodo abierto.
+              </span>
+            ) : (
+              <span>
+                ℹ️ <strong>Salón Planificado:</strong> El salón se encuentra en preparación para el inicio de clases.
+              </span>
+            )}
+          </div>
+
+          <div style={{ marginBottom: "1.25rem" }}>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.35rem" }}>
+              Motivo de Auditoría {isReleasingForTeacher ? "(Requerido para liberar)" : ""}
+            </label>
+            <input
+              type="text"
+              required={isReleasingForTeacher}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder={
+                isReleasingForTeacher
+                  ? "Ej. Liberación autorizada para completar notas de la Unidad 4..."
+                  : "Ej. Fin de ciclo de clases, inicio de evaluaciones..."
               }
+              className="input-field"
+              style={{ width: "100%", fontSize: "0.8125rem", padding: "0.45rem 0.75rem" }}
+            />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", borderTop: "1px solid #f1f5f9", paddingTop: "1rem" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="academic-btn-action btn-action-secondary"
             >
-              {review ? "Volver a editar" : "Cancelar"}
-            </Button>
-            <Button type="submit" variant="primary" disabled={busy}>
-              {busy
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="academic-btn-action btn-action-primary"
+            >
+              {loading
                 ? "Guardando…"
-                : review
-                  ? "Confirmar estado"
-                  : "Revisar cambio"}
-            </Button>
-          </footer>
+                : isReleasingForTeacher
+                  ? "Liberar Salón para Docente"
+                  : "Actualizar Estado"}
+            </button>
+          </div>
         </form>
-      </Dialog>
-      {unsaved.confirmation}
-    </>
+      </div>
+    </div>
   );
-}
+};

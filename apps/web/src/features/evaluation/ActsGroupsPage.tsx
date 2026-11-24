@@ -341,10 +341,11 @@ export function ActsGroupsPage({ access }: { access: Access }) {
       {statusModalGroup && (
         <GroupStatusModal
           group={statusModalGroup}
+          isOpen={true}
           onClose={() => setStatusModalGroup(null)}
-          onUpdated={async () => {
-            setSuccess(`¡Estado del salón ${statusModalGroup.codigo} actualizado!`);
-            await loadData();
+          onSuccess={(newStatus) => {
+            setSuccess(`¡Estado del salón ${statusModalGroup.codigo} actualizado a ${newStatus}!`);
+            void loadData();
           }}
         />
       )}

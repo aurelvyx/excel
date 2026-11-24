@@ -295,14 +295,19 @@ const routes: AppRoute[] = [
     pattern: re(`/salones/(${ID})`),
     title: "Espacio del Salón",
     allowed: (a) => a.reader || a.admin || a.teacherOnly,
-    render: ([id], { query, access }) => (
-      <GroupWorkspacePage
-        key={id}
-        groupId={id!}
-        query={query}
-        access={access}
-      />
-    ),
+    render: ([id], { query }) => {
+      const tab = query.get("tab");
+      const initialTab =
+        tab === "nomina" || tab === "calificaciones" ? tab : "asistencia";
+      return (
+        <GroupWorkspacePage
+          key={id}
+          groupId={id!}
+          initialTab={initialTab}
+          query={query}
+        />
+      );
+    },
   },
   {
     pattern: re("/auditoria"),
