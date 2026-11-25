@@ -18,6 +18,8 @@ import { databaseOptions } from '../src/database/configuracion/data-source.js';
 import { bootstrapAdministrator } from '../src/database/bootstrap-admin.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
+import { AuthService } from '../src/modules/auth/auth.service.js';
+import { COOKIE_NAME, cookieOptions } from '../src/modules/auth/security.js';
 import {
   attendanceFixture,
   type AttendanceFixtures,
@@ -44,10 +46,6 @@ describe('B12 navegador React → API → PostgreSQL', () => {
   let fixture: AttendanceFixtures;
   const previousOrigins = process.env.WEB_ORIGINS;
   const errors: string[] = [];
-  const sessions = new Map<
-    string,
-    Awaited<ReturnType<BrowserContext['cookies']>>
-  >();
   beforeAll(async () => {
     const base = await new DataSource(databaseOptions()).initialize();
     try {
@@ -105,24 +103,27 @@ describe('B12 navegador React → API → PostgreSQL', () => {
     else process.env.WEB_ORIGINS = previousOrigins;
   });
   async function login(name: string) {
-    const cookies = sessions.get(name);
-    if (cookies) await context.addCookies(cookies);
-    await page.goto(origin);
-    if (!cookies) {
-      await page.getByLabel('Usuario', { exact: true }).fill(name);
-      await page.getByLabel('Contraseña', { exact: true }).fill(password);
-      const response = page.waitForResponse(
-        (res) =>
-          res.url().endsWith('/api/v1/auth/login') &&
-          res.request().method() === 'POST',
-      );
-      await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
-      expect((await response).status()).toBe(200);
-    }
+    // Cada contexto prueba la restauración de su propia sesión persistida.
+    // B05 y B20 cubren el formulario de ingreso y B03 el límite por IP.
+    const { token } = await app.get(AuthService).login(name, password);
+    await context.addCookies([
+      {
+        name: COOKIE_NAME,
+        value: token,
+        domain: new URL(origin).hostname,
+        path: cookieOptions().path!,
+        httpOnly: true,
+        sameSite: 'Strict',
+      },
+    ]);
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().endsWith('/api/v1/auth/me')),
+      page.goto(origin),
+    ]);
+    expect(response.status()).toBe(200);
     await page
       .getByRole('button', { name: 'Cerrar sesión', exact: true })
       .waitFor();
-    if (!cookies) sessions.set(name, await context.cookies());
   }
   async function matrix(count = 2) {
     const group = await fixture.group();
@@ -505,5 +506,177 @@ describe('B12 navegador React → API → PostgreSQL', () => {
       (await context.request.get(`${origin}/api/v1/auth/me`)).status(),
     ).toBe(200);
     expect(await persisted(f.session)).toEqual([]);
+  });
+
+  it('abre el control de asistencia del salón en la sesión del día y conserva el regreso a la matriz mensual', async () => {
+    const f = await matrix(2);
+    await fixture.session(f.group, 'PROGRAMADA', fixture.tomorrow);
+    await login('docente');
+    await page.goto(`${origin}/#/salones/${f.group.id}?tab=asistencia`);
+    const session = page.getByLabel('Sesión de clase del salón');
+    await session.waitFor();
+    expect(await session.inputValue()).toBe(f.session.id);
+    const search = page.getByLabel('Buscar estudiante en esta página');
+    await search.fill(f.students[0]!.documento);
+    await page.getByText('1 de 2 estudiantes', { exact: true }).waitFor();
+    await page
+      .getByRole('button', { name: 'Marcar presentes', exact: true })
+      .click();
+    await search.fill('');
+    expect(await mark(f.students[0]!).inputValue()).toBe('P');
+    expect(await mark(f.students[1]!).inputValue()).toBe('');
+
+    const matrixButton = page.getByRole('button', {
+      name: 'Matriz mensual',
+      exact: true,
+    });
+    const discard = page.getByRole('dialog', { name: 'Descartar cambios' });
+    await page
+      .getByRole('button', { name: 'Revisar justificaciones', exact: true })
+      .click();
+    await discard.getByRole('button', { name: 'Seguir editando' }).click();
+    expect(await mark(f.students[0]!).inputValue()).toBe('P');
+    await matrixButton.click();
+    await discard.getByRole('button', { name: 'Seguir editando' }).click();
+    expect(await mark(f.students[0]!).inputValue()).toBe('P');
+    await save();
+    await page.getByText('Asistencia guardada.', { exact: true }).waitFor();
+    await page
+      .getByRole('button', { name: 'Guardar asistencia', exact: true })
+      .waitFor();
+    await matrixButton.click();
+
+    await page
+      .getByLabel('Buscar estudiante', { exact: true })
+      .fill(f.students[1]!.documento);
+    await page.getByText('1 de 2 estudiantes', { exact: true }).waitFor();
+    const region = page.getByRole('region', {
+      name: 'Matriz de asistencia por fecha',
+    });
+    expect(await region.getByRole('rowheader').allTextContents()).toEqual([
+      expect.stringContaining(f.students[1]!.nombre),
+    ]);
+    await region.getByRole('link', { name: / · Realizada$/ }).click();
+    await page
+      .getByRole('heading', { name: 'Registro de asistencia', exact: true })
+      .waitFor();
+    await page
+      .getByRole('link', { name: '← Volver a la matriz', exact: true })
+      .click();
+    expect(new URL(page.url()).hash).toBe(
+      `#/salones/${f.group.id}?tab=asistencia&vista=matriz&mes=${f.session.fecha.slice(0, 7)}`,
+    );
+    expect(await page.getByLabel('Mes del periodo').inputValue()).toBe(
+      f.session.fecha.slice(0, 7),
+    );
+    expect(await persisted(f.session)).toMatchObject([
+      { matricula_id: f.enrollments[0]!.id, codigo: 'P' },
+    ]);
+  });
+
+  it('la celda mensual permite editar con revisión, conserva la captura ante conflicto y exige descarte al recargar', async () => {
+    const f = await matrix(2);
+    await login('docente');
+    await page.goto(`${origin}/#/asistencia/grupos/${f.group.id}/matriz`);
+    await page
+      .getByRole('heading', { name: 'Matriz de asistencia', exact: true })
+      .waitFor();
+    const openCell = () =>
+      page
+        .getByRole('button', {
+          name: new RegExp(`${f.students[0]!.nombre}, .*Ver detalle`),
+        })
+        .click();
+    await openCell();
+    let dialog = page.getByRole('dialog', {
+      name: 'Detalle de asistencia',
+      exact: true,
+    });
+    await dialog.getByLabel('Marca', { exact: true }).waitFor();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      '',
+    );
+    await dialog.getByLabel('Marca', { exact: true }).selectOption('F');
+    await dialog
+      .getByLabel('Observación', { exact: true })
+      .fill('Registro sintético desde la celda mensual');
+    await dialog
+      .getByRole('button', { name: 'Revisar cambio', exact: true })
+      .click();
+    const saved = page.waitForResponse(
+      (res) =>
+        res.url().endsWith(`/sesiones/${f.session.id}/asistencias`) &&
+        res.request().method() === 'PATCH',
+    );
+    await dialog
+      .getByRole('button', { name: 'Confirmar cambio', exact: true })
+      .click();
+    expect((await saved).status()).toBe(200);
+    await dialog.waitFor({ state: 'hidden' });
+    expect(await persisted(f.session)).toHaveLength(1);
+    expect((await persisted(f.session))[0]).toMatchObject({
+      matricula_id: f.enrollments[0]!.id,
+      codigo: 'F',
+      version: 1,
+    });
+    await openCell();
+    dialog = page.getByRole('dialog', {
+      name: 'Detalle de asistencia',
+      exact: true,
+    });
+    await dialog.getByLabel('Marca', { exact: true }).selectOption('T');
+    await page.route(
+      `**/api/v1/asistencia/grupos/${f.group.id}/sesiones/${f.session.id}/asistencias`,
+      async (route) => {
+        if (route.request().method() === 'PATCH')
+          await route.fulfill({
+            status: 409,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              message: 'Conflicto sintético de la celda',
+            }),
+          });
+        else await route.continue();
+      },
+    );
+    await dialog
+      .getByRole('button', { name: 'Revisar cambio', exact: true })
+      .click();
+    await dialog
+      .getByRole('button', { name: 'Confirmar cambio', exact: true })
+      .click();
+    await dialog.getByRole('alert').waitFor();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      'T',
+    );
+    expect(
+      await dialog
+        .getByRole('button', { name: 'Revisar cambio', exact: true })
+        .isDisabled(),
+    ).toBe(true);
+    await dialog
+      .getByRole('button', { name: 'Recargar detalle', exact: true })
+      .click();
+    const discard = page.getByRole('dialog', {
+      name: 'Descartar cambios',
+      exact: true,
+    });
+    await discard
+      .getByRole('button', { name: 'Seguir editando', exact: true })
+      .click();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      'T',
+    );
+    await dialog
+      .getByRole('button', { name: 'Recargar detalle', exact: true })
+      .click();
+    await discard
+      .getByRole('button', { name: 'Descartar y continuar', exact: true })
+      .click();
+    await dialog.getByLabel('Marca', { exact: true }).waitFor();
+    expect(await dialog.getByLabel('Marca', { exact: true }).inputValue()).toBe(
+      'F',
+    );
+    expect(await persisted(f.session)).toHaveLength(1);
   });
 });

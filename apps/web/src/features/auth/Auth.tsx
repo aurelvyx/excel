@@ -122,12 +122,11 @@ export function Auth({ children }: { children: ReactNode }) {
 export function Brand() {
   return (
     <div className="brand">
-      <span className="brand-mark" aria-hidden="true">
-        E
-      </span>
-      <span>
-        EXCEL<small>Centro de Idiomas · Cusco</small>
-      </span>
+      <img
+        className="brand-logo"
+        src="/excel-logo.svg"
+        alt="Excel Language Center"
+      />
     </div>
   );
 }
@@ -166,23 +165,32 @@ function Login({
     <div className="login-layout">
       <aside className="login-intro">
         <Brand />
-        <div>
+        <div className="login-story">
           <p className="eyebrow">Gestión académica</p>
           <h1>
-            Un espacio para
+            Todo tu centro,
             <br />
-            seguir aprendiendo.
+            en un mismo lugar.
           </h1>
-          <p>La organización del centro, en un solo lugar.</p>
+          <p>Organiza el aprendizaje y acompaña cada avance.</p>
+          <div className="login-highlight" aria-hidden="true">
+            <span className="login-highlight-icon">E</span>
+            <span>
+              <strong>Una gestión más clara</strong>
+              <small>Información académica conectada y segura</small>
+            </span>
+            <span className="login-highlight-check">✓</span>
+          </div>
         </div>
-        <small>Centro de Idiomas Excel · Cusco</small>
+        <small className="login-footer">Centro de Idiomas Excel <span>·</span> Cusco</small>
       </aside>
       <main className="login-main">
-        <section className="auth-card">
+        <section className="auth-card login-card">
+          <div className="login-access"><span aria-hidden="true">✦</span> Acceso institucional</div>
           <p className="eyebrow">Bienvenido de nuevo</p>
           <h2>Ingresa a tu cuenta</h2>
           <p className="muted">
-            Utiliza el usuario asignado por el administrador.
+            Usa las credenciales asignadas por el administrador.
           </p>
           <Feedback tone="notice">{notice}</Feedback>
           <form onSubmit={submit}>

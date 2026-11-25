@@ -24,3 +24,9 @@ Aplicar la séptima migración. Ver [guía B08](../../docs/B08-matriculas.md).
 
 B09 admite `claveSolicitud` opcional para reintentar un alta sin generar otro
 intento ni auditoría. Aplicar la octava migración. Ver [guía B09](../../docs/B09-asistente-matricula.md).
+
+La recuperación de `front/1` añade `ACTA_DEMOSTRACION` a los reportes de B19.
+Aplicar la migración 18 antes de usar el nuevo formato EN/PT. La descarga
+conserva cálculo decimal, permisos por grupo y auditoría, y utiliza las plantillas
+identificadas como BORRADOR. Ver [reportes XLSX](../../docs/B19-reportes-xlsx.md)
+y [alcance de la integración](../../docs/PR21-integracion.md).

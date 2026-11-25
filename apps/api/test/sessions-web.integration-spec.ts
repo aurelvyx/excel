@@ -343,4 +343,62 @@ describe('B11 navegador React → API → PostgreSQL', () => {
       ]),
     ).toHaveLength(1);
   });
+
+  it('el calendario recupera todas las páginas y prepara una fecha sin crear asistencia automática', async () => {
+    const code = `SYN-CAL-${++sequence}`;
+    const [period] = await source.query(
+      `INSERT INTO periodos_academicos(codigo,nombre,fecha_inicio,fecha_fin,matricula_inicio,matricula_fin,estado)
+      VALUES($1,'Calendario sintético','2026-01-01','2026-12-31','2026-01-01','2026-12-31','ABIERTO') RETURNING id`,
+      [code],
+    );
+    const [g] = await source.query(
+      `INSERT INTO grupos(periodo_id,nivel_id,turno_id,seccion_id,codigo,estado)
+      SELECT $1,nivel_id,turno_id,seccion_id,$2,'ACTIVO' FROM grupos WHERE codigo='DEMO-EN-G1' RETURNING id`,
+      [period.id, code],
+    );
+    await source.query(
+      "INSERT INTO grupo_docentes(grupo_id,docente_id,fecha_asignacion,activo) VALUES($1,$2,'2026-01-01',true)",
+      [g.id, teacherId],
+    );
+    await source.query(
+      `INSERT INTO sesiones_clase(grupo_id,fecha,estado,creado_por)
+      SELECT $1,'2026-01-01'::date+n,'PROGRAMADA',$2 FROM generate_series(0,100) n`,
+      [g.id, adminId],
+    );
+    await login('docente');
+    await open(g.id);
+    await page.getByRole('button', { name: 'Calendario', exact: true }).click();
+    await page.getByRole('button', { name: 'Abril 2026', exact: true }).click();
+    await page
+      .getByRole('link', {
+        name: 'Abrir asistencia del 11/04/2026',
+        exact: true,
+      })
+      .waitFor();
+    await page
+      .getByRole('button', {
+        name: 'Programar sesión del 12/04/2026',
+        exact: true,
+      })
+      .click();
+    const dialog = page.getByRole('dialog', {
+      name: 'Programar sesiones',
+      exact: true,
+    });
+    expect(
+      await dialog.getByLabel('Fecha de clase', { exact: true }).inputValue(),
+    ).toBe('2026-04-12');
+    expect(
+      await source.query('SELECT id FROM asistencias WHERE grupo_id=$1', [
+        g.id,
+      ]),
+    ).toEqual([]);
+    expect(
+      await source.query(
+        'SELECT count(*)::int AS cantidad FROM sesiones_clase WHERE grupo_id=$1',
+        [g.id],
+      ),
+    ).toEqual([{ cantidad: 101 }]);
+    await dialog.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  });
 });

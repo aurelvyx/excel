@@ -53,6 +53,19 @@ export class VouchersController {
   list(@Req() req: AuthRequest, @Query() query: Record<string, unknown>) {
     return this.service.list(req.identity, query);
   }
+  @Get('resumen-recaudacion')
+  @ApiOperation({
+    summary:
+      'Resumen de recaudación de vouchers validados agrupado por periodo académico y salón/grupo',
+  })
+  @ApiQuery({ name: 'periodoId', required: false })
+  @ApiQuery({ name: 'grupoId', required: false })
+  revenueSummary(
+    @Req() req: AuthRequest,
+    @Query() query: Record<string, unknown>,
+  ) {
+    return this.service.revenueSummary(req.identity, query);
+  }
   @Get(':id')
   @ApiOkResponse({ schema: voucherSchema })
   get(@Req() req: AuthRequest, @Param('id') id: string) {

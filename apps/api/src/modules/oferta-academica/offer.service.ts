@@ -69,7 +69,9 @@ export class OfferService {
       }
       values.push(limit);
       const items = (await manager.query(
-        `SELECT t.*${key === 'grupos' ? `,${groupContext}` : ''} FROM ${config.table} t WHERE ${clauses.join(' AND ')} ORDER BY t.id LIMIT $${values.length}`,
+        `SELECT t.*${key === 'grupos' ? `,${groupContext},
+        (SELECT count(*)::int FROM matriculas m WHERE m.grupo_id=t.id AND m.estado IN ('ACTIVA','CERRADA')) AS matriculados` : ''}
+        FROM ${config.table} t WHERE ${clauses.join(' AND ')} ORDER BY t.id LIMIT $${values.length}`,
         values,
       )) as Row[];
       return {

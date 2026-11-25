@@ -49,6 +49,30 @@
       "hoja": "ANEXO N° 05",
       "filaCabecera": 10,
       "primeraFila": 11
+    },
+    {
+      "id": "ACTA-UGEL-EN-v2",
+      "tipo": "ACTA_DEMOSTRACION",
+      "idioma": "EN",
+      "version": 2,
+      "estado": "PROPUESTA",
+      "sha256": "d4bf16a58b3ec7318a5f7f6b156e3f3cf3f9b90446f8507f2e1d6cbe4ee73af8",
+      "archivo": "acta-ugel-en-v1-limpia.xlsx",
+      "hoja": "Acta Evaluación",
+      "filaCabecera": 16,
+      "primeraFila": 17
+    },
+    {
+      "id": "ACTA-UGEL-PT-v2",
+      "tipo": "ACTA_DEMOSTRACION",
+      "idioma": "PT",
+      "version": 2,
+      "estado": "PROPUESTA",
+      "sha256": "be0c594a70ccf29900e00393f108ee33c08083286b250e7086c08a647e456865",
+      "archivo": "acta-ugel-pt-v1-limpia.xlsx",
+      "hoja": "Acta Evaluación",
+      "filaCabecera": 16,
+      "primeraFila": 17
     }
   ]
 }

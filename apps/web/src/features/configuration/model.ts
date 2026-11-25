@@ -253,6 +253,7 @@ const resourcesList: Resource[] = [
       "nivelId",
       "turnoId",
       "seccionId",
+      "matriculados",
       "estado",
     ],
     filters: [

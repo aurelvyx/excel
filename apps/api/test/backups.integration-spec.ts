@@ -243,6 +243,12 @@ describe('B21 respaldo real, restauración aislada y consulta administrativa', (
       'SELECT * FROM resultados_academicos WHERE matricula_id=$1',
       [enrollmentId],
     );
+    const [schema] = await source.query<
+      { tablas: number; migraciones: number }[]
+    >(`SELECT
+      (SELECT count(*)::int FROM pg_tables WHERE schemaname='public') AS tablas,
+      (SELECT count(*)::int FROM migraciones) AS migraciones`);
+    expect(schema!.migraciones).toBe(source.migrations.length);
     saved = await operations.backup(env);
     files.add(join(directory, saved.archivo));
     files.add(join(directory, `${saved.archivo}.json`));
@@ -264,8 +270,7 @@ describe('B21 respaldo real, restauración aislada y consulta administrativa', (
       RESTORE_CONFIRM: 'VERIFICAR_EN_CONTENEDOR_NUEVO',
     });
     expect(verified).toMatchObject({
-      tablas: 32,
-      migraciones: 17,
+      ...schema,
       intentoCompletoVerificado: true,
       intentoId: enrollmentId,
     });

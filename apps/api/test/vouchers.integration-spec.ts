@@ -347,7 +347,7 @@ describe('B07 vouchers HTTP, navegador y PostgreSQL', () => {
       await page
         .getByRole('button', { name: 'Confirmar decisión', exact: true })
         .click();
-      await row.getByRole('cell', { name: 'Validado', exact: true }).waitFor();
+      await row.getByText('Validado', { exact: true }).waitFor();
       const artifacts = fileURLToPath(
         new URL('../../../.tmp/b07/', import.meta.url),
       );
@@ -357,6 +357,21 @@ describe('B07 vouchers HTTP, navegador y PostgreSQL', () => {
         fullPage: true,
       });
       await page.setViewportSize({ width: 390, height: 844 });
+      const tableScroll = page.getByRole('region', {
+        name: 'Tabla de vouchers registrados',
+        exact: true,
+      });
+      expect(
+        await tableScroll.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      ).toBe(true);
+      expect(
+        await row
+          .getByRole('cell')
+          .nth(1)
+          .evaluate((element) => element.getBoundingClientRect().width),
+      ).toBeGreaterThanOrEqual(220);
       await page.screenshot({
         path: `${artifacts}/vouchers-movil.png`,
         fullPage: true,
@@ -366,6 +381,14 @@ describe('B07 vouchers HTTP, navegador y PostgreSQL', () => {
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      await page.setViewportSize({ width: 320, height: 800 });
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+        .toBe(320);
+      await page.getByRole('button', { name: 'Tarjetas', exact: true }).click();
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+        .toBe(320);
       await page.goto(`${origin}/#/vouchers?estudianteId=${studentId}`);
       await page
         .getByRole('button', { name: 'Registrar voucher', exact: true })

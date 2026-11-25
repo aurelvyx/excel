@@ -222,6 +222,12 @@ describe('B05 navegador React → API → PostgreSQL', () => {
     await page
       .getByRole('row')
       .filter({ hasText: 'B05-G' })
+      .locator('summary')
+      .filter({ hasText: 'Administrar' })
+      .click();
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'B05-G' })
       .getByRole('button', { name: 'Asignar docentes' })
       .click();
     await page
@@ -389,6 +395,23 @@ describe('B05 navegador React → API → PostgreSQL', () => {
       .getByText('Inglés de prueba / Nivel sintético 1', { exact: true })
       .waitFor();
     await page.getByLabel('Cerrar formulario').click();
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'DEMO-EN-G1' })
+      .getByRole('link', { name: 'Salón 360°' })
+      .click();
+    await page.getByRole('heading', { name: 'Salón 360°' }).waitFor();
+    const tabs = page.getByRole('navigation', { name: 'Secciones del salón' });
+    await tabs
+      .getByRole('link', { name: 'Calificaciones', exact: true })
+      .click();
+    await page
+      .getByRole('heading', { name: 'Registro de calificaciones' })
+      .waitFor();
+    await page.getByRole('link', { name: 'Criterios del grupo' }).waitFor();
+    expect(
+      await tabs.getByRole('link', { name: 'Alumnos matriculados' }).count(),
+    ).toBe(0);
     await page.goto(`${origin}/#/configuracion/usuarios`);
     await page.getByRole('heading', { name: 'Página no disponible' }).waitFor();
     expect((await page.request.get(`${origin}/api/v1/usuarios`)).status()).toBe(
@@ -506,5 +529,26 @@ describe('B05 navegador React → API → PostgreSQL', () => {
     await page.getByRole('row').filter({ hasText: 'PAGE-23' }).waitFor();
     await page.getByRole('button', { name: 'Primera página' }).click();
     await page.getByRole('row').filter({ hasText: 'DEMO-A' }).waitFor();
+  });
+  it('recupera la gestión visual del salón y registra sus cambios de estado con motivo', async () => {
+    await login();
+    await page.goto(`${origin}/#/gestion-academica`);
+    const card = () => page.locator('.academic-card').filter({ hasText: 'B05-G' });
+    await card().getByRole('button', { name: /ACTIVO/ }).click();
+    await page.getByLabel('Estado del grupo', { exact: true }).selectOption('PLANIFICADO');
+    await page.getByLabel('Motivo del cambio', { exact: true }).fill('Ensayo visual de planificación');
+    await page.getByRole('button', { name: 'Revisar cambio', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirmar estado', exact: true }).click();
+    await card().getByRole('button', { name: /PLANIFICADO/ }).waitFor();
+    const [event] = await source.query("SELECT valor_anterior,valor_nuevo FROM auditoria_eventos WHERE motivo='Ensayo visual de planificación' ORDER BY id DESC LIMIT 1");
+    expect(event.valor_anterior.estado).toBe('ACTIVO');
+    expect(event.valor_nuevo.estado).toBe('PLANIFICADO');
+    await card().getByRole('button', { name: /PLANIFICADO/ }).click();
+    await page.getByLabel('Estado del grupo', { exact: true }).selectOption('ACTIVO');
+    await page.getByLabel('Motivo del cambio', { exact: true }).fill('Restaurar el salón después del ensayo visual');
+    await page.getByRole('button', { name: 'Revisar cambio', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirmar estado', exact: true }).click();
+    await card().getByRole('button', { name: /ACTIVO/ }).waitFor();
+    await page.screenshot({ path: `${artifacts}/gestion-recuperada.png`, fullPage: true });
   });
 });

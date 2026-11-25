@@ -77,12 +77,16 @@ vacía y se rechaza cuando ya existe historial de asistencia.
 
 ## Uso y contrato REST
 
-1. Abrir **Grupos** o **Mis grupos** → **Sesiones** → **Asistencia**.
-2. Revisar fecha y contexto; elegir marcas individuales o **Marcar presentes**.
+1. Abrir el grupo en **Salón 360°** → **Control de asistencia**. El selector abre
+   la sesión del día si está disponible. También permite cambiar de fecha, abrir
+   el calendario o trabajar desde la **Matriz mensual**.
+2. Revisar fecha y contexto. Buscar por nombre o documento en la página cargada
+   y elegir marcas individuales o **Marcar presentes** para las filas visibles.
 3. Añadir observaciones si se necesitan y pulsar **Guardar asistencia**.
 4. Corregir mientras el registro esté abierto. Ante conflicto, revisar y recargar.
 
-Ruta web: `#/asistencia/grupos/{grupoId}/sesiones/{sesionId}`.
+Rutas web: `#/salones/{grupoId}?tab=asistencia` y
+`#/asistencia/grupos/{grupoId}/sesiones/{sesionId}`.
 API documentada en `/api/docs` y `/api/openapi.json`:
 
 - `GET /api/v1/asistencia/grupos/{grupoId}/sesiones/{sesionId}/asistencias?limit=20&after=0`

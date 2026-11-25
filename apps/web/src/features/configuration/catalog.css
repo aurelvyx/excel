@@ -1,0 +1,498 @@
+/* Catálogos y configuración: Plana docente, Periodos, Turnos, Idiomas/Niveles,
+   Usuarios y roles, Grupos, Secciones y Unidades didácticas.
+   Unificado con tokens de design-system.css. */
+
+.catalog-page {
+  --cat-ink: #0f172a;
+  --cat-ink-soft: #475569;
+  --cat-ink-faint: #64748b;
+  --cat-line: #e2e8f0;
+  --cat-line-soft: #f1f5f9;
+  --cat-surface: #ffffff;
+  --cat-paper: #f8fafc;
+  --cat-accent: #059669;
+  --cat-accent-strong: #064e3b;
+  --cat-accent-wash: #ecfdf5;
+  --cat-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.catalog-page .readonly {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #64748b;
+  border-radius: 0.75rem;
+  background: var(--cat-paper);
+  color: var(--cat-ink-soft);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+/* ── Panel y Barra de Filtros al estilo AuditLogsPage ────────────────────── */
+.catalog-page .panel {
+  background: var(--cat-surface);
+  border: 1px solid var(--cat-line);
+  border-radius: 0.95rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.catalog-page .filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 0.95rem 1.15rem;
+  background: var(--cat-surface);
+  border-bottom: 1px solid var(--cat-line);
+}
+
+.catalog-page .filters > div {
+  flex: 0 1 220px;
+  min-width: 160px;
+  max-width: 260px;
+}
+
+.catalog-page .filters label {
+  margin: 0 0 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cat-ink-faint);
+}
+
+.catalog-page .filters input,
+.catalog-page .filters select {
+  min-height: 38px;
+  padding: 0.48rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  font-size: 0.84rem;
+  background: var(--cat-paper);
+  color: var(--cat-ink);
+  transition: all 0.15s ease;
+}
+
+.catalog-page .filters input:focus-visible,
+.catalog-page .filters select:focus-visible {
+  outline: none;
+  background: var(--cat-surface);
+  border-color: var(--cat-accent);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.catalog-page .filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.6rem;
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+.catalog-page .filters button[type="submit"] {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.catalog-page .filters button[type="submit"]:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+/* ── Barra de estado de tabla ───────────────────────────────────────────── */
+.catalog-table-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.65rem 1.15rem;
+  background: var(--cat-paper);
+  border-bottom: 1px solid var(--cat-line);
+  font-size: 0.76rem;
+  color: var(--cat-ink-soft);
+}
+
+.catalog-status-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--cat-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.catalog-status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.catalog-status-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.catalog-status-dot.active::before {
+  background: #059669;
+}
+
+/* ── Tabla Densa y Limpia ───────────────────────────────────────────────── */
+.catalog-page .table-scroll {
+  overflow-x: auto;
+}
+
+.catalog-page .table-scroll table {
+  min-width: 660px;
+}
+
+.catalog-page table {
+  font-size: 0.84rem;
+}
+
+.catalog-page th {
+  padding: 0.8rem 1.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cat-ink-soft);
+  background: var(--cat-paper);
+  border-bottom: 1px solid var(--cat-line);
+}
+
+.catalog-page td {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--cat-line-soft);
+  vertical-align: middle;
+  color: #1e293b;
+}
+
+.catalog-page tbody tr {
+  transition: background-color 0.12s ease;
+}
+
+.catalog-page tbody tr:hover {
+  background: var(--cat-paper);
+}
+
+.catalog-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.catalog-page td.cell-mono {
+  font-family: var(--cat-mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--cat-ink);
+  white-space: nowrap;
+}
+
+.catalog-page td.cell-strong {
+  font-weight: 600;
+  color: var(--cat-ink);
+}
+
+/* ── Chips de Roles (Usuarios) ──────────────────────────────────────────── */
+.catalog-role-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.catalog-role-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.14rem 0.5rem;
+  border-radius: 0.38rem;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.catalog-role-chip.ADMIN {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.catalog-role-chip.SECRETARIA {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.catalog-role-chip.DOCENTE {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.catalog-role-chip.COORDINADOR {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+/* ── Acciones por fila ──────────────────────────────────────────────────── */
+.catalog-page td.row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.catalog-page th:last-child {
+  text-align: right;
+}
+
+.catalog-page .row-actions .link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.42rem 0.78rem;
+  margin-left: 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: var(--cat-surface);
+  color: #1e293b;
+  font-size: 0.77rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.catalog-page .row-actions .link-button:hover:not(:disabled) {
+  background: var(--cat-accent-wash);
+  border-color: #6ee7b7;
+  color: var(--cat-accent-strong);
+}
+
+/* ── Paginación ─────────────────────────────────────────────────────────── */
+.catalog-page .pagination {
+  padding: 0.78rem 1.15rem;
+  border-top: 1px solid var(--cat-line);
+  background: var(--cat-paper);
+  font-size: 0.77rem;
+  color: var(--cat-ink-faint);
+}
+
+.catalog-page .pagination span {
+  font-family: var(--cat-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.catalog-page .pagination button {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.77rem;
+}
+
+/* ── Estados vacío / carga ──────────────────────────────────────────────── */
+.catalog-page .empty {
+  padding: 3rem 1.5rem;
+  color: var(--cat-ink-soft);
+}
+
+.catalog-page .empty h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cat-ink);
+}
+
+.catalog-page .empty p {
+  margin: 0.25rem 0 0;
+  font-size: 0.84rem;
+}
+
+.catalog-page .empty-icon {
+  display: none;
+}
+
+/* ── Grupos: guía de preparación ────────────────────────────────────────── */
+.catalog-page .group-setup-guide {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cat-line);
+  border-radius: 0.9rem;
+  background: var(--cat-surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.catalog-page .group-setup-intro {
+  padding: 0.95rem 1.2rem;
+  border-bottom: 1px solid var(--cat-line);
+  background: var(--cat-paper);
+}
+
+.catalog-page .group-setup-intro .eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--cat-accent);
+}
+
+.catalog-page .group-setup-intro h2 {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.catalog-page .group-setup-intro > p:last-child {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--cat-ink-soft);
+}
+
+.catalog-page .group-setup-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0;
+}
+
+.catalog-page .group-setup-step {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.95rem 1.2rem;
+  border: 0;
+  border-right: 1px solid var(--cat-line-soft);
+  border-radius: 0;
+  background: transparent;
+}
+
+.catalog-page .group-setup-step:last-child {
+  border-right: 0;
+}
+
+.catalog-page .group-setup-number {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cat-line);
+  border-radius: 0.42rem;
+  background: var(--cat-accent-wash);
+  color: var(--cat-accent-strong);
+  font-family: var(--cat-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.catalog-page .group-setup-step h3 {
+  margin: 0 0 2px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.catalog-page .group-setup-step p {
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  color: var(--cat-ink-soft);
+}
+
+.catalog-page .group-setup-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.catalog-page .group-setup-links a {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--cat-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.catalog-page .group-setup-next {
+  margin: 0;
+  padding: 0.65rem 1.2rem;
+  border-top: 1px solid var(--cat-line);
+  font-size: 0.76rem;
+  color: var(--cat-ink-soft);
+  background: var(--cat-paper);
+}
+
+/* ── Grupos: tabla y acciones ───────────────────────────────────────────── */
+.catalog-page .group-catalog-table .table-scroll {
+  max-height: 66vh;
+  border: 0;
+  border-radius: 0;
+}
+
+.catalog-page .group-catalog-table th,
+.catalog-page .group-catalog-table td {
+  padding: 0.78rem 1rem;
+}
+
+.catalog-page .group-catalog-table .group-student-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: var(--cat-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--cat-ink);
+}
+
+.catalog-page .group-catalog-table .group-student-count small {
+  color: var(--cat-ink-faint);
+}
+
+/* ── Diálogos de crear/editar/detalle dentro del catálogo ───────────────── */
+.catalog-page dialog {
+  border: 1px solid var(--cat-line);
+  border-radius: 1rem;
+  padding: 1.35rem 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28);
+}
+
+.catalog-page dialog::backdrop {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.catalog-page .dialog-header {
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cat-line);
+}
+
+.catalog-page .dialog-header h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.catalog-page .dialog-header button {
+  border-radius: 0.5rem;
+  background: var(--cat-paper);
+  border: 1px solid var(--cat-line);
+}
+
+@media (max-width: 720px) {
+  .catalog-page .filters > div {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .catalog-page .group-setup-step {
+    border-right: 0;
+    border-bottom: 1px solid var(--cat-line-soft);
+  }
+
+  .catalog-page .group-setup-step:last-child {
+    border-bottom: 0;
+  }
+}

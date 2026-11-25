@@ -11,6 +11,8 @@ import { PageHeading } from "../../shared/ui/PageHeading";
 import { StatusBadge } from "../../shared/ui/StatusBadge";
 import { DefinitionView } from "./EvaluationDefinition";
 import { PlanFields } from "./PlanFields";
+import "../academic/academic.css";
+import "../academic/components/workspace.css";
 import {
   formulaLabel,
   validatePlanCapture,
@@ -24,22 +26,55 @@ export function EvaluationLevelsPage({ levelId }: { levelId?: string }) {
   return levelId ? <LevelPlans key={levelId} levelId={levelId} /> : <Levels />;
 }
 function Levels() {
+  const [view, setView] = useState<"table" | "cards">("table");
   const { data, loading, error, reload } = useApiQuery<{
     items: EvaluationLevel[];
   }>("evaluacion/niveles");
   return (
-    <section>
-      <PageHeading
-        eyebrow="Evaluación"
-        title="Criterios de evaluación"
-        description="Consulta y organiza las versiones de criterios por idioma y nivel."
-      />
+    <section className="academic-container">
+      <div className="academic-card workspace-hero">
+        <PageHeading
+          eyebrow="Evaluación"
+          title="Criterios de evaluación"
+          description="Consulta y organiza las versiones de criterios por idioma y nivel."
+        />
+      </div>
+      <div
+        className="workspace-evaluation-tabs"
+        aria-label="Presentación de niveles"
+      >
+        <Button
+          aria-pressed={view === "table"}
+          onClick={() => setView("table")}
+        >
+          Lista de niveles
+        </Button>
+        <Button
+          aria-pressed={view === "cards"}
+          onClick={() => setView("cards")}
+        >
+          Tarjetas de niveles
+        </Button>
+      </div>
       {loading ? (
         <Loading>Cargando niveles…</Loading>
       ) : error ? (
         <Feedback onRetry={reload}>{error}</Feedback>
+      ) : view === "cards" ? (
+        <div className="workspace-session-cards">
+          {(data?.items ?? []).map((row) => (
+            <article className="workspace-session-card" key={row.id}>
+              <span className="academic-badge badge-green">{row.idioma}</span>
+              <h2>{row.nombre}</h2>
+              <p>Versiones y ponderaciones aplicables a este nivel.</p>
+              <a href={`#/evaluacion/niveles/${row.id}`}>
+                Ver versiones de {row.nombre}
+              </a>
+            </article>
+          ))}
+        </div>
       ) : (
-        <div className="panel">
+        <div className="academic-card">
           <DataTable
             caption="Niveles para evaluación"
             rows={data?.items ?? []}
@@ -75,30 +110,32 @@ function LevelPlans({ levelId }: { levelId: string }) {
       navigate(`/evaluacion/planes/${createdPlanId}`);
   }, [creating, createdPlanId]);
   return (
-    <section>
+    <section className="academic-container">
       <a className="back-link" href="#/evaluacion/niveles">
         ← Volver a niveles
       </a>
-      <PageHeading
-        eyebrow="Evaluación"
-        title="Versiones de criterios"
-        description={
-          data
-            ? `${data.nivel.idioma} · ${data.nivel.nombre}`
-            : "Criterios académicos por nivel."
-        }
-        action={
-          data?.puedeCrear && (
-            <Button
-              variant="primary"
-              disabled={loading || !!error || stale}
-              onClick={() => create(true)}
-            >
-              Nueva versión
-            </Button>
-          )
-        }
-      />
+      <div className="academic-card workspace-hero">
+        <PageHeading
+          eyebrow="Evaluación"
+          title="Versiones de criterios"
+          description={
+            data
+              ? `${data.nivel.idioma} · ${data.nivel.nombre}`
+              : "Criterios académicos por nivel."
+          }
+          action={
+            data?.puedeCrear && (
+              <Button
+                variant="primary"
+                disabled={loading || !!error || stale}
+                onClick={() => create(true)}
+              >
+                Nueva versión
+              </Button>
+            )
+          }
+        />
+      </div>
       {loading ? (
         <Loading>Cargando versiones…</Loading>
       ) : error ? (

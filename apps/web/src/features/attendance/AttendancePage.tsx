@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ApiError, api, errorText } from "../../shared/api";
 import { navigate } from "../../shared/navigation";
+import { safeAttendanceReturnTo, withAttendanceReturn } from "./navigation";
 import { useApiQuery } from "../../shared/useApiQuery";
 import { useUnsavedChanges } from "../../shared/useUnsavedChanges";
 import { Button } from "../../shared/ui/Button";
@@ -11,22 +12,24 @@ import { InputField, SelectField } from "../../shared/ui/Field";
 import { ListPanel } from "../../shared/ui/ListPanel";
 import { PageHeading } from "../../shared/ui/PageHeading";
 import { Pagination } from "../../shared/ui/Pagination";
-import { StatusBadge } from "../../shared/ui/StatusBadge";
 import {
   EnrollmentAttempt,
   StudentIdentity,
 } from "../../shared/ui/AcademicCells";
 import { CaptureToolbar } from "../../shared/ui/CaptureToolbar";
 import { GroupContext } from "./GroupContext";
+import { WorkspaceSummary } from "../academic/components/WorkspaceSummary";
 import { AttendanceSummary } from "./AttendanceSummary";
 import { AttendanceCorrectionDialog } from "./AttendanceCorrectionDialog";
 import { AttendanceHistoryDialog } from "./AttendanceHistoryDialog";
+import { AttendanceStudentSearch } from "./AttendanceStudentSearch";
 import {
   justificationStates,
   type JustificationState,
 } from "./justification-model";
 import {
   attendanceCodes,
+  filterAttendanceStudents,
   sessionDate,
   sessionStates,
   sessionTime,
@@ -35,18 +38,29 @@ import {
   type AttendanceRow,
   type SavedAttendance,
 } from "./model";
+import "./attendance.css";
 
 export function AttendancePage({
   groupId,
   sessionId,
   query,
+  workspacePath,
+  onChanged,
 }: {
   groupId: string;
   sessionId: string;
   query: URLSearchParams;
+  workspacePath?: (cursor: string) => string;
+  onChanged?: () => void;
 }) {
   const after = query.get("after") ?? "";
   const path = `/asistencia/grupos/${groupId}/sesiones/${sessionId}`;
+  const returnTo = safeAttendanceReturnTo(query.get("retorno"), groupId);
+  const returnLabel =
+    returnTo?.startsWith(`/asistencia/grupos/${groupId}/matriz`) ||
+    new URLSearchParams(returnTo?.split("?")[1]).get("vista") === "matriz"
+      ? "Volver a la matriz"
+      : "Volver a sesiones";
   const endpoint = `asistencia/grupos/${groupId}/sesiones/${sessionId}/asistencias`;
   const search = new URLSearchParams({ limit: "20" });
   if (after) search.set("after", after);
@@ -59,15 +73,21 @@ export function AttendancePage({
         key={after}
         initial={data}
         path={path}
+        returnTo={returnTo}
+        returnLabel={returnLabel}
         endpoint={endpoint}
         queryPath={`${endpoint}?${search}`}
         after={after}
         reload={reload}
+        workspacePath={workspacePath}
+        onChanged={onChanged}
       />
     );
   return (
     <section>
-      <a href={`#/asistencia/grupos/${groupId}`}>← Volver a sesiones</a>
+      <a href={`#${returnTo ?? `/asistencia/grupos/${groupId}`}`}>
+        ← {returnLabel}
+      </a>
       <AttendanceHeading />
       {loading ? (
         <Loading>Cargando asistencia…</Loading>
@@ -80,11 +100,13 @@ export function AttendancePage({
 
 function AttendanceHeading() {
   return (
-    <PageHeading
-      eyebrow="Asistencia"
-      title="Registro de asistencia"
-      description="Registra P, F, T o J para cada matrícula de la sesión seleccionada."
-    />
+    <div className="academic-card workspace-hero">
+      <PageHeading
+        eyebrow="Asistencia"
+        title="Registro de asistencia"
+        description="Registra P, F, T o J para cada matrícula de la sesión seleccionada."
+      />
+    </div>
   );
 }
 
@@ -98,20 +120,30 @@ function recorded(row: AttendanceRow): Draft {
 function AttendanceMatrix({
   initial,
   path,
+  returnTo,
+  returnLabel,
   endpoint,
   queryPath,
   after,
   reload,
+  workspacePath,
+  onChanged,
 }: {
   initial: AttendancePageData;
   path: string;
+  returnTo: string | null;
+  returnLabel: string;
   endpoint: string;
   queryPath: string;
   after: string;
   reload: () => void;
+  workspacePath?: (cursor: string) => string;
+  onChanged?: () => void;
 }) {
   const [snapshot, setSnapshot] = useState(initial);
   const rows = snapshot.items;
+  const [studentSearch, searchStudents] = useState("");
+  const visibleRows = filterAttendanceStudents(rows, studentSearch);
   const session = snapshot.sesion;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [issues, setIssues] = useState<Record<string, string>>({});
@@ -145,7 +177,7 @@ function AttendanceMatrix({
     });
   }
   function markPresent() {
-    for (const row of rows)
+    for (const row of visibleRows)
       if (canEdit && row.editable && !row.justificacionId)
         change(row, { codigo: "P" });
   }
@@ -174,6 +206,7 @@ function AttendanceMatrix({
       ),
     }));
     setDrafts({});
+    onChanged?.();
     notify(message);
     setSummaryCurrent(false);
     failSummary("");
@@ -201,6 +234,12 @@ function AttendanceMatrix({
     }
     setIssues(next);
     if (Object.keys(next).length) {
+      if (
+        changes.some(
+          (row) => next[row.matricula_id] && !visibleRows.includes(row),
+        )
+      )
+        searchStudents("");
       setTimeout(
         () =>
           document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
@@ -238,12 +277,43 @@ function AttendanceMatrix({
   }
   return (
     <section>
-      <a href={`#/asistencia/grupos/${snapshot.grupo.id}`}>
-        ← Volver a sesiones
+      <a href={`#${returnTo ?? `/asistencia/grupos/${snapshot.grupo.id}`}`}>
+        ← {returnLabel}
       </a>
       <AttendanceHeading />
       <GroupContext group={snapshot.grupo} />
-      <p>
+      {summaryCurrent && (
+        <WorkspaceSummary
+          label="Marcas guardadas en esta página"
+          items={[
+            {
+              label: "Presentes",
+              value: rows.filter((row) => row.asistencia?.codigo === "P")
+                .length,
+              tone: "green",
+            },
+            {
+              label: "Faltas",
+              value: rows.filter((row) => row.asistencia?.codigo === "F")
+                .length,
+              tone: "amber",
+            },
+            {
+              label: "Tardanzas",
+              value: rows.filter((row) => row.asistencia?.codigo === "T")
+                .length,
+              tone: "blue",
+            },
+            {
+              label: "Justificadas",
+              value: rows.filter((row) => row.asistencia?.codigo === "J")
+                .length,
+              detail: "Su efecto depende de la resolución y recuperación",
+            },
+          ]}
+        />
+      )}
+      <p className="workspace-tools group-nav-pills">
         <a href={`#/asistencia/grupos/${snapshot.grupo.id}/cierre`}>
           Cierre de asistencia
         </a>
@@ -300,28 +370,56 @@ function AttendanceMatrix({
         loadingLabel="Cargando asistencia…"
         error=""
         onRetry={reload}
-        empty={!rows.length}
-        emptyDescription="No hay matrículas disponibles para esta sesión en esta página."
+        empty={!visibleRows.length}
+        emptyDescription={
+          rows.length
+            ? "No se encontraron estudiantes con esa búsqueda en esta página."
+            : "No hay matrículas disponibles para esta sesión en esta página."
+        }
         filters={
-          <CaptureToolbar
-            changes={changedRows}
-            busy={busy}
-            reloadLabel="Recargar asistencia"
-            onReload={() => guard.request(reload)}
-          >
-            {canEdit && (
-              <Button
-                disabled={
-                  busy ||
-                  conflict ||
-                  !rows.some((row) => row.editable && !row.justificacionId)
-                }
-                onClick={markPresent}
-              >
-                Marcar presentes
-              </Button>
+          <>
+            {!!rows.length && (
+              <AttendanceStudentSearch
+                search={studentSearch}
+                onSearch={searchStudents}
+                visible={visibleRows.length}
+                total={rows.length}
+                paginated
+              />
             )}
-          </CaptureToolbar>
+            <CaptureToolbar
+              changes={changedRows}
+              busy={busy}
+              reloadLabel="Recargar asistencia"
+              onReload={() => guard.request(reload)}
+            >
+              {canEdit && (
+                <>
+                  <Button
+                    disabled={
+                      busy ||
+                      conflict ||
+                      !visibleRows.some(
+                        (row) => row.editable && !row.justificacionId,
+                      )
+                    }
+                    onClick={markPresent}
+                  >
+                    Marcar presentes
+                  </Button>
+                  <Button
+                    variant="primary"
+                    disabled={!dirty || conflict}
+                    busy={busy}
+                    busyLabel="Guardando asistencia…"
+                    onClick={() => void save()}
+                  >
+                    Guardar asistencia
+                  </Button>
+                </>
+              )}
+            </CaptureToolbar>
+          </>
         }
         pagination={
           <Pagination
@@ -330,7 +428,14 @@ function AttendanceMatrix({
             nextCursor={snapshot.nextCursor}
             onChange={(cursor) =>
               guard.request(
-                () => navigate(cursor ? `${path}?after=${cursor}` : path),
+                () =>
+                  navigate(
+                    workspacePath?.(cursor) ??
+                      withAttendanceReturn(
+                        cursor ? `${path}?after=${cursor}` : path,
+                        returnTo,
+                      ),
+                  ),
                 true,
               )
             }
@@ -339,7 +444,7 @@ function AttendanceMatrix({
       >
         <DataTable
           caption="Asistencia de la sesión"
-          rows={rows}
+          rows={visibleRows}
           rowKey={(row) => row.matricula_id}
           columns={[
             {
@@ -374,6 +479,7 @@ function AttendanceMatrix({
                     label={`Asistencia de ${row.estudiante}`}
                     id={`attendance-${row.matricula_id}`}
                     value={(drafts[row.matricula_id] ?? recorded(row)).codigo}
+                    className={`attendance-mark-select mark-${(drafts[row.matricula_id] ?? recorded(row)).codigo}`}
                     disabled={busy || conflict || !!row.justificacionId}
                     hint={
                       row.justificacionId
@@ -397,11 +503,13 @@ function AttendanceMatrix({
                     ))}
                   </SelectField>
                 ) : (
-                  <StatusBadge inactive={!row.asistencia}>
+                  <span
+                    className={`attendance-code mark-${row.asistencia?.codigo ?? "empty"}`}
+                  >
                     {row.asistencia
                       ? `${row.asistencia.codigo} · ${attendanceCodes[row.asistencia.codigo]}`
                       : "Pendiente"}
-                  </StatusBadge>
+                  </span>
                 ),
             },
             {
@@ -499,19 +607,6 @@ function AttendanceMatrix({
           ]}
         />
       </ListPanel>
-      {canEdit && (
-        <footer className="actions">
-          <Button
-            variant="primary"
-            disabled={!dirty || conflict}
-            busy={busy}
-            busyLabel="Guardando asistencia…"
-            onClick={() => void save()}
-          >
-            Guardar asistencia
-          </Button>
-        </footer>
-      )}
       {guard.confirmation}
       {correcting && snapshot.grupo.cierre_asistencia && (
         <AttendanceCorrectionDialog

@@ -18,6 +18,7 @@ import { CalificacionesAbiertas1790208013000 } from '../migraciones/179020801300
 import { ActasResultados1790208014000 } from '../migraciones/1790208014000-actas-resultados.js';
 import { Exportaciones1790208015000 } from '../migraciones/1790208015000-exportaciones.js';
 import { Respaldos1790208016000 } from '../migraciones/1790208016000-respaldos.js';
+import { ActaDemostracion1790208017000 } from '../migraciones/1790208017000-acta-demostracion.js';
 
 export function databaseOptions(
   env: NodeJS.ProcessEnv = process.env,
@@ -48,6 +49,7 @@ export function databaseOptions(
       ActasResultados1790208014000,
       Exportaciones1790208015000,
       Respaldos1790208016000,
+      ActaDemostracion1790208017000,
     ],
     logging: false,
   };

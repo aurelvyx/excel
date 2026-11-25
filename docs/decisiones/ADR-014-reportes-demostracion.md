@@ -45,3 +45,12 @@ La migración y el flujo se prueban con PostgreSQL temporal. La compatibilidad s
 comprueba reabriendo XLSX, comparando datos y con renderizado independiente; eso
 no equivale a una revisión manual de Microsoft Excel. La aceptación institucional
 y las variantes no priorizadas siguen pendientes.
+
+## Actas de front/1
+
+El equipo eligió las plantillas anonimizadas `acta-ugel-*-v1-limpia.xlsx`
+como fuente en todos los entornos. La versión `ACTA-UGEL-…-v2` comprueba y
+registra su huella. La vista previa proyecta las celdas, tamaños, estilos e
+imágenes de la hoja poblada por el mismo adaptador del XLSX. La vista pagina la
+nómina alfabética y la descarga incluye el padrón completo. La aprobación
+institucional sigue pendiente.

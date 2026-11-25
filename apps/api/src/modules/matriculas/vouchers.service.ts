@@ -86,6 +86,107 @@ export class VouchersService {
       return this.view(manager, id);
     });
   }
+  async revenueSummary(actor: Identity, query: Record<string, unknown>) {
+    const periodoId = queryText(query, 'periodoId', 18);
+    const grupoId = queryText(query, 'grupoId', 18);
+    if (periodoId) validId(periodoId);
+    if (grupoId) validId(grupoId);
+
+    return this.source.transaction(async (manager) => {
+      await authorize(manager, actor, voucherRoles);
+
+      const values: unknown[] = [];
+      const clauses = ["v.estado = 'VALIDADO'", "m.estado <> 'ANULADA'"];
+
+      if (periodoId) {
+        values.push(periodoId);
+        clauses.push(`pa.id = $${values.length}::bigint`);
+      }
+      if (grupoId) {
+        values.push(grupoId);
+        clauses.push(`g.id = $${values.length}::bigint`);
+      }
+
+      const items = (await manager.query(
+        `SELECT
+          pa.id::text AS periodo_id,
+          pa.codigo AS periodo_codigo,
+          pa.nombre AS periodo_nombre,
+          pa.estado AS periodo_estado,
+          g.id::text AS grupo_id,
+          g.codigo AS grupo_codigo,
+          g.estado AS grupo_estado,
+          i.nombre AS idioma,
+          n.nombre AS nivel,
+          t.nombre AS turno,
+          s.codigo AS seccion,
+          COUNT(v.id)::int AS cantidad_vouchers,
+          COALESCE(SUM(v.importe), 0)::numeric(12,2)::text AS total_recaudado
+        FROM vouchers v
+        JOIN matriculas m ON m.voucher_id = v.id
+        JOIN grupos g ON g.id = m.grupo_id
+        JOIN periodos_academicos pa ON pa.id = g.periodo_id
+        JOIN niveles n ON n.id = g.nivel_id
+        JOIN idiomas i ON i.id = n.idioma_id
+        JOIN turnos t ON t.id = g.turno_id
+        JOIN secciones s ON s.id = g.seccion_id
+        WHERE ${clauses.join(' AND ')}
+        GROUP BY pa.id, pa.codigo, pa.nombre, pa.estado, g.id, g.codigo, g.estado, i.nombre, n.nombre, n.orden, t.nombre, s.codigo
+        ORDER BY pa.fecha_inicio DESC, pa.id DESC, i.nombre ASC, n.orden ASC, g.codigo ASC`,
+        values,
+      )) as Array<{
+        periodo_id: string;
+        periodo_codigo: string;
+        periodo_nombre: string;
+        periodo_estado: string;
+        grupo_id: string;
+        grupo_codigo: string;
+        grupo_estado: string;
+        idioma: string;
+        nivel: string;
+        turno: string;
+        seccion: string;
+        cantidad_vouchers: number;
+        total_recaudado: string;
+      }>;
+
+      const [periodos, grupos] = await Promise.all([
+        manager.query(
+          `SELECT id::text AS id, codigo, nombre, estado
+           FROM periodos_academicos
+           ORDER BY fecha_inicio DESC, id DESC`,
+        ),
+        manager.query(
+          `SELECT g.id::text AS id, g.codigo, g.periodo_id::text AS periodo_id,
+                  i.nombre AS idioma, n.nombre AS nivel, t.nombre AS turno, s.codigo AS seccion
+           FROM grupos g
+           JOIN niveles n ON n.id = g.nivel_id
+           JOIN idiomas i ON i.id = n.idioma_id
+           JOIN turnos t ON t.id = g.turno_id
+           JOIN secciones s ON s.id = g.seccion_id
+           ORDER BY g.codigo ASC`,
+        ),
+      ]);
+
+      let totalVouchers = 0;
+      let totalRecaudadoCents = 0;
+      for (const row of items) {
+        totalVouchers += Number(row.cantidad_vouchers) || 0;
+        totalRecaudadoCents += Math.round(Number(row.total_recaudado || 0) * 100);
+      }
+
+      return {
+        items,
+        resumen: {
+          totalVouchers,
+          totalRecaudado: (totalRecaudadoCents / 100).toFixed(2),
+          totalSalones: items.length,
+        },
+        periodos,
+        grupos,
+      };
+    });
+  }
   async create(actor: Identity, dto: VoucherDto, ip?: string) {
     let amount: string;
     try {

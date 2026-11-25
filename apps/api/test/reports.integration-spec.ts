@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { DataSource } from 'typeorm';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
@@ -6,6 +7,7 @@ import ExcelJS from 'exceljs';
 import request from 'supertest';
 import { databaseOptions } from '../src/database/configuracion/data-source.js';
 import { bootstrapAdministrator } from '../src/database/bootstrap-admin.js';
+import { configureRuntimeRole } from '../src/database/runtime-role.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
 import { AuditService } from '../src/modules/control/audit.service.js';
@@ -17,6 +19,7 @@ import type {
   ReportType,
 } from '../src/modules/reportes/report.model.js';
 import { Exportaciones1790208015000 } from '../src/database/migraciones/1790208015000-exportaciones.js';
+import { ActaDemostracion1790208017000 } from '../src/database/migraciones/1790208017000-acta-demostracion.js';
 import { checkMigrationReversal } from './migration-test.js';
 import {
   attendanceFixture,
@@ -67,12 +70,31 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
     fixture = await attendanceFixture(source, adminId, password);
     origin = `http://127.0.0.1:${await freePort()}`;
     process.env.WEB_ORIGINS = origin;
-    const module = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = module.createNestApplication();
-    configureApp(app);
-    await app.init();
+    // Fixtures con la conexión propietaria y exportaciones con el rol B21 sin DDL.
+    const apiRole = 'excel_reports_api_test';
+    const apiPassword = randomBytes(32).toString('hex');
+    await configureRuntimeRole(source, apiRole, apiPassword);
+    const ownerUser = process.env.DB_USER;
+    const ownerPassword = process.env.DB_PASSWORD;
+    try {
+      process.env.DB_USER = apiRole;
+      process.env.DB_PASSWORD = apiPassword;
+      const module = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+      app = module.createNestApplication();
+      configureApp(app);
+      await app.init();
+    } finally {
+      if (ownerUser === undefined) delete process.env.DB_USER;
+      else process.env.DB_USER = ownerUser;
+      if (ownerPassword === undefined) delete process.env.DB_PASSWORD;
+      else process.env.DB_PASSWORD = ownerPassword;
+    }
+    const apiSource = app.get(DataSource);
+    expect(await apiSource.query('SELECT current_user AS rol')).toEqual([
+      { rol: apiRole },
+    ]);
     admin = await login('admin_b19');
     teacher = await login('docente');
     stranger = await login('ajeno');
@@ -267,6 +289,128 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
       .expect(201);
   }
 
+  it.each([
+    ['EN', '12.40', 'U17'],
+    ['PT', '12.50', 'T17'],
+  ] as const)(
+    'exporta el acta limpia %s con permisos, proyección decimal y resultado confirmado de B18',
+    async (language, grade, flag) => {
+      const cleanTemplate = await readFile(
+        new URL(
+          `../templates/reportes/acta-ugel-${language.toLowerCase()}-v1-limpia.xlsx`,
+          import.meta.url,
+        ),
+      );
+      const cleanHash = createHash('sha256').update(cleanTemplate).digest('hex');
+      const data = await dataset(language, grade);
+      const initial = await preview(
+        data.group,
+        'ACTA_DEMOSTRACION',
+        coordinator,
+      );
+      expect(initial.puedeExportar).toBe(true);
+      expect(initial.plantilla).toMatchObject({
+        id: `ACTA-UGEL-${language}-v2`,
+        version: 2,
+        sha256: cleanHash,
+      });
+      expect(initial.componentes).toHaveLength(1);
+      expect(
+        initial.items[0]!.notasComponentes[initial.componentes[0]!.id],
+      ).toBe(grade);
+      const first = await exported(data.group, initial, coordinator).expect(
+        201,
+      );
+      const firstSheet = (await workbook(first)).worksheets[0]!;
+      expect(firstSheet.getCell('A2').text).toContain('BORRADOR');
+      expect(firstSheet.getCell('S17').value).toBe(grade === '12.40' ? 12 : 13);
+      expect(firstSheet.getCell('T17').value).toBeNull();
+      expect(firstSheet.getCell('U17').value).toBeNull();
+      const teacherView = await preview(
+        data.group,
+        'ACTA_DEMOSTRACION',
+        teacher,
+      );
+      await exported(data.group, teacherView, teacher).expect(201);
+      for (const actor of [stranger, secretary]) {
+        await call(
+          'get',
+          `${path(data.group)}?tipo=ACTA_DEMOSTRACION`,
+          actor,
+        ).expect(403);
+        await exported(data.group, initial, actor).expect(403);
+      }
+      await close(data.group);
+      const confirmed = await preview(data.group, 'ACTA_DEMOSTRACION');
+      const second = await exported(data.group, confirmed).expect(201);
+      const secondSheet = (await workbook(second)).worksheets[0]!;
+      expect(secondSheet.getCell(flag).value).toBe('X');
+      expect(secondSheet.getCell('Y13').value).toBe(grade === '12.50' ? 1 : 0);
+      expect(secondSheet.getCell('Y14').value).toBe(grade === '12.40' ? 1 : 0);
+      const before = await evidence(data.group);
+      expect(before.exports).toHaveLength(3);
+      for (const row of before.exports)
+        expect(row).toMatchObject({
+          plantilla_id: initial.plantilla.id,
+          plantilla_version: 2,
+          plantilla_sha256: cleanHash,
+        });
+      await expect(
+        checkMigrationReversal(source, new ActaDemostracion1790208017000()),
+      ).rejects.toMatchObject({ driverError: { code: '23514' } });
+      expect(await evidence(data.group)).toEqual(before);
+    },
+  );
+
+  it('pagina el padrón del acta en el mismo orden que el XLSX, incluso si los identificadores no aumentan', async () => {
+    const { group, student } = await dataset();
+    const middle = await fixture.student();
+    const last = await fixture.student();
+    const middleEnrollment = await fixture.enroll(group, middle);
+    const lastEnrollment = await fixture.enroll(group, last);
+    for (const [person, surname] of [
+      [student, 'Zeta'],
+      [middle, 'Mendoza'],
+      [last, 'Álvarez'],
+    ] as const)
+      await source.query(
+        'UPDATE personas SET apellido_paterno=$1 WHERE id=$2',
+        [surname, person.persona_id],
+      );
+    const first = await preview(
+      group,
+      'ACTA_DEMOSTRACION',
+      teacher,
+      '&limit=1',
+    );
+    const second = await preview(
+      group,
+      'ACTA_DEMOSTRACION',
+      teacher,
+      `&after=${first.nextCursor}`,
+    );
+    expect(first.offset).toBe(0);
+    expect(first.nextCursor).toBe(lastEnrollment.id);
+    expect(second.offset).toBe(1);
+    expect(second.items[0]!.matriculaId).toBe(middleEnrollment.id);
+    expect(second.nextCursor).toBeNull();
+    expect(second.revision).toBe(first.revision);
+    const downloaded = await exported(group, first, teacher).expect(201);
+    const { worksheets } = await workbook(downloaded);
+    const [act] = worksheets;
+    const ordered = [...first.items, ...second.items];
+    expect(ordered).toHaveLength(3);
+    for (const [index, row] of ordered.entries()) {
+      expect(act!.getCell(`A${17 + index}`).value).toBe(index + 1);
+      expect(act!.getCell(`C${17 + index}`).value).toBe(row.estudiante);
+    }
+    await call(
+      'get',
+      `${path(group)}?tipo=ACTA_DEMOSTRACION&after=999999999999999999`,
+      teacher,
+    ).expect(409);
+  });
+
   it('lee el grupo completo con revisión independiente de página y no registra exportaciones', async () => {
     const data = await dataset();
     for (let index = 0; index < 2; index++)
@@ -449,23 +593,28 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
     expect(await evidence(data.group)).toEqual({ exports: [], audit: [] });
   });
 
-  it('revalida asignación y revocación después de consultar la vista previa', async () => {
-    const data = await dataset();
-    const view = await preview(data.group, 'MATRIZ_NOTAS', teacher);
-    await source.query(
-      'UPDATE grupo_docentes SET activo=false WHERE grupo_id=$1',
-      [data.group.id],
-    );
-    await exported(data.group, view, teacher).expect(403);
-    await call('get', `${path(data.group)}/exportaciones`, teacher).expect(403);
-    const temporary = await login('docente');
-    await source.query(
-      'UPDATE sesiones_usuario SET revocado_at=now() WHERE usuario_id=$1 AND id=(SELECT id FROM sesiones_usuario WHERE usuario_id=$1 ORDER BY creado_at DESC,id DESC LIMIT 1)',
-      [fixture.userIds.docente],
-    );
-    await exported(data.group, view, temporary).expect(401);
-    expect(await evidence(data.group)).toEqual({ exports: [], audit: [] });
-  });
+  it.each(['MATRIZ_NOTAS', 'ACTA_DEMOSTRACION'] as const)(
+    'revalida asignación y revocación para %s después de consultar la vista previa',
+    async (tipo) => {
+      const data = await dataset();
+      const view = await preview(data.group, tipo, teacher);
+      await source.query(
+        'UPDATE grupo_docentes SET activo=false WHERE grupo_id=$1',
+        [data.group.id],
+      );
+      await exported(data.group, view, teacher).expect(403);
+      await call('get', `${path(data.group)}/exportaciones`, teacher).expect(
+        403,
+      );
+      const temporary = await login('docente');
+      await source.query(
+        'UPDATE sesiones_usuario SET revocado_at=now() WHERE usuario_id=$1 AND id=(SELECT id FROM sesiones_usuario WHERE usuario_id=$1 ORDER BY creado_at DESC,id DESC LIMIT 1)',
+        [fixture.userIds.docente],
+      );
+      await exported(data.group, view, temporary).expect(401);
+      expect(await evidence(data.group)).toEqual({ exports: [], audit: [] });
+    },
+  );
 
   it('rechaza tipos y campos extra; idioma se determina por código y no por nombre', async () => {
     const data = await dataset();
@@ -647,6 +796,10 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
     await exported(data.group, await preview(data.group)).expect(201);
     await exported(
       data.group,
+      await preview(data.group, 'ACTA_DEMOSTRACION'),
+    ).expect(201);
+    await exported(
+      data.group,
       await preview(data.group, 'RESUMEN_PARTICIPANTES'),
     ).expect(201);
     await exported(data.group, await preview(data.group)).expect(201);
@@ -658,16 +811,21 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
       'get',
       `${path(data.group)}/exportaciones?limit=1&after=${all.body.nextCursor}`,
     ).expect(200);
-    expect(next.body.items[0].tipo).toBe('RESUMEN_PARTICIPANTES');
+    expect(next.body.items[0].tipo).toBe('ACTA_DEMOSTRACION');
     const mine = await call(
       'get',
       `${path(data.group)}/exportaciones`,
       teacher,
     ).expect(200);
-    expect(mine.body.items).toHaveLength(2);
+    expect(mine.body.items).toHaveLength(3);
     expect(
-      mine.body.items.every(
-        (item: { tipo: string }) => item.tipo === 'MATRIZ_NOTAS',
+      mine.body.items.some(
+        (item: { tipo: string }) => item.tipo === 'ACTA_DEMOSTRACION',
+      ),
+    ).toBe(true);
+    expect(
+      mine.body.items.every((item: { tipo: string }) =>
+        ['MATRIZ_NOTAS', 'ACTA_DEMOSTRACION'].includes(item.tipo),
       ),
     ).toBe(true);
     expect(mine.body.items[0]).not.toHaveProperty('archivo');
@@ -702,7 +860,7 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
   );
 
   it('revierte migración vacía; conserva evidencia ante UPDATE DELETE TRUNCATE y down', async () => {
-    // La base de datos genérica verifica además las 16 migraciones desde cero y reversión completa vacía.
+    // La suite de base verifica además todas las migraciones desde cero y su reversión completa vacía.
     const data = await dataset();
     await exported(data.group, await preview(data.group)).expect(201);
     const before = await evidence(data.group);
@@ -757,19 +915,17 @@ describe('B19 borradores XLSX con autorización, revisión y evidencia transacci
     const data = await dataset();
     const view = await preview(data.group);
     await expect(
-      app
-        .get(ReportsService)
-        .export(
-          {
-            id: adminId,
-            sessionId: '999999999999999999',
-            nombre_usuario: 'admin_b19',
-            roles: ['ADMIN'],
-            requiere_cambio_clave: false,
-          },
-          data.group.id,
-          { tipo: view.tipo, revision: view.revision },
-        ),
+      app.get(ReportsService).export(
+        {
+          id: adminId,
+          sessionId: '999999999999999999',
+          nombre_usuario: 'admin_b19',
+          roles: ['ADMIN'],
+          requiere_cambio_clave: false,
+        },
+        data.group.id,
+        { tipo: view.tipo, revision: view.revision },
+      ),
     ).rejects.toMatchObject({ status: 403 });
   });
 });

@@ -13,13 +13,18 @@ desde grupos, calificaciones y acta. La vista conserva periodo, idioma, nivel,
 grupo, turno y sección. La página de 20 intentos no limita la descarga: los
 conteos y el archivo incluyen el grupo completo. Revisar los pendientes y la
 confirmación antes de **Generar XLSX**. El historial identifica cada generación.
+En el acta, **Ver vista previa** lleva a la hoja preparada para el XLSX, con
+los logotipos, los estilos, las celdas combinadas y los bloques de la plantilla.
+El padrón se consulta por páginas, en orden alfabético y con numeración continua.
+Las columnas A/D/R muestran el resultado confirmado en el cierre vigente.
 
 | Reporte | Usuarios | Idiomas | Contenido |
 | --- | --- | --- | --- |
 | Matriz de notas | Administrador, coordinación y docente asignado activo | EN/PT | Notas por indicador, promedio exacto, nota calculada, asistencia y condición confirmada |
 | Resumen de participantes, basado en Anexo 05 | Administrador y coordinación | EN/PT | Una fila por grupo, unidades/créditos/horas, fechas del periodo e intentos/aprobados |
+| Acta de evaluación de demostración, recuperada de front/1 | Administrador, coordinación y docente asignado activo | EN/PT | Hasta ocho componentes aprobados, promedio exacto, nota calculada y condición confirmada de cada intento |
 
-Secretaría no recibe permisos de estos dos reportes: ficha y nómina, previstos
+Secretaría no recibe permisos de este conjunto de reportes: ficha y nómina, previstos
 para ese rol, quedan fuera de este primer conjunto. Un rol adicional sin permiso
 B19 no amplía el alcance docente. Se protegen consulta, generación e historial
 en el servidor, incluso al revocar sesión, rol, persona o asignación.
@@ -48,7 +53,7 @@ notas, redondeo, faltas ni condición mediante otra fórmula académica.
   PENDIENTE y ANULADA. Una repetición sigue siendo otro intento. El conteo propuesto
   no representa personas únicas y se identifica así en la vista y el XLSX.
 - Las notas requieren criterios aprobados aplicados al grupo para exportar la
-  matriz. El resumen puede mostrar datos aún incompletos como borrador.
+  matriz o el acta de demostración. El resumen puede mostrar datos aún incompletos como borrador.
 - La asistencia abierta, incompleta o con justificaciones pendientes puede ser
   parcial/provisional; se advierte en la vista y el libro. No produce por sí sola
   una condición académica confirmada.
@@ -64,8 +69,8 @@ No se inventan ni se copian responsables, documentos o firmas de los originales.
 
 ## Plantillas y mantenimiento
 
-Los cuatro diseños de ejecución están en `apps/api/templates/reportes/`:
-matriz y resumen EN/PT, una hoja cada uno. `registro.json` fija identificador,
+Los seis diseños de ejecución están en `apps/api/templates/reportes/`:
+matriz, resumen y acta de demostración EN/PT, una hoja cada uno. `registro.json` fija identificador,
 versión, idioma, tipo, hoja, filas y hash. Una alteración sin actualizar/revisar
 la versión impide exportar. La validación reproducible es:
 
@@ -73,12 +78,25 @@ la versión impide exportar. La validación reproducible es:
 pnpm b19:plantillas
 ```
 
-Son diseños nuevos propuestos, basados en los campos observados en B10. No son
-copias exactas ni versiones aprobadas de los originales. La matriz admite los
+La matriz y el resumen son diseños propuestos a partir de los campos observados
+en B10. Las actas se generan exclusivamente a partir de
+`acta-ugel-en-v1-limpia.xlsx` y `acta-ugel-pt-v1-limpia.xlsx`, derivados
+anonimizados de front/1. La versión de exportación `ACTA-UGEL-…-v2` registra
+la huella de la plantilla limpia. Los seis formatos se identifican como
+borradores de aprobación pendiente.
+La matriz admite los
 indicadores configurados y todas las filas permitidas, preserva encabezado e
 identidad al desplazarse y agrega un conteo del padrón completo. El resumen tiene
 una fila por grupo, sin duplicarla en una fila de totales. Formatos de número,
 porcentaje y fecha conservan tipos numéricos; documentos y códigos son texto.
+
+El acta crece por encima de sus 35 filas iniciales y desplaza el pie para
+conservar toda la nómina. Calcula los componentes mediante el servicio decimal
+del dominio. La versión de la fórmula y la condición confirmada corresponden al
+grupo y al intento. La migración 18 habilita `ACTA_DEMOSTRACION` como tipo de
+exportación. La reversión rechaza actas persistidas para conservar su evidencia.
+La recuperación de pantallas y el alcance de las plantillas se detallan en
+[Integración de front/1](PR21-integracion.md).
 
 Las muestras privadas de `.tmp/b10` no se modificaron ni se incorporaron a Git.
 Los XLSM contienen registros y responsables; además, sus fórmulas de indicadores,
@@ -110,8 +128,8 @@ OpenAPI **0.19.0**. Base `/api/v1/reportes/grupos/{grupoId}`:
 | POST | `/exportaciones`, `{tipo, revision}` | XLSX binario y registro transaccional |
 | GET | `/exportaciones`, `after` y `limit` | Historial autorizado de metadatos |
 
-Solo se aceptan `MATRIZ_NOTAS` y `RESUMEN_PARTICIPANTES`. No hay modo oficial ni
-endpoint de aprobación. Los códigos de idioma soportados son EN/PT y DEMO-EN/PT;
+Se aceptan `MATRIZ_NOTAS`, `RESUMEN_PARTICIPANTES` y `ACTA_DEMOSTRACION`. Los
+códigos de idioma soportados son EN/PT y DEMO-EN/PT;
 no se adivina el idioma a partir del nombre. Otro código necesita un mapeo revisado.
 El POST exige sesión, Origin y CSRF, devuelve Content-Disposition seguro,
 `X-Exportacion-Id` y `Cache-Control: no-store`. El cliente comparte el mismo

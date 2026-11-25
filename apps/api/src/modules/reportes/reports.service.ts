@@ -17,13 +17,16 @@ import {
 } from '../asistencia/academic-context.js';
 import { AttendanceCalculationService } from '../asistencia/attendance-calculation.service.js';
 import { GradeCalculationService } from '../evaluacion/grade-calculation.service.js';
+import { calculateGradeAverage } from '../evaluacion/grade.policy.js';
 import { AuditService } from '../control/audit.service.js';
 import { page, validId } from '../../common/validation.js';
 import { ReportsRepository } from './reports.repository.js';
 import { ReportWorkbookService } from './report-workbook.service.js';
+import { actSheetLayout, compareActRows } from './report-acta.js';
 import {
   reportTypes,
   type ReportLanguage,
+  type ReportPage,
   type ReportRow,
   type ReportSnapshot,
   type ReportType,
@@ -123,6 +126,17 @@ export class ReportsService {
     const attendanceSummaries = await this.attendance.summaries(manager, ids);
     const results = await this.repo.results(manager, ids);
     const byEnrollment = new Map(results.map((row) => [row.matricula_id, row]));
+    const componentIndicators = new Map<string, typeof indicators>();
+    for (const indicator of indicators) {
+      const list = componentIndicators.get(indicator.evaluacionId) ?? [];
+      list.push(indicator);
+      componentIndicators.set(indicator.evaluacionId, list);
+    }
+    const componentes = [...componentIndicators].map(([id, entries]) => ({
+      id,
+      nombre: entries[0]!.evaluacion,
+      pesoPct: entries[0]!.pesoEvaluacion,
+    }));
     const items: ReportRow[] = roster.map((row) => ({
       matriculaId: row.matricula_id,
       codigo: row.codigo_matricula,
@@ -136,10 +150,43 @@ export class ReportsService {
           notesByKey.get(`${row.matricula_id}:${indicator.id}`) ?? null,
         ]),
       ),
+      notasComponentes: Object.fromEntries(
+        [...componentIndicators].map(([id, entries]) => [
+          id,
+          plan?.estado === 'APROBADO' && indicators.length <= 100
+            ? calculateGradeAverage(
+                'PONDERADA_JERARQUICA_V1',
+                {
+                  evaluaciones: [
+                    {
+                      nombre: entries[0]!.evaluacion,
+                      unidadId: null,
+                      pesoPct: '100.00',
+                      orden: 1,
+                      indicadores: entries.map((entry, index) => ({
+                        codigo: entry.codigo,
+                        descripcion: entry.descripcion,
+                        pesoPct: entry.pesoIndicador,
+                        orden: index + 1,
+                      })),
+                    },
+                  ],
+                },
+                entries.map((entry, index) => ({
+                  evaluacionOrden: 1,
+                  indicadorOrden: index + 1,
+                  nota:
+                    notesByKey.get(`${row.matricula_id}:${entry.id}`) ?? null,
+                })),
+              ).promedio
+            : null,
+        ]),
+      ),
       resumenNotas: gradeSummaries.get(row.matricula_id)!,
       resumenAsistencia: attendanceSummaries.get(row.matricula_id)!,
       resultado: byEnrollment.get(row.matricula_id) ?? null,
     }));
+    if (tipo === 'ACTA_DEMOSTRACION') items.sort(compareActRows);
     const confirmed = items.filter((row) => {
       const result = row.resultado;
       return (
@@ -218,11 +265,18 @@ export class ReportsService {
         'El grupo supera el límite de 100 indicadores por exportación',
       );
     if (
-      tipo === 'MATRIZ_NOTAS' &&
+      tipo !== 'RESUMEN_PARTICIPANTES' &&
       (!configuration || plan?.estado !== 'APROBADO' || !indicators.length)
     )
       pendientes.push(
         'Aplica criterios de evaluación aprobados al grupo; los criterios históricos no se consideran aprobados',
+      );
+    if (
+      tipo === 'ACTA_DEMOSTRACION' &&
+      componentes.length > actSheetLayout.components
+    )
+      pendientes.push(
+        'El diseño de acta admite hasta ocho componentes. Utiliza la matriz detallada para conservar todos los criterios.',
       );
     if (!/^[a-f0-9]{64}$/.test(template.sha256))
       pendientes.push('La plantilla no tiene un hash válido');
@@ -293,6 +347,7 @@ export class ReportsService {
       advertencias,
       resumen,
       indicadores: indicators,
+      componentes,
       items,
       anexo,
     };
@@ -302,22 +357,49 @@ export class ReportsService {
     actor: Identity,
     groupId: string,
     query: Record<string, unknown>,
-  ) {
+  ): Promise<ReportPage> {
     validId(groupId);
     const { after, limit } = page(query, ['tipo']);
     const tipo = this.type(query.tipo);
-    return this.source.transaction(async (manager) => {
-      const { group } = await this.scope(manager, actor, groupId, tipo);
-      const snapshot = await this.snapshot(manager, group, tipo);
-      const rows = snapshot.items
-        .filter((row) => BigInt(row.matriculaId) > BigInt(after))
-        .slice(0, limit + 1);
-      return {
-        ...snapshot,
-        items: rows.slice(0, limit),
-        nextCursor: rows.length > limit ? rows[limit - 1]!.matriculaId : null,
-      };
-    });
+    const report: ReportPage = await this.source.transaction(
+      async (manager) => {
+        const { group } = await this.scope(manager, actor, groupId, tipo);
+        const snapshot = await this.snapshot(manager, group, tipo);
+        if (tipo === 'ACTA_DEMOSTRACION') {
+          const offset =
+            after === '0'
+              ? 0
+              : snapshot.items.findIndex((row) => row.matriculaId === after) +
+                1;
+          if (after !== '0' && offset === 0)
+            throw new ConflictException(
+              'El padrón cambió. Recarga la vista desde la primera página',
+            );
+          const nextOffset = offset + limit;
+          const items = snapshot.items.slice(offset, nextOffset);
+          return {
+            ...snapshot,
+            items,
+            offset,
+            nextCursor:
+              nextOffset < snapshot.items.length
+                ? items.at(-1)!.matriculaId
+                : null,
+          };
+        }
+        const rows = snapshot.items
+          .filter((row) => BigInt(row.matriculaId) > BigInt(after))
+          .slice(0, limit + 1);
+        return {
+          ...snapshot,
+          items: rows.slice(0, limit),
+          nextCursor: rows.length > limit ? rows[limit - 1]!.matriculaId : null,
+        };
+      },
+    );
+    if (tipo === 'ACTA_DEMOSTRACION')
+      report.acta = await this.workbook.previewAct(report, report.offset ?? 0);
+    return report;
   }
 
   async export(
